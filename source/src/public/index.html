@@ -537,13 +537,15 @@ function onDocChange(){
   const ph=document.createElement('option'); ph.value=''; ph.textContent='—— 请选择来源档 ——'; ss.appendChild(ph);
   const exSet=new Set((META.srcExcluded||{})[doc.id]||[]);
   // 业务流向：上游单据不能取下游单据的值，后台自动排除
+  const infoGroup=document.createElement('optgroup'); infoGroup.label='信息档';
   META.srcs.forEach(src=>{
     if(exSet.has(src.id))return;      // 业务流向：下游单据自动排除
     if(src.id===doc.id)return;        // 来源档不能与主表是同一张表
     const o=document.createElement('option');
     o.value=src.id; o.textContent=src.name;
-    ss.appendChild(o);
+    if(src.info) infoGroup.appendChild(o); else ss.appendChild(o);
   });
+  if(infoGroup.children.length) ss.appendChild(infoGroup);
   if(ss.options.length<=1){ const vs=document.getElementById('valSub'); if(vs) vs.textContent='当前单据没有可选来源档'; }
   ss.onchange=()=>onSrcChange();
   onSrcChange();

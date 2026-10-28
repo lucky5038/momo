@@ -158,6 +158,7 @@ module.exports = function makeSqlgen(sql) {
       srcs.push({
         id: tbl,
         name: tbl + ' ' + (row.srcDesc || '').trim(),
+        info: /信息档/.test(String(row.srcDesc || '')),
         party,
         key: [keyCol],
         keyDesc,

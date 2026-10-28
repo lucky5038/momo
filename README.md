@@ -1,7 +1,7 @@
 # Momo传值助手 · 开发版
 
 本目录由 **release/Momo传值助手 1.0.0.exe**（确认可正常运行的基线版本）提取，
-当前正式版本为 **Momo传值助手 2.2.15**。
+当前正式版本为 **Momo传值助手 2.2.16**。
 是当前唯一的开发源码。旧的 `chuanzhi-app` 目录已删除。
 
 ## 目录说明
@@ -28,8 +28,8 @@ node tools\regen-inline.js
 
 3. 快速看效果：运行 `run-dev.ps1`。
 4. 出正式包：运行 `build-electron.ps1`，会同时生成两个产物：
-   - `dist-electron\Momo传值助手 2.2.15.exe`（便携版，双击即用）
-   - `dist-electron\Momo传值助手 Setup 2.2.15.exe`（安装包，带安装向导，可选安装路径）
+   - `dist-electron\Momo传值助手 2.2.16.exe`（便携版，双击即用）
+   - `dist-electron\Momo传值助手 Setup 2.2.16.exe`（安装包，带安装向导，可选安装路径）
 
 ## 回归测试
 
