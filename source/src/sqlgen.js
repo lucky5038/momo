@@ -489,7 +489,8 @@ module.exports = function makeSqlgen(sql) {
         cond = bt(alias) + '.' + bt(toMeta.docNo) + ' = ' + bt(prevAlias) + '.' + bt(fromMeta.docNo);
       } else {
         cond = bt(alias) + '.' + bt(e.toJoinCol || toMeta.docNo) + ' = ' + bt(prevAlias) + '.' + bt(e.fromNo);
-        if (toMeta.docSeq && e.fromSeq) cond += ' AND ' + bt(alias) + '.' + bt(toMeta.docSeq) + ' = ' + bt(prevAlias) + '.' + bt(e.fromSeq);
+        const toSeq = e.toSeqCol || toMeta.docSeq;
+        if (toSeq && e.fromSeq) cond += ' AND ' + bt(alias) + '.' + bt(toSeq) + ' = ' + bt(prevAlias) + '.' + bt(e.fromSeq);
         if (e.fromCode) cond += " AND " + bt(prevAlias) + '.' + bt(e.fromCode) + " = N'" + esc(e.code) + "'";
       }
       joins.push(' JOIN [dbo].[' + e.to + '] ' + alias + ' ON ' + cond);

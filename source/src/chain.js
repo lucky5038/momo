@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 16;
+const REGISTRY_VERSION = 17;
 function registryRequest(pool) {
   const request = pool.request();
   request.timeout = 60000;
@@ -267,19 +267,17 @@ async function buildRegistry(pool) {
     { from: 'QMSMCB', to: 'QMSMBB', fromNo: 'MCB005', fromSeq: 'MCB006', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     // 委外送料 -> 委外单（委外单号/序号）
     { from: 'SGMRFB', to: 'SGMREB', fromNo: 'RFB010', fromSeq: 'RFB011', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
-    { from: 'SGMRFA', to: 'SGMREA', fromNo: 'RFA006', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
-    // 委外单 -> 工单（源工单）
-    { from: 'SGMREA', to: 'SGMRAA', fromNo: 'REA014', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
-    // 生产入库单 -> 工单（工单单号）
-    { from: 'SGMRCA', to: 'SGMRAA', fromNo: 'RCA007', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     { from: 'SGMRCB', to: 'SGMRAB', fromNo: 'RCB026', fromSeq: 'RCB027', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     // 生产检验单身 -> 工单（来源单号，81=工单）
     { from: 'QMSMAB', to: 'SGMRAA', fromNo: 'MAB006', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
-    // 领/退料单 -> 工单
-    { from: 'SGMRBA', to: 'SGMRAA', fromNo: 'RBA006', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     { from: 'SGMRBB', to: 'SGMRAB', fromNo: 'RBB010', fromSeq: 'RBB011', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     // 重工单 -> 工单（来源工单单号）
-    { from: 'SGMRKA', to: 'SGMRAA', fromNo: 'RKA010', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 }
+    { from: 'SGMRKA', to: 'SGMRAA', fromNo: 'RKA010', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 物料需求计划发放：委外单/工单都挂同一计划编号，经 SGMRIB 互为来源
+    { from: 'SGMREA', to: 'SGMRIB', fromNo: 'REA049', fromSeq: 'REA050', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'SGMRAA', to: 'SGMRIB', fromNo: 'RAA026', fromSeq: 'RAA027', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'SGMRIB', to: 'SGMRAA', fromNo: 'RIB001', fromSeq: 'RIB002', toJoinCol: 'RAA026', toSeqCol: 'RAA027', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'SGMRIB', to: 'SGMREA', fromNo: 'RIB001', fromSeq: 'RIB002', toJoinCol: 'REA049', toSeqCol: 'REA050', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 }
   ];
   // 单头显式引用上游单据时自动接边，覆盖付款单、收款单、计划建议等同类结构。
   for (const [tbl, cols] of Object.entries(byTable)) {
@@ -391,6 +389,7 @@ function buildAdj(registry) {
       fromNo: l.fromNo,
       fromSeq: l.fromSeq,
       toJoinCol: l.toJoinCol,
+      toSeqCol: l.toSeqCol,
       link: l
     });
   });
