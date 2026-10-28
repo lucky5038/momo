@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 14;
+const REGISTRY_VERSION = 15;
 function registryRequest(pool) {
   const request = pool.request();
   request.timeout = 60000;
