@@ -651,8 +651,6 @@ function renderPreview(b, d){
   }).join('');
 
   const tags = [
-    d.partyNote ? '<span class="tag">' + esc(d.partyNote) + '</span>' : '',
-    d.note ? '<span class="tag">' + esc(d.note) + '</span>' : '',
     d.channelNote ? '<span class="tag tag-blue">' + esc(d.channelNote) + '</span>' : '',
     d.chainNote ? '<span class="tag tag-blue">链式 · ' + esc(d.chainNote) + '</span>' : ''
   ].filter(Boolean).join('');
@@ -662,7 +660,7 @@ function renderPreview(b, d){
       + '<th>单号</th><th style="width:90px">序号</th><th>现值</th><th>应带</th>'
       + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
       + (total > 50 ? '<div class="pv-foot">仅显示前 50 行，实际共 ' + total + ' 行</div>' : '')
-    : '<div class="pv-empty">没有需要填入的行：目标列可能已有值，或来源单据没有匹配数据。</div>';
+    : '<div class="pv-empty">没有需要填入的行：目标列可能已有值（数值 0 也算已有值，需要覆盖请勾选“强制覆盖”），或来源单据没有匹配数据。</div>';
 
   return '<div class="pv-wrap">'
     + '<div class="pv-head">'

@@ -9,6 +9,12 @@ module.exports = function makeSqlgen(sql) {
 
   const PARTY_HINT = { supplier: '供应商', customer: '客户' };
 
+  // 单号列与序号列可能是同一列（信息档常见），ORDER BY 去重，避免 SQL Server 报“列重复”。
+  function orderBy(showNo, noCol) {
+    const cols = [...new Set([showNo, noCol].filter(Boolean))];
+    return cols.map(c => 'b.[' + c + ']').join(', ');
+  }
+
   function guessParty(mainDesc) {
     if (!mainDesc) return 'none';
     if (/供应商|请购|采购|进货|收料|借入/.test(mainDesc)) return 'supplier';
@@ -32,7 +38,9 @@ module.exports = function makeSqlgen(sql) {
   }
 
   async function scanDocs(p) {
-    // 1. One batched query: all user tables with a description, plus their
+    // 个别“信息档”的第 3 列不是品号（如 SGMRFD 第 3 列是委外单号），
+    // 这里显式指定关联列，避免默认按第 3 列 JOIN 取不到库存。
+    const DOC_REF_OVERRIDES = { SGMRFD: 'RFD007' };    // 1. One batched query: all user tables with a description, plus their
     //    col1 / col3 names, and main-table description.
     const base = await p.request().query(
       "SELECT t.name AS subTbl, CONVERT(varchar(120),s0.value) AS subDesc, " +
@@ -103,6 +111,7 @@ module.exports = function makeSqlgen(sql) {
         name: sub + ' ' + ((row.subDesc || row.mainDesc || '').trim()),
         main: mainGuess, mainKeyCol, sub,
         keyCol: row.itemCol || (pfx + '003'),
+        refCol: DOC_REF_OVERRIDES[sub] || null,
         party, partyCol,
         prefCol, seqCol, colNo, colSeq
       });
@@ -365,7 +374,7 @@ module.exports = function makeSqlgen(sql) {
         const cond = force ? '1=1' : (mode === 'fix' ? ('(' + emptyCond + ' OR ' + fixCond + ')') : emptyCond);
         const whereClause = ' WHERE ' + cond + ' AND (' + fallbackVal + ' IS NOT NULL AND CAST(' + fallbackVal + ' AS varchar(200)) <> N\'\')';
         const previewSqlX = 'SELECT TOP 200 b.[' + showNo + '] AS [单号], b.[' + noCol + '] AS [序号], b.[' + tgtCol + '] AS [现值], ' + fallbackVal + ' AS [应带]' +
-          fromClause + whereClause + ' ORDER BY b.[' + showNo + '], b.[' + noCol + ']';
+          fromClause + whereClause + ' ORDER BY ' + orderBy(showNo, noCol);
         const updateSqlX = 'UPDATE b SET b.[' + tgtCol + ']=' + fallbackVal +
           fromClause + whereClause;
         const cntSqlX = 'SELECT COUNT(*) AS n FROM [dbo].[' + doc.sub + '] b' +
@@ -405,7 +414,7 @@ module.exports = function makeSqlgen(sql) {
         const cond = force ? '1=1' : (mode === 'fix' ? ('(' + emptyCond + ' OR ' + fixCond + ')') : emptyCond);
         const whereClause = ' WHERE ' + cond + ' AND (' + fallbackVal + ' IS NOT NULL AND CAST(' + fallbackVal + ' AS varchar(200)) <> N\'\')';
         const previewSqlX = 'SELECT TOP 200 b.[' + showNo + '] AS [单号], b.[' + noCol + '] AS [序号], b.[' + tgtCol + '] AS [现值], ' + fallbackVal + ' AS [应带], (CASE WHEN h.[JDA058]=N\'F\' THEN N\'免检流程\' ELSE N\'检验流程\' END) AS [路径]' +
-          fromClause + whereClause + ' ORDER BY b.[' + showNo + '], b.[' + noCol + ']';
+          fromClause + whereClause + ' ORDER BY ' + orderBy(showNo, noCol);
         const updateSqlX = 'UPDATE b SET b.[' + tgtCol + ']=' + fallbackVal +
           fromClause + whereClause;
         const cntSqlX = 'SELECT COUNT(*) AS n' + fromClause + whereClause;
@@ -425,7 +434,7 @@ module.exports = function makeSqlgen(sql) {
       const previewSqlX = 'SELECT TOP 200 b.[' + showNo + '] AS [单号], b.[' + noCol + '] AS [序号], b.[' + tgtCol + '] AS [现值], s.[' + srcValCol + '] AS [应带]' +
         ' FROM [dbo].[' + doc.sub + '] b' + mJoinSqlX + chain2Sql + midJoinSql +
         ' JOIN [dbo].[' + src.id + '] s ON ' + whereX +
-        ' WHERE ' + condX + ' ORDER BY b.[' + showNo + '], b.[' + noCol + ']';
+        ' WHERE ' + condX + ' ORDER BY ' + orderBy(showNo, noCol);
       const updateSqlX = 'UPDATE b SET b.[' + tgtCol + ']=s.[' + srcValCol + ']' +
         ' FROM [dbo].[' + doc.sub + '] b' + mJoinSqlX + chain2Sql + midJoinSql +
         ' JOIN [dbo].[' + src.id + '] s ON ' + whereX +
