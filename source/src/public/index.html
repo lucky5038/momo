@@ -423,7 +423,7 @@ async function init(){
   ds.onchange=()=>{ onDocChange(); };
   META.docs.forEach(d=>{
     const o=document.createElement('option');
-    o.value=d.id; o.textContent=d.name;
+    o.value=d.id; o.textContent=d.name + (d.info ? '（信息档，界面字段通常在单身表）' : '');
     ds.appendChild(o);
   });
 }

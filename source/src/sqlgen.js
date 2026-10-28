@@ -120,6 +120,7 @@ module.exports = function makeSqlgen(sql) {
         main: mainGuess, mainKeyCol, sub,
         keyCol,
         refCol: DOC_REF_OVERRIDES[sub] || null,
+        info: /信息档/.test(String(row.subDesc || '')),
         party, partyCol,
         prefCol, seqCol, colNo, colSeq
       });
