@@ -1,0 +1,150 @@
+// Electron 主进程 —— 传值工具 独立应用版
+// 启动内置 HTTP 后端 (app.js) + 创建无边框应用窗口指向它
+'use strict';
+
+const { app, BrowserWindow, shell } = require('electron');
+const fs = require('fs');
+const path = require('path');
+
+// 与 app.js 的 BASE_DIR 保持一致：便携版用 PORTABLE_EXECUTABLE_DIR，
+// 安装版用用户数据目录。port.txt 由后端写在这里。
+function baseDir() {
+  if (process.env.PORTABLE_EXECUTABLE_DIR) return process.env.PORTABLE_EXECUTABLE_DIR;
+  try { return app.getPath('userData'); } catch (_) {}
+  return path.dirname(process.execPath);
+}
+
+// 读取 app.js 写入的实际端口（端口冲突时可能 > 8787）
+function getActualPort() {
+  try {
+    const portFile = path.join(baseDir(), 'port.txt');
+    if (fs.existsSync(portFile)) {
+      const p = parseInt(fs.readFileSync(portFile, 'utf8').trim(), 10);
+      if (p > 0) return p;
+    }
+  } catch (_) {}
+  return 8787;
+}
+
+let mainWindow = null;
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1320,
+    height: 880,
+    minWidth: 960,
+    minHeight: 640,
+    backgroundColor: '#0b1220',
+    title: 'Momo传值助手 · 让ERP在中国普遍成功',
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  // 移除默认菜单，彻底"桌面软件化"
+  mainWindow.setMenuBarVisibility(false);
+  mainWindow.removeMenu();
+
+  // 加载本地 http 后端提供的界面（端口以 port.txt 为准，冲突时自动递增）
+  // 等待 app.js 写入 port.txt 后再加载（首次加载失败自动重试一次）
+  const loadWithRetry = (attempts) => {
+    const port = getActualPort();
+    mainWindow.loadURL('http://127.0.0.1:' + port + '/', (err) => {
+      if (err && attempts > 0) {
+        console.log('[Electron] 加载失败，2秒后重试：', err.message);
+        setTimeout(() => loadWithRetry(attempts - 1), 2000);
+      }
+    });
+  };
+  setTimeout(() => loadWithRetry(3), 300); // 给 app.js 一点时间写 port.txt
+
+  // 仅允许 127.0.0.1:8787，其他外链交给系统浏览器
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    const _p = getActualPort();
+    if (url.startsWith('http://127.0.0.1:' + _p) || url.startsWith('http://localhost:' + _p)) {
+      return { action: 'deny' };
+    }
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  mainWindow.on('closed', () => { mainWindow = null; });
+}
+
+// 在 require('./src/app.js') 之前安装 Module._load shim：
+// 拦截 @azure-rest/core-client 和 @typespec/ts-http-runtime 的任意子路径，
+// 返回一个"函数型" Proxy 桩：
+//   - 属性访问返回自身（支持 .createLoggerContext 等命名导出）
+//   - 可被调用（支持 createLoggerContext() 等函数调用）
+//   - 可被 new（支持 class 构造场景）
+// 该桩只用于防御性兜底，主程序路径（数据库连接/档案扫描/备份/触发器）不会触及此链。
+if (!global.__chz_esModuleShimInstalled) {
+  global.__chz_esModuleShimInstalled = true;
+  const Module = require('module');
+  const origLoad = Module._load;
+
+  // 用一个函数作为 Proxy target，使 apply/construct 陷阱生效
+  const fnTarget = function esmStubFn() { return esmStub; };
+  const esmStub = new Proxy(fnTarget, {
+    get(target, prop) {
+      if (prop === Symbol.for('nodejs.util.inspect.custom')) {
+        return () => '[ESM shim stub]';
+      }
+      if (prop === '__esModuleShim') return true;
+      if (prop === 'then') return undefined;   // 防止被当作 thenable
+      if (prop === 'default') return esmStub;
+      // 其余属性都返回自身（函数），保持链式不断裂
+      return esmStub;
+    },
+    set() { return true; },
+    apply() {
+      return esmStub;
+    },
+    construct() {
+      return esmStub;
+    },
+    has() { return true; }
+  });
+
+  Module._load = function(request, parent, isMain) {
+    if (
+      request === '@azure-rest/core-client' ||
+      (typeof request === 'string' &&
+       (request.indexOf('@azure-rest/core-client') === 0 ||
+        request.indexOf('@typespec/ts-http-runtime') === 0))
+    ) {
+      console.log('[ESM shim] 拦截:', request);
+      return esmStub;
+    }
+    return origLoad.call(this, request, parent, isMain);
+  };
+  console.log('[Electron] ESM shim 已安装（@azure-rest/core-client 等）');
+}
+
+app.whenReady().then(async () => {
+  // 设置后端运行模式，避免 app.js 再去开 Edge/Chrome 窗口
+  process.env.CHZ_ELECTRON = '1';
+
+  // 备份路径不再启动时弹窗，改为主界面「备份路径」按钮选择（/api/backup-dir）
+  createWindow();
+
+  // 在进程内直接启动后端（app.js 顶层即 listen + 建库连接）
+  try {
+    require('./app.js');
+    console.log('[Electron] 后端已在本进程内启动');
+  } catch (e) {
+    console.error('[Electron] 后端启动失败:', e && e.message);
+    if (mainWindow) mainWindow.loadURL('data:text/html;charset=utf-8,<h2>后端启动失败</h2><pre>' + (e && e.stack || e) + '</pre>');
+  }
+});
+
+// 所有窗口关闭 -> 退出（后端随之终止，端口释放）
+app.on('window-all-closed', () => {
+  app.quit();
+});
+
+app.on('quit', () => {
+  try { process.exit(0); } catch (_) {}
+});

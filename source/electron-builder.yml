@@ -1,0 +1,38 @@
+appId: com.momo.chuanzhi
+productName: Momo传值助手
+asar: true
+compression: normal
+
+directories:
+  output: ../dist-electron
+  buildResources: build
+
+files:
+  - package.json
+  - public_inline.js
+  - src/**/*
+
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+    - target: nsis
+      arch:
+        - x64
+
+portable:
+  artifactName: "${productName} ${version}.exe"
+
+nsis:
+  artifactName: "${productName} Setup ${version}.exe"
+  include: "build/installer.nsh"
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "Momo传值助手"
+  runAfterFinish: true
+  deleteAppDataOnUninstall: true

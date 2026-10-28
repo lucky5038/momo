@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+source/node_modules/
+tools/eb/node_modules/
+
+# 构建产物
+dist-electron/
+
+# 基线 exe / 旧版本归档
+baseline/
+
+# 运行时状态与日志
+*.log
+port.txt
+first_open.flag
+momo_backup_picked.flag
+chain_registry.json
+invoice_source_map.json
+*.bak
+
+# 本地快照
+snapshots/
