@@ -497,30 +497,33 @@ async function handleMeta(req, res) {
   sendJSON(res, 200, { docs, srcs, srcAllCols, tgtAllCols, srcExcluded, currentDb: (CUR_CONFIG || CONFIG.db).database, server: (CUR_CONFIG || CONFIG.db).server, user: (CUR_CONFIG || CONFIG.db).user || '', password: (CUR_CONFIG || CONFIG.db).password || '', hasPassword: !!(CUR_CONFIG || CONFIG.db).password });
 }
 
-// 检测同表已启用的系统触发器是否在写目标列（B 方案：避免和 ERP 自带取值逻辑冲突）
-// 系统触发器 SQL 形态：update <表名> set <col>=... / update [dbo].<表名> set [col]=...
-// 工具自写 SQL 形态：UPDATE b SET b.<col>=... FROM ... JOIN inserted ...（用别名 b，不匹配表名，天然排除）
-// 因此检测条件：SQL 中 "SET <col>=" 或 "SET [<col>]=" 的列名两侧是词边界，且该 SET 子句的更新对象是本表
+// 检测同表已启用的 ERP 触发器是否写目标列。
+// ERP 触发器分两类：保存触发（AFTER INSERT/UPDATE）与审核触发（审核动作时触发）。
+// 工具触发器形如 UPDATE b SET b.<col>，用别名 b，按定义排除，不能按名称 trg_ 排除（ERP 也可能用 trg_）。
 async function detectTrigConflict(pool, tbl, tgtCol) {
   try {
     const r = await pool.request().input('t', sql.NVarChar, tbl)
-      .query("SELECT o.name, m.definition [sql] FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_id=OBJECT_ID(@t) AND o.is_disabled=0 AND o.name NOT LIKE 'trg_%'");
+      .query("SELECT o.name, m.definition [sql] FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_id=OBJECT_ID(@t) AND o.is_disabled=0");
     const conflicts = [];
-    // 精确匹配：SET 后紧跟目标列（可选表前缀），后面是 =
-    const colRe = new RegExp('\\bSET\\s+(?:\\[?\\w+\\]?\\.)?(?:\\[?(' + tgtCol + '\\])|(' + tgtCol + '))\\s*=', 'gi');
+    const tgt = String(tgtCol || '').toUpperCase();
     for (const row of r.recordset) {
-      const sqlText = (row.sql || '').toUpperCase();
-      // 排除工具风格的自写 SQL（含 "FROM [dbo]." 或 "JOIN INSERTED" 且 SET 对象是别名 b）
-      const isToolStyle = /UPDATE\s+b\s+SET\s+b\./i.test(row.sql || '');
-      if (isToolStyle) continue;
-      colRe.lastIndex = 0;
-      if (colRe.exec(sqlText)) conflicts.push({ trigName: row.name, col: tgtCol });
+      const def = String(row.sql || '');
+      if (/UPDATE\s+b\s+SET\s+b\./i.test(def)) continue; // 工具自建触发器
+      const up = def.toUpperCase();
+      const event = /FOR\s+INSERT/.test(up) ? 'INSERT' : (/FOR\s+UPDATE/.test(up) ? 'UPDATE' : 'OTHER');
+      const kind = /审核|AUDIT/.test(up) ? 'audit' : (event === 'UPDATE' ? 'save' : 'other');
+      const setCols = [...up.matchAll(/\bSET\s+(?:\[?[A-Z0-9_]+\]?\.)?\[?([A-Z0-9_]+)\]?\s*=/g)].map(m => m[1]);
+      if (setCols.includes(tgt)) conflicts.push({ trigName: row.name, col: tgtCol, event, kind });
     }
     return conflicts;
   } catch (e) {
     dbg('[conflict] detect failed: ' + e.message);
     return [];
   }
+}
+
+function conflictLabel(c) {
+  return (c.kind === 'audit' ? '审核触发' : (c.kind === 'save' ? '保存触发' : '系统触发')) + ' ' + c.trigName;
 }
 
 
@@ -1000,8 +1003,10 @@ async function handleRun(req, res) {
       conflicts = [...new Map(conflicts.map(c => [c.trigName + '|' + c.col, c])).values()];
       if (conflicts.length && !b.forceCreateTrigger) {
         // 默认跳过建触发器，但允许用户传 forceCreateTrigger=true 强制
+        const conflictText = conflicts.map(c => conflictLabel(c) + ' 写 ' + c.col).join('；');
         triggerResult = { ok: true, skipped: true, allowForce: true, conflict: conflicts.map(c => c.trigName),
-          note: '系统触发器 ' + conflicts.map(c => c.trigName).join('、') + ' 已写入 ' + tgtCol + ' 列，为避免取值冲突已跳过建立工具触发器。如确认需要可勾选强制创建。' };
+          conflictDetail: conflicts,
+          note: 'ERP 触发器已写入目标列，为避免取值冲突已跳过建立工具触发器：' + conflictText + '。如确认需要可勾选强制创建。' };
         sendJSON(res, 200, { ok: true, mappingCount: builtResults.length, affected: affectedRows, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed, sampleAfter: after.recordset, updateSql: built.updateSql, updateSqls: built.updateSqls, triggerResult });
         return;
       }
@@ -1126,8 +1131,13 @@ async function handleRun(req, res) {
         const verified = await new sql.Request(triggerTx).input('n', sql.NVarChar, trgName).query("SELECT OBJECT_ID(@n,'TR') AS id");
         if (!verified.recordset[0] || !verified.recordset[0].id) throw new Error('触发器创建后未找到 ' + trgName);
         await triggerTx.commit();
+        let orderLast = false;
+        try {
+          await p.request().query("EXEC sp_settriggerorder @triggername = N'" + String(trgName).replace(/'/g, "''") + "', @order = 'Last', @stmttype = 'INSERT'");
+          orderLast = true;
+        } catch (e2) { dbg('[trig] set order failed: ' + e2.message); }
         dbg('[trig] created OK ' + trgName + ' merged=' + existingTools.length);
-        triggerResult = { ok: true, name: trgName, mergedExisting: existingTools.length, conflict: conflicts.length ? conflicts.map(c => c.trigName) : undefined, conflictNote: conflicts.length ? ('注意：系统触发器 ' + conflicts.map(c => c.trigName).join('、') + ' 也在写目标列') : undefined };
+        triggerResult = { ok: true, name: trgName, mergedExisting: existingTools.length, orderLast, conflict: conflicts.length ? conflicts.map(c => c.trigName) : undefined, conflictDetail: conflicts.length ? conflicts : undefined, conflictNote: conflicts.length ? ('注意：' + conflicts.map(c => conflictLabel(c) + ' 写 ' + c.col).join('；')) : undefined };
       } catch (createErr) {
         try { await triggerTx.rollback(); } catch (_) {}
         dbg('[trig] CREATE FAILED: ' + createErr.message);
@@ -1206,7 +1216,7 @@ async function trigBuild(req, res) {
 }
 
 async function trigCreate(req, res) {
-  const b = JSON.parse(await readBody(req)); const { trgName, onTable, trigSql, confirm } = b;
+  const b = JSON.parse(await readBody(req)); const { trgName, onTable, trigSql, confirm, force } = b;
   if (!trgName || !onTable || !trigSql) return sendJSON(res, 400, { error: '缺少参数' });
   let p = await getPool();
   const dropSql = "IF OBJECT_ID(N'" + trgName + "','TR') IS NOT NULL DROP TRIGGER [dbo].[" + trgName + '];';
@@ -1220,6 +1230,18 @@ async function trigCreate(req, res) {
     p = await switchPool(cfg);
     try { const q = await p.request().query('SELECT DB_NAME() AS db'); dbNow = q.recordset[0] && q.recordset[0].db || ''; } catch (_) {}
   }
+  // 与 ERP 触发器冲突检查：目标列已被保存/审核触发器写入时，默认阻止创建
+  try {
+    const tgtCols = [...new Set(sqlgen.triggerTargetColumns(trigSql))];
+    const conflicts = [];
+    for (const col of tgtCols) conflicts.push(...await detectTrigConflict(p, onTable, col));
+    if (conflicts.length) {
+      const text = conflicts.map(c => conflictLabel(c) + ' 写 ' + c.col).join('；');
+      if (!force) return sendJSON(res, 409, { error: 'ERP 触发器已写入目标列，已阻止创建：' + text, conflicts });
+      dbg('[trigCreate] force create despite conflict: ' + text);
+    }
+  } catch (e) { dbg('[trigCreate] conflict check failed: ' + e.message); }
+
   const backup = await backupDatabaseWithCleanup(p, cfg, 'trigCreate');
   const bp = backup.path;
   await p.request().query(dropSql);
@@ -1234,7 +1256,13 @@ async function trigCreate(req, res) {
   if (!verified) {
     return sendJSON(res, 500, { error: '触发器创建后未在数据库 ' + (verifyDb || cfg.database) + ' 中找到，请检查当前连接的账套', database: verifyDb });
   }
-  sendJSON(res, 200, { ok: true, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed, name: trgName, database: verifyDb, server: cfg.server, verified: true });
+  // 让工具触发器在 INSERT 事件中排最后：ERP 保存触发先执行，工具只补仍然为空的列。
+  let orderSet = false;
+  try {
+    await p.request().query("EXEC sp_settriggerorder @triggername = N'" + String(trgName).replace(/'/g, "''") + "', @order = 'Last', @stmttype = 'INSERT'");
+    orderSet = true;
+  } catch (e) { dbg('[trigCreate] set trigger order failed: ' + e.message); }
+  sendJSON(res, 200, { ok: true, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed, name: trgName, database: verifyDb, server: cfg.server, verified: true, orderLast: orderSet });
 }
 
 async function trigToggle(req, res) {
