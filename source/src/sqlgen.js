@@ -106,17 +106,13 @@ module.exports = function makeSqlgen(sql) {
           if (d === '客户' || d === '客户编号' || d === '请款客户') { party = 'customer'; partyCol = rr.col; break; }
         }
       }
-      // 关联列默认取第 3 列，但信息档/检验单等第 3 列常是序号、检验类型、单号。
-      // 仅当第 3 列明确不是品号、且是这些“非品号”语义时，才改用表内精确的品号列，
-      // 避免把库存档、统计档、主档的天然主键也改掉。
+      // 关联列默认取第 3 列，但信息档/检验单/头档的第 3 列常是序号、日期、单号、仓库。
+      // 全库规则：只要表内存在明确的品号列，就用品号列作为“按品号取值”的关联列。
       const col3Desc = ((cols.find(c => c.cid === 3) || {}).d || '').trim();
-      const NON_ITEM_COL3 = /^(序号|子序号|检验类型|来源|前置来源|层级码|单号|委外单号|类别|性质)$/;
       let keyCol = row.itemCol || (pfx + '003');
-      if (NON_ITEM_COL3.test(col3Desc)) {
-        for (const want of ['品号', '子件品号', '主件品号', '商品', '产品品号', '需求品号']) {
-          const hit = cols.find(c => c.cid >= 4 && c.cid <= 20 && String(c.d || '').trim() === want);
-          if (hit) { keyCol = hit.col; break; }
-        }
+      for (const want of ['品号', '子件品号', '主件品号', '商品', '产品品号', '需求品号']) {
+        const hit = cols.find(c => c.cid >= 1 && c.cid <= 20 && String(c.d || '').trim() === want);
+        if (hit) { keyCol = hit.col; break; }
       }
       docs.push({
         id: sub,

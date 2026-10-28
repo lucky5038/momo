@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 15;
+const REGISTRY_VERSION = 16;
 function registryRequest(pool) {
   const request = pool.request();
   request.timeout = 60000;
@@ -56,7 +56,17 @@ const SOURCE_CODE_MAP = {
 const SOURCE_CODE_OVERRIDES = {
   'KJSNDB.NDB017:21': 'YSFGGB', // 会计凭证单身中的来源21为销售开票单
   'YSFGQC.GQC004:21': 'YSFGSA', // 付款冲账档中的来源21为采购发票
-  'QMSMBB.MBB010:86': 'SGMREA'  // 委外进货收料中的来源86为委外单（全局86=调整单）
+  'QMSMBB.MBB010:86': 'SGMREA',  // 委外进货收料中的来源86为委外单（全局86=调整单）
+  'SGMRCB.RCB021:81': 'SGMRAB',  // 生产入库单身来源81为工单（全局81=进货单）
+  'SGMRCC.RCC003:81': 'SGMRAB'   // 生产入库工单信息档来源81为工单
+};
+
+// 同一代码在不同表里指向同一张单据、但单号/序号列不同时的字段级修正。
+const LINK_FIELD_OVERRIDES = {
+  // 生产入库：来源序号列是 000，真正的工单序号在 RCB027
+  'SGMRCB.RCB021:81': { fromCode: 'RCB025', fromNo: 'RCB026', fromSeq: 'RCB027' },
+  // 生产入库工单信息档：来源序号列是 000，行序号在 RCC022
+  'SGMRCC.RCC003:81': { fromCode: 'RCC012', fromNo: 'RCC013', fromSeq: 'RCC022' }
 };
 
 const IGNORED_SOURCE_CODES = new Set(['18A', '18B', '35']);
@@ -299,6 +309,12 @@ async function buildRegistry(pool) {
 
   // 同一来源类型应指向同一种单据。先用已确定链路投票；
   // 没有投票时，取该类型所有歧义链路的候选交集，仅当交集落在唯一一个“单头/单身族”时采用。
+  // 字段级修正：同一代码指向同一单据，但承载单号/序号的列不同
+  for (const l of links) {
+    const fo = LINK_FIELD_OVERRIDES[`${l.from}.${l.fromCode}:${l.code}`];
+    if (fo) { Object.assign(l, fo); l.status = 'field-override'; }
+  }
+
   const linksByCode = {};
   links.forEach(l => {
     if (!l.code) return;
