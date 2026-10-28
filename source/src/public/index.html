@@ -421,11 +421,13 @@ async function init(){
   ds.innerHTML=''; // 重新加载时先清空，避免重复追加
   const dph=document.createElement('option'); dph.value=''; dph.textContent='—— 请选择单据 ——'; ds.appendChild(dph);
   ds.onchange=()=>{ onDocChange(); };
+  const infoGroup=document.createElement('optgroup'); infoGroup.label='信息档';
   META.docs.forEach(d=>{
     const o=document.createElement('option');
-    o.value=d.id; o.textContent=d.name + (d.info ? '（信息档，界面字段通常在单身表）' : '');
-    ds.appendChild(o);
+    o.value=d.id; o.textContent=d.name;
+    if(d.info) infoGroup.appendChild(o); else ds.appendChild(o);
   });
+  if(infoGroup.children.length) ds.appendChild(infoGroup);
 }
 
 function commonCols(cols, src){
