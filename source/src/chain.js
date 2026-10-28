@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 13;
+const REGISTRY_VERSION = 14;
 function registryRequest(pool) {
   const request = pool.request();
   request.timeout = 60000;
@@ -55,7 +55,8 @@ const SOURCE_CODE_MAP = {
 
 const SOURCE_CODE_OVERRIDES = {
   'KJSNDB.NDB017:21': 'YSFGGB', // 会计凭证单身中的来源21为销售开票单
-  'YSFGQC.GQC004:21': 'YSFGSA'  // 付款冲账档中的来源21为采购发票
+  'YSFGQC.GQC004:21': 'YSFGSA', // 付款冲账档中的来源21为采购发票
+  'QMSMBB.MBB010:86': 'SGMREA'  // 委外进货收料中的来源86为委外单（全局86=调整单）
 };
 
 const IGNORED_SOURCE_CODES = new Set(['18A', '18B', '35']);
@@ -249,7 +250,26 @@ async function buildRegistry(pool) {
     // 进货检验单 -> 收料单（收料单号/序号）
     { from: 'QMSMFB', to: 'JSKJCB', fromNo: 'MFB005', fromSeq: 'MFB006', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     // 委外进/退货单 -> 委外单（委外单号/序号）
-    { from: 'SGMRGB', to: 'SGMREB', fromNo: 'RGB025', fromSeq: 'RGB026', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 }
+    { from: 'SGMRGB', to: 'SGMREB', fromNo: 'RGB025', fromSeq: 'RGB026', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 采购单 -> 采购底稿（底稿单号/序号）
+    { from: 'DCSHDB', to: 'DCSHCB', fromNo: 'HDB016', fromSeq: 'HDB017', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 委外进货检验 -> 委外进货收料（收料单号/序号）
+    { from: 'QMSMCB', to: 'QMSMBB', fromNo: 'MCB005', fromSeq: 'MCB006', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 委外送料 -> 委外单（委外单号/序号）
+    { from: 'SGMRFB', to: 'SGMREB', fromNo: 'RFB010', fromSeq: 'RFB011', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'SGMRFA', to: 'SGMREA', fromNo: 'RFA006', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 委外单 -> 工单（源工单）
+    { from: 'SGMREA', to: 'SGMRAA', fromNo: 'REA014', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 生产入库单 -> 工单（工单单号）
+    { from: 'SGMRCA', to: 'SGMRAA', fromNo: 'RCA007', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'SGMRCB', to: 'SGMRAB', fromNo: 'RCB026', fromSeq: 'RCB027', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 生产检验单身 -> 工单（来源单号，81=工单）
+    { from: 'QMSMAB', to: 'SGMRAA', fromNo: 'MAB006', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 领/退料单 -> 工单
+    { from: 'SGMRBA', to: 'SGMRAA', fromNo: 'RBA006', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'SGMRBB', to: 'SGMRAB', fromNo: 'RBB010', fromSeq: 'RBB011', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 重工单 -> 工单（来源工单单号）
+    { from: 'SGMRKA', to: 'SGMRAA', fromNo: 'RKA010', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 }
   ];
   // 单头显式引用上游单据时自动接边，覆盖付款单、收款单、计划建议等同类结构。
   for (const [tbl, cols] of Object.entries(byTable)) {

@@ -490,7 +490,7 @@ module.exports = function makeSqlgen(sql) {
     return {
       previewSql, updateSql, cntSql,
       channelName: '自动链路',
-      channelNote: '自动链路: ' + path.map(x => x.from + (x.internal ? '→' : '[' + x.code + ']→') + x.to).join(' / '),
+      channelNote: '自动链路: ' + path.map(x => x.from + (x.internal ? '→' : (x.code ? '[' + x.code + ']→' : '→')) + x.to).join(' / '),
       joins: [],
       partyNote: '自动链路',
       chainNote: '',
@@ -723,7 +723,7 @@ module.exports = function makeSqlgen(sql) {
     return {
       previewSql, updateSql, cntSql,
       channelName: options.aggregateDistinct ? '自动链路(多路径去重汇总)' : '自动链路(多路径)',
-      channelNote: (options.aggregateDistinct ? '多路径去重汇总: ' : '自动链路: ') + orderedPaths.map(p => p.map(x => x.from + (x.internal ? '→' : '[' + x.code + ']→') + x.to).join('/')).join(' || '),
+      channelNote: (options.aggregateDistinct ? '多路径去重汇总: ' : '自动链路: ') + orderedPaths.map(p => p.map(x => x.from + (x.internal ? '→' : (x.code ? '[' + x.code + ']→' : '→')) + x.to).join('/')).join(' || '),
       joins: [],
       partyNote: '自动链路(多路径)',
       chainNote: ''
