@@ -650,10 +650,7 @@ function renderPreview(b, d){
       + '</tr>';
   }).join('');
 
-  const tags = [
-    d.channelNote ? '<span class="tag tag-blue">' + esc(d.channelNote) + '</span>' : '',
-    d.chainNote ? '<span class="tag tag-blue">链式 · ' + esc(d.chainNote) + '</span>' : ''
-  ].filter(Boolean).join('');
+  const tags = '';
 
   const body = total > 0
     ? '<div class="pv-table-wrap"><table class="pv-table"><thead><tr>'

@@ -106,11 +106,23 @@ module.exports = function makeSqlgen(sql) {
           if (d === '客户' || d === '客户编号' || d === '请款客户') { party = 'customer'; partyCol = rr.col; break; }
         }
       }
+      // 关联列默认取第 3 列，但信息档/检验单等第 3 列常是序号、检验类型、单号。
+      // 仅当第 3 列明确不是品号、且是这些“非品号”语义时，才改用表内精确的品号列，
+      // 避免把库存档、统计档、主档的天然主键也改掉。
+      const col3Desc = ((cols.find(c => c.cid === 3) || {}).d || '').trim();
+      const NON_ITEM_COL3 = /^(序号|子序号|检验类型|来源|前置来源|层级码|单号|委外单号|类别|性质)$/;
+      let keyCol = row.itemCol || (pfx + '003');
+      if (NON_ITEM_COL3.test(col3Desc)) {
+        for (const want of ['品号', '子件品号', '主件品号', '商品', '产品品号', '需求品号']) {
+          const hit = cols.find(c => c.cid >= 4 && c.cid <= 20 && String(c.d || '').trim() === want);
+          if (hit) { keyCol = hit.col; break; }
+        }
+      }
       docs.push({
         id: sub,
         name: sub + ' ' + ((row.subDesc || row.mainDesc || '').trim()),
         main: mainGuess, mainKeyCol, sub,
-        keyCol: row.itemCol || (pfx + '003'),
+        keyCol,
         refCol: DOC_REF_OVERRIDES[sub] || null,
         party, partyCol,
         prefCol, seqCol, colNo, colSeq
@@ -136,11 +148,11 @@ module.exports = function makeSqlgen(sql) {
     for (const row of r.recordset) {
       const tbl = row.srcTbl;
       const c1d = row.c1Desc || '', c2d = row.c2Desc || '', c3d = row.c3Desc || '';
-      let keyCol;
-      if (c1d.includes("品号")) keyCol = row.c1Name;
-      else if (c3d.includes("品号") || c3d.includes("商品")) keyCol = row.c3Name;
-      else if (c2d.includes("品号")) keyCol = row.c2Name;
-      else keyCol = row.c1Name;
+      let keyCol, keyDesc;
+      if (c1d.includes("品号")) { keyCol = row.c1Name; keyDesc = c1d; }
+      else if (c3d.includes("品号") || c3d.includes("商品")) { keyCol = row.c3Name; keyDesc = c3d; }
+      else if (c2d.includes("品号")) { keyCol = row.c2Name; keyDesc = c2d; }
+      else { keyCol = row.c1Name; keyDesc = c1d; }
       let party;
       if (c1d.includes("供应商") || c2d.includes("供应商") || c3d.includes("供应商") || tbl === 'TPADEG' || tbl === 'TPADGA') party = 'supplier';
       else if (c1d.includes("客户") || c2d.includes("客户") || c3d.includes("客户") || tbl === 'TPADEF' || tbl === 'TPADFA') party = 'customer';
@@ -151,6 +163,7 @@ module.exports = function makeSqlgen(sql) {
         name: tbl + ' ' + (row.srcDesc || '').trim(),
         party,
         key: [keyCol],
+        keyDesc,
         seqKey: isSeqKey ? [row.c1Name, row.c2Name] : null,
         partyKeyCol: party !== 'item' ? row.c2Name : null,
         valDefault: null, valCol: null, vals: {}
@@ -218,7 +231,8 @@ module.exports = function makeSqlgen(sql) {
     // 前置单号键通道：目标单有 prefCol 时，找来源档的单号列匹配
     // 来源单身有 seqKey → 用 seqKey[0]（单号列）
     // 来源单头无 seqKey → 用 key[0]（尾号=1 时为单号列）
-    if (doc.prefCol && !src.seqKey) {
+    // 只有来源键本身是“单号”时才加单号键通道；库存档/主档的键是品号，不能当单号用。
+    if (doc.prefCol && !src.seqKey && /单号/.test(src.keyDesc || '')) {
       let srcNoCol = null;
       if (src.seqKey) {
         srcNoCol = src.seqKey[0]; // 单身：seqKey[0] = 单号
