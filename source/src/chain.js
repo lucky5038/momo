@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 17;
+const REGISTRY_VERSION = 18;
 function registryRequest(pool) {
   const request = pool.request();
   request.timeout = 60000;
@@ -277,7 +277,10 @@ async function buildRegistry(pool) {
     { from: 'SGMREA', to: 'SGMRIB', fromNo: 'REA049', fromSeq: 'REA050', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     { from: 'SGMRAA', to: 'SGMRIB', fromNo: 'RAA026', fromSeq: 'RAA027', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     { from: 'SGMRIB', to: 'SGMRAA', fromNo: 'RIB001', fromSeq: 'RIB002', toJoinCol: 'RAA026', toSeqCol: 'RAA027', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
-    { from: 'SGMRIB', to: 'SGMREA', fromNo: 'RIB001', fromSeq: 'RIB002', toJoinCol: 'REA049', toSeqCol: 'REA050', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 }
+    { from: 'SGMRIB', to: 'SGMREA', fromNo: 'RIB001', fromSeq: 'RIB002', toJoinCol: 'REA049', toSeqCol: 'REA050', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 收款核销 -> 销售开票单头；销售开票 -> 订单单头（来源序号为空时按单头取）
+    { from: 'YSFGHC', to: 'YSFGGA', fromNo: 'GHC004', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'YSFGGB', to: 'DCSIBA', fromNo: 'GGB004', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 }
   ];
   // 单头显式引用上游单据时自动接边，覆盖付款单、收款单、计划建议等同类结构。
   for (const [tbl, cols] of Object.entries(byTable)) {
@@ -311,6 +314,12 @@ async function buildRegistry(pool) {
   for (const l of links) {
     const fo = LINK_FIELD_OVERRIDES[`${l.from}.${l.fromCode}:${l.code}`];
     if (fo) { Object.assign(l, fo); l.status = 'field-override'; }
+  }
+  // 盘点单没有前置单据，JSKLNA 的来源 03 不应生成链路
+  const LINK_DROP = new Set(['JSKLNA.LNA025:03']);
+  for (let i = links.length - 1; i >= 0; i--) {
+    const l = links[i];
+    if (LINK_DROP.has(`${l.from}.${l.fromCode}:${l.code}`)) links.splice(i, 1);
   }
 
   const linksByCode = {};
