@@ -930,13 +930,15 @@ async function handleRun(req, res) {
   const tblName = 'dbo.' + doc.sub;
   const trigRows = await p.request().input('t', sql.NVarChar, tblName).query("SELECT name FROM sys.triggers WHERE parent_id=OBJECT_ID(@t) AND is_disabled=0");
   const enTrigs = trigRows.recordset.map(r => r.name);
-  for (const tn of enTrigs) { await p.request().query("DISABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
-
   let affectedRows = 0;
   let updateSqls = builtResults.flatMap(builtUpdateSqls).filter(Boolean);
   if (mergeDisplay) updateSqls = updateSqls.map(sql => sqlgen.appendUpdateSql(sql, ' '));
   let tx = null;
+  let after = null;
+  // 目标表上的触发器（含 ERP 自带）在整个更新期间被禁用，必须保证无论哪一步抛错都恢复，
+  // 否则一旦"先禁用、后出错"，ERP 的新单据会静默停止联动。恢复动作放在 finally。
   try {
+    for (const tn of enTrigs) { await p.request().query("DISABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
     if (updateSqls.length > 1) {
       tx = new sql.Transaction(p);
       await tx.begin();
@@ -948,17 +950,19 @@ async function handleRun(req, res) {
     }
     if (tx) await tx.commit();
     dbg('[handleRun] UPDATE OK affected=' + affectedRows + ' statements=' + updateSqls.length);
+    after = await p.request().query("SELECT TOP 20 b.[" + (doc.refCol || doc.keyCol) + "] docNo, b.[" + tgtCol + "] filled FROM [dbo].[" + doc.sub + "] b WHERE b.[" + tgtCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max))<>N'' ORDER BY b.[" + doc.keyCol + "]");
   } catch (updErr) {
     if (tx) { try { await tx.rollback(); } catch (_) {} }
-    for (const tn of enTrigs) { try { await p.request().query("ENABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); } catch (e2) {} }
     dbg('[handleRun] UPDATE FAILED: ' + updErr.message);
     return sendJSON(res, 500, { error: '执行更新失败: ' + updErr.message, backupPath: bp, updateSql: built.updateSql, updateSqls: built.updateSqls });
+  } finally {
+    for (const tn of enTrigs) {
+      try { await p.request().query("ENABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
+      catch (e2) { dbg('[handleRun] 恢复触发器失败 ' + tn + ': ' + e2.message); }
+    }
   }
 
-  const after = await p.request().query("SELECT TOP 20 b.[" + (doc.refCol || doc.keyCol) + "] docNo, b.[" + tgtCol + "] filled FROM [dbo].[" + doc.sub + "] b WHERE b.[" + tgtCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max))<>N'' ORDER BY b.[" + doc.keyCol + "]");
-
   let triggerResult = null;
-  for (const tn of enTrigs) { try { await p.request().query("ENABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); } catch (e2) {} }
 
   if (createTrigger && docId === 'YSFGQB' && (srcId === 'DCSHDA' || srcId === 'DCSHDB')) {
     triggerResult = {
@@ -1003,17 +1007,6 @@ async function handleRun(req, res) {
       }
       if (conflicts.length && b.forceCreateTrigger) {
         dbg('[trig] force create despite conflict: ' + conflicts.map(c => c.trigName).join(','));
-      }
-
-      const joinTables = multiFieldTrigger
-        ? [...new Set(allMappings.map(m => m.srcId).filter(Boolean))]
-        : (mixedInvoiceNumber ? [] : [srcId]);
-      if (mixedInvoiceNumber) joinTables.push('JSKJDB', 'QMSMFB', 'JSKJCB', 'JSKJFB', 'DCSHDB', 'SGMRGB', 'SGMREB');
-      const uniqueJoinTables = [...new Set(joinTables)];
-      if (!mixedInvoiceNumber && effChain && effChain.src2Id) uniqueJoinTables.push(effChain.src2Id);
-      for (const jt of [...new Set(uniqueJoinTables)]) {
-        const tchk = await p.request().input('t', sql.NVarChar, jt).query('SELECT OBJECT_ID(@t) AS id');
-        if (!tchk.recordset[0].id) throw new Error('表 ' + jt + ' 在数据库 ' + cfg.database + ' 中不存在');
       }
 
       const pkCols = await p.request().input('t', sql.NVarChar, doc.sub).query("SELECT c.name FROM sys.index_columns ic JOIN sys.indexes i ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id WHERE i.is_primary_key=1 AND ic.object_id=OBJECT_ID(@t) ORDER BY ic.key_ordinal");
@@ -1094,44 +1087,26 @@ async function handleRun(req, res) {
         trigSql = sqlgen.buildInvoiceMixedNumberTriggerSQL(doc.sub, trgName, tgtCol, pkJoin, triggerTimeMode);
         dbg('[trig] 采购发票混合来源单号 SQL: ' + trigSql);
       } else if (built.isFallback) {
-        if (built.isPoInspec) {
-          // 检验分流触发器：动态生成（对齐 sqlgen 检验分流分支）
-          const srcc = CUR_SRCS.find(x => x.id === srcId);
-          const srcNoT = srcc.seqKey ? srcc.seqKey[0] : srcc.key[0];
-          const srcSeqT = srcc.seqKey ? srcc.seqKey[1] : null;
-          const srcItemT = srcc.key[0];
-          const srcMainT = srcc.id.replace(/B$/, 'A');
-          const tgtPartyT = doc.main ? doc.main.slice(3, 6) + '004' : 'JDA004';
-          const srcPartyT = srcMainT.slice(3, 6) + '004';
-          const s1OnT = 's1.' + srcNoT + ' = b.JDB014' + (srcSeqT ? (' AND s1.' + srcSeqT + ' = b.JDB015') : '');
-          const s2mOnT = 's2m.JCB001 = b.JDB014' + (srcSeqT ? (' AND s2m.JCB002 = b.JDB015') : '');
-          const fallbackValExpr = 'ISNULL(s1.[' + srcValCol + '], s1b.[' + srcValCol + '])';
-          trigSql = "CREATE TRIGGER [dbo].[" + trgName + "] ON [dbo].[" + doc.sub + "] AFTER INSERT AS BEGIN SET NOCOUNT ON; UPDATE b SET b.[" + tgtCol + "] = " + fallbackValExpr +
-            " FROM [dbo].[" + doc.sub + "] b JOIN inserted i ON " + pkJoin +
-            " JOIN [dbo].[" + doc.main + "] m ON m." + doc.mainKeyCol + " = b.JDB001" +
-            " LEFT JOIN [dbo].[" + srcId + "] s1 ON " + s1OnT +
-            " LEFT JOIN [dbo].[JSKJCB] s2m ON " + s2mOnT +
-            " LEFT JOIN [dbo].[QMSMFB] s5 ON s5.MFB007 = s2m.JCB003 AND s5.MFB005 = s2m.JCB001 AND s5.MFB006 = s2m.JCB002" +
-            " LEFT JOIN [dbo].[" + srcId + "] s1b ON s1b." + srcItemT + " = s5.MFB007" +
-            " LEFT JOIN [dbo].[" + srcMainT + "] m2 ON m2." + srcMainT.slice(3, 6) + "001 = s1b." + srcNoT + " AND m2." + srcPartyT + " = m." + tgtPartyT +
-            " WHERE " + trigWhere + " AND (" + fallbackValExpr + " IS NOT NULL AND CAST(" + fallbackValExpr + " AS varchar(200)) <> N\'\');" +
-            " END;";
-          dbg('[trig] 检验分流 SQL: ' + trigSql);
-        } else {
-          const fallbackValExpr2 = 'ISNULL(s1.[' + srcValCol + '], s1b.[' + srcValCol + '])';
-          trigSql = "CREATE TRIGGER [dbo].[" + trgName + "] ON [dbo].[" + doc.sub + "] AFTER INSERT AS BEGIN SET NOCOUNT ON; UPDATE b SET b.[" + tgtCol + "] = " + fallbackValExpr2 + " FROM [dbo].[" + doc.sub + "] b JOIN inserted i ON " + pkJoin +
-            " LEFT JOIN [dbo].[SGMRIB] s2m ON s2m.RIB001 = b.RAA026" +
-            " LEFT JOIN [dbo].[" + srcId + "] s1 ON s1.IBA001 = b.RAA011" +
-            " LEFT JOIN [dbo].[" + srcId + "] s1b ON s1b.IBA001 = s2m.RIB004" +
-            " WHERE " + trigWhere + " AND (" + fallbackValExpr2 + " IS NOT NULL AND CAST(" + fallbackValExpr2 + " AS nvarchar(max))<>N'');" +
-            " END;";
-          dbg('[trig] 前置优先_计划兜底 SQL: ' + trigSql);
-        }
+        // 检验分流 / 计划兜底通道的 UPDATE 含 LEFT JOIN + ISNULL，无法套用普通 JOIN 链。
+        // 直接复用该通道生成的 UPDATE SQL 加 inserted 过滤：触发器与预览、执行共用同一套
+        // 表名和字段，不再在触发器里重写一遍（原先硬编码的 SGMRIB/QMSMFB/RAA026 已删除）。
+        const trigBuilt = await buildMapping(allMappings[0], 'fill', false);
+        trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName,
+          builtUpdateSqls(trigBuilt).filter(Boolean).map(s => sqlgen.applyInsertedFilter(s, pkJoin)));
+        dbg('[trig] 兜底通道触发器 SQL: ' + trigSql);
       } else {
         trigSql = "CREATE TRIGGER [dbo].[" + trgName + "] ON [dbo].[" + doc.sub + "] AFTER INSERT AS BEGIN SET NOCOUNT ON; UPDATE b SET b.[" + tgtCol + "] = " + finalValExpr + " FROM [dbo].[" + doc.sub + "] b JOIN inserted i ON " + pkJoin + " " + mJoinForTrig + " " + chain2ForTrigStr + " " + midJoinForTrig + " " + joinSql + " WHERE " + trigWhere + "; END;";
         dbg('[trig] SQL: ' + trigSql);
       }
       dbg('[trig] SQL: ' + trigSql);
+
+      // 统一校验触发器 SQL 里 FROM/JOIN 引用的表都在当前账套存在，
+      // 取代原先手工维护的 joinTables 列表（手工列表容易和生成逻辑脱节）。
+      const referencedTables = [...new Set([...trigSql.matchAll(/(?:FROM|JOIN)\s+\[dbo\]\.\[([A-Za-z0-9_]+)\]/gi)].map(m => m[1]))];
+      for (const jt of referencedTables) {
+        const tchk = await p.request().input('t', sql.NVarChar, jt).query('SELECT OBJECT_ID(@t) AS id');
+        if (!tchk.recordset[0].id) throw new Error('表 ' + jt + ' 在数据库 ' + cfg.database + ' 中不存在（触发器 SQL 引用了它）');
+      }
 
       const existingTools = (await p.request().input('t', sql.NVarChar, doc.sub).query(
         "SELECT o.name, m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_id=OBJECT_ID(@t) AND o.name LIKE 'trg_' + @t + '[_]%'"
@@ -1396,8 +1371,33 @@ async function handleSaveConfig(req, res) {
   } catch (e) { sendJSON(res, 500, { error: '保存失败: ' + e.message }); }
 }
 
-// 持久化凭据记忆：{server → {user, pass}}，存到 backupDir 下的 creds.json（跨运行、跨重打包持久）
-const CREDS_FILE = () => path.join((CUR_CONFIG && CUR_CONFIG.backupDir) || CONFIG.backupDir || 'D:\\TPA\\SQL2008', 'creds.json');
+// 持久化凭据记忆：{server → {user, pass}}。固定存到用户配置目录，不跟随备份目录，
+// 避免备份目录指向共享盘/公共目录时，把服务器账号密码一起暴露出去。
+function credsFileInUserDir() {
+  const appData = process.env.APPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming') : '');
+  return appData ? path.join(appData, 'Momo传值助手', 'creds.json') : path.join(BASE_DIR, 'creds.json');
+}
+function credsFileLegacy() {
+  return path.join((CUR_CONFIG && CUR_CONFIG.backupDir) || CONFIG.backupDir || 'D:\\TPA\\SQL2008', 'creds.json');
+}
+// 旧版本把 creds.json 写在备份目录。首次访问时迁到用户目录，并删除旧文件（含明文密码）。
+function migrateLegacyCreds() {
+  const next = credsFileInUserDir();
+  try {
+    if (fs.existsSync(next)) return next;
+    const old = credsFileLegacy();
+    if (!old || old === next || !fs.existsSync(old)) return next;
+    fs.mkdirSync(path.dirname(next), { recursive: true });
+    try { fs.renameSync(old, next); }
+    catch (_) { fs.copyFileSync(old, next); try { fs.unlinkSync(old); } catch (_) {} }
+    dbg('[creds] migrated from ' + old + ' to ' + next);
+    return next;
+  } catch (e) {
+    dbg('[creds] migrate failed: ' + e.message);
+    return next;
+  }
+}
+const CREDS_FILE = () => migrateLegacyCreds();
 
 async function handleGetCreds(req, res) {
   try {
@@ -1511,9 +1511,9 @@ function handleRequest(req, res) {
 // ====== 启动应用窗口（Edge → Chrome → 系统默认浏览器，不硬依赖 Edge） ======
 function openEdgeApp() {
   
-  const edgePath = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe';
-  const chromePath = 'C:\Program Files\Google\Chrome\Application\chrome.exe';
-  const chrome32Path = 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe';
+  const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+  const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  const chrome32Path = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
   let launched = false;
 
   const tryBrowser = (browserPath, label) => {
