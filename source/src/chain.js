@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 18;
+const REGISTRY_VERSION = 19;
 function registryRequest(pool) {
   const request = pool.request();
   request.timeout = 60000;
@@ -315,11 +315,12 @@ async function buildRegistry(pool) {
     const fo = LINK_FIELD_OVERRIDES[`${l.from}.${l.fromCode}:${l.code}`];
     if (fo) { Object.assign(l, fo); l.status = 'field-override'; }
   }
-  // 盘点单没有前置单据，JSKLNA 的来源 03 不应生成链路
+  // 盘点单没有前置单据；会计凭证/应付异动不进入付款链路；付款单的发票来源走 YSFGQC
   const LINK_DROP = new Set(['JSKLNA.LNA025:03']);
+  const DROP_PAIRS = new Set(['KJSNDA->KJSNBA', 'YSFGPA->KJSNBA', 'YSFGQA->DCSHDA', 'YSFGQA->YSFGSA']);
   for (let i = links.length - 1; i >= 0; i--) {
     const l = links[i];
-    if (LINK_DROP.has(`${l.from}.${l.fromCode}:${l.code}`)) links.splice(i, 1);
+    if (LINK_DROP.has(`${l.from}.${l.fromCode}:${l.code}`) || DROP_PAIRS.has(`${l.from}->${l.to}`)) links.splice(i, 1);
   }
 
   const linksByCode = {};

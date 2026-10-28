@@ -180,7 +180,9 @@ function pruneInvoicePaths(paths) {
     if (!groups.size) break;
     const next = kept.filter(path => path.length <= depth);
     for (const group of groups.values()) {
-      const external = group.filter(path => !path[depth].internal && path[depth].fromCode);
+      // 只在“采购发票来源列”之间做剪枝（GSB003/GSB037），
+      // 不能把 JDB013=14/A0 的免检/检验分支当成重复路径剪掉。
+      const external = group.filter(path => !path[depth].internal && path[depth].fromCode && path[depth].fromCode.startsWith('GSB'));
       const fields = new Set(external.map(path => path[depth].fromCode));
       if (fields.size > 1) {
         const minRemaining = Math.min(...external.map(path => path.length - depth));
@@ -855,7 +857,7 @@ async function handleRun(req, res) {
     } else {
       const mappingChain = mapping.chain || (mSrcId === srcId ? chain : null);
       out = sqlgen.buildSQL(docId, mTgtCol, mSrcId, mSrcValCol, partyKey, runMode, runForce, mappingChain, { docs: CUR_DOCS, srcs: CUR_SRCS });
-      const aggregatePurchase = docId === 'YSFGQB' && (mSrcId === 'DCSHDA' || mSrcId === 'DCSHDB');
+      const aggregatePurchase = (docId === 'YSFGQB' || docId === 'YSFGQA') && (mSrcId === 'DCSHDA' || mSrcId === 'DCSHDB');
       let autoPaths = [];
       let autoRegistry = null;
       try {
