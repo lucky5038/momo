@@ -716,7 +716,7 @@ async function doRun(confirm){
       <div class="summary"><b>已写入数据库</b> 受影响 <span style="color:#22c55e">${aff}</span> 行 · 备份文件 <code>${esc(bp)}</code></div>
       <div><b>执行后抽样（前 20）</b>
         <table><thead><tr><th>单号</th><th>已填值</th></tr></thead><tbody>
-        ${(d.sampleAfter||[]).map(s=>'<tr><td>'+esc(s.docNo)+'</td><td><b style="color:#22c55e">'+esc(s.filled)+'</b></td></tr>').join('')}
+        ${(d.sampleAfter||[]).map(s=>'<tr><td>'+esc(s.docNo)+'</td><td style="white-space:pre-wrap"><b style="color:#22c55e">'+esc(s.filled)+'</b></td></tr>').join('')}
         </tbody></table>
       </div>
       ${trigMsg}

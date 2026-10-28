@@ -637,7 +637,8 @@ module.exports = function makeSqlgen(sql) {
     const sepLiteral = "N'" + String(separator).replace(/'/g, "''") + "'";
     const joined = "CASE WHEN b.[" + col + "] IS NULL OR " + current + "=N'' THEN " + next +
       ' ELSE ' + current + ' + ' + sepLiteral + ' + ' + next + ' END';
-    const duplicateGuard = "(b.[" + col + "] IS NULL OR " + current + "=N'' OR CHARINDEX(N' '+" + next + ',N\' \'+' + current + ')=0)';
+    // 重复值判断按“空格+值”匹配，兼容旧的单空格数据和新的三空格分隔
+    const duplicateGuard = "(b.[" + col + "] IS NULL OR " + current + "=N'' OR CHARINDEX(N' '+" + next + ",N' '+" + current + ")=0)";
     return prefix + 'UPDATE b SET b.[' + col + ']=' + joined + ' FROM ' + fromBody +
       ' WHERE (' + whereBody + ') AND ' + duplicateGuard;
   }

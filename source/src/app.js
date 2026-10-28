@@ -935,7 +935,7 @@ async function handleRun(req, res) {
   const enTrigs = trigRows.recordset.map(r => r.name);
   let affectedRows = 0;
   let updateSqls = builtResults.flatMap(builtUpdateSqls).filter(Boolean);
-  if (mergeDisplay) updateSqls = updateSqls.map(sql => sqlgen.appendUpdateSql(sql, ' '));
+  if (mergeDisplay) updateSqls = updateSqls.map(sql => sqlgen.appendUpdateSql(sql, '   '));
   let tx = null;
   let after = null;
   // 目标表上的触发器（含 ERP 自带）在整个更新期间被禁用，必须保证无论哪一步抛错都恢复，
@@ -1120,7 +1120,7 @@ async function handleRun(req, res) {
         ? sqlgen.mergeTriggerDefinitions(doc.sub, trgName, existingTools, trigSql, {
           mergeTargets: mergeDisplay ? [tgtCol] : [],
           replaceTargets: mergeDisplay ? [] : [tgtCol],
-          separator: ' '
+          separator: '   '
         })
         : trigSql;
       const triggerTx = new sql.Transaction(p);
