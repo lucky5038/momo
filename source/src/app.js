@@ -131,6 +131,30 @@ function resetPool() {
 }
 function markBroken() { if (pool) { pool._broken = true; pool = null; CUR_CONFIG = null; } }
 
+// 读取连接池实际所在的库名。切库只改配置、没真正重连时，这里能立刻暴露。
+async function poolDbName(p) {
+  try {
+    const r = await p.request().query('SELECT DB_NAME() AS db');
+    return (r.recordset[0] && r.recordset[0].db) || '';
+  } catch (_) { return ''; }
+}
+
+// 写操作前确认连接池真在目标账套；不一致就按目标账套重建连接池。
+async function ensurePoolDb(expected) {
+  let p = await getPool();
+  const actual = await poolDbName(p);
+  if (expected && actual && actual.toLowerCase() !== String(expected).toLowerCase()) {
+    dbg('[db] pool=' + actual + ' expected=' + expected + '，重建连接池');
+    p = await switchPool(makeConnConfig({ database: expected }));
+    if (typeof CUR_DOCS !== 'undefined') { CUR_DOCS = DOC_ITEMS; CUR_SRCS = SRC_ITEMS; }
+    const after = await poolDbName(p);
+    if (after && after.toLowerCase() !== String(expected).toLowerCase()) {
+      throw new Error('账套不一致：当前连接=' + after + '，目标=' + expected);
+    }
+  }
+  return p;
+}
+
 // ===== 全单据链路注册表（只读诊断，第一阶段）=====
 const CHAIN_REGISTRIES = {};
 const CHAIN_BUILDS = {};
@@ -384,11 +408,12 @@ async function handleSwitchDb(req, res) {
   if (!b.database) return sendJSON(res, 400, { error: '缺少 database' });
   try {
     const cfg = makeConnConfig({ database: b.database });
-    // switchPool 内部已完成 SELECT 1 验证；此处不再额外查询，避免并发重连把新池关闭
     await switchPool(cfg);
-    const actual = (CUR_CONFIG || CONFIG.db).database;
-    if (String(actual).toLowerCase() !== String(b.database).toLowerCase()) {
-      return sendJSON(res, 500, { error: '账套切换未生效：当前=' + actual + '，目标=' + b.database });
+    // 以 DB_NAME() 为准校验，不能只看配置对象
+    const pNow = await getPool();
+    const actual = await poolDbName(pNow);
+    if (!actual || String(actual).toLowerCase() !== String(b.database).toLowerCase()) {
+      return sendJSON(res, 500, { error: '账套切换未生效：实际连接=' + (actual || '未知') + '，目标=' + b.database });
     }
     CUR_DOCS = DOC_ITEMS; CUR_SRCS = SRC_ITEMS;
     sendJSON(res, 200, { ok: true, database: actual, server: cfg.server });
@@ -416,7 +441,7 @@ async function handleTestConn(req, res) {
     let autoApplied = false;
     let applyNote = '';
     try {
-      const savedCfg = { server: cfg.server, user: cfg.user, password: cfg.password, database: cfg.database, options: cfg.options };
+      const savedCfg = { server: cfg.server, user: cfg.user, password: cfg.password, database: dbName, options: cfg.options };
       writeConfigFile(path.join(BASE_DIR, 'config.js'), savedCfg, (CUR_CONFIG && CUR_CONFIG.backupDir) || CONFIG.backupDir, CONFIG.httpPort);
       CONFIG.db = Object.assign({}, CONFIG.db, { server: cfg.server, user: cfg.user, password: cfg.password, database: dbName });
       await resetPool();
@@ -496,7 +521,9 @@ async function handleMeta(req, res) {
     const merged = [...new Set([...ex, ...famEx])];
     if (merged.length) srcExcluded[d.id] = merged;
   }
-  sendJSON(res, 200, { docs, srcs, srcAllCols, tgtAllCols, srcExcluded, currentDb: (CUR_CONFIG || CONFIG.db).database, server: (CUR_CONFIG || CONFIG.db).server, user: (CUR_CONFIG || CONFIG.db).user || '', password: (CUR_CONFIG || CONFIG.db).password || '', hasPassword: !!(CUR_CONFIG || CONFIG.db).password });
+  // 返回真实 DB_NAME()，避免“界面显示 DSB、实际连着 XBK”
+  const actualDb = (await poolDbName(p)) || (CUR_CONFIG || CONFIG.db).database;
+  sendJSON(res, 200, { docs, srcs, srcAllCols, tgtAllCols, srcExcluded, currentDb: actualDb, server: (CUR_CONFIG || CONFIG.db).server, user: (CUR_CONFIG || CONFIG.db).user || '', password: (CUR_CONFIG || CONFIG.db).password || '', hasPassword: !!(CUR_CONFIG || CONFIG.db).password });
 }
 
 // 检测同表已启用的 ERP 触发器是否写目标列。
@@ -802,6 +829,9 @@ async function getEffectiveChain(chain, srcId, srcValCol, CUR_SRCS, pool) {
 async function handleRun(req, res) {
   const b = JSON.parse(await readBody(req));
   const { docId, tgtCol, srcId, srcValCol, partyKey, mode, confirm, force, chain, createTrigger, triggerTimeMode, mergeDisplay } = b;
+  // 写操作前先确认真实连接库，避免“界面选 DSB、SQL 落到 XBK”
+  try { await ensurePoolDb((CUR_CONFIG || CONFIG.db).database); }
+  catch (e) { return sendJSON(res, 500, { error: '账套校验失败: ' + e.message }); }
   const isInvoiceDate = docId === 'YSFGSB';
   if (isInvoiceDate && (!tgtCol || !srcId || !srcValCol)) return sendJSON(res, 400, { error: '请选择目标列、来源档和来源值列' });
   if (!isInvoiceDate && docId && srcId && docId === srcId) {
@@ -1155,7 +1185,7 @@ async function handleRun(req, res) {
 }
 
 // 触发器管理
-async function trigList(req, res) { const p = await getPool(); const r = await p.request().query("SELECT o.name, OBJECT_NAME(o.parent_id) tbl, o.is_disabled [disabled], m.definition [sql] FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_class=1 ORDER BY o.name");
+async function trigList(req, res) { const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database); const r = await p.request().query("SELECT o.name, OBJECT_NAME(o.parent_id) tbl, o.is_disabled [disabled], m.definition [sql] FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_class=1 ORDER BY o.name");
   // 为每个触发器自动生成中文说明
   const docNames = {};
   try {
@@ -1270,7 +1300,7 @@ async function trigCreate(req, res) {
 async function trigToggle(req, res) {
   const b = JSON.parse(await readBody(req));
   if (!b.trgName) return sendJSON(res, 400, { error: '缺少 trgName' });
-  const p = await getPool();
+  const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database);
   const tblRow = await p.request().input('n', sql.NVarChar, b.trgName).query("SELECT OBJECT_NAME(parent_id) AS tbl FROM sys.triggers WHERE name=@n");
   const tbl = tblRow.recordset[0] ? tblRow.recordset[0].tbl : null;
   if (!tbl) return sendJSON(res, 404, { error: '触发器 ' + b.trgName + ' 不存在或无法找到所属表' });
@@ -1281,7 +1311,7 @@ async function trigToggle(req, res) {
 
 async function trigDrop(req, res) {
   const b = JSON.parse(await readBody(req)); if (!b.trgName) return sendJSON(res, 400, { error: '缺少 trgName' });
-  const p = await getPool();
+  const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database);
   if (!b.confirm) return sendJSON(res, 200, { preview: true, dropSql: 'DROP TRIGGER [dbo].[' + b.trgName + '];' });
   const cfg = CUR_CONFIG || CONFIG.db;
   const backup = await backupDatabaseWithCleanup(p, cfg, 'trigDrop');
@@ -1387,7 +1417,17 @@ async function handleSaveConfig(req, res) {
     CONFIG.db.server = server; CONFIG.db.user = user; CONFIG.db.password = password || '';
     if (database) CONFIG.db.database = database;
     if (CUR_CONFIG) { CUR_CONFIG.server = server; CUR_CONFIG.user = user; CUR_CONFIG.password = password || ''; if (database) CUR_CONFIG.database = database; }
-    sendJSON(res, 200, { ok: true });
+    // 保存后立即按新配置重连：不能只改配置对象，否则会出现“配置是 DSB、连接池还是 XBK”
+    try {
+      await switchPool(makeConnConfig({ database: database || CONFIG.db.database }));
+    } catch (re) {
+      return sendJSON(res, 500, { error: '配置已保存，但按新配置重连失败: ' + re.message });
+    }
+    const actualDb = await poolDbName(await getPool());
+    if (database && actualDb && actualDb.toLowerCase() !== String(database).toLowerCase()) {
+      return sendJSON(res, 500, { error: '配置已保存，但实际连接=' + actualDb + '，目标=' + database });
+    }
+    sendJSON(res, 200, { ok: true, database: actualDb || database || CONFIG.db.database });
     // 按服务器记忆偏好账套：prefs[server] = {user, pass, db}，只在点「保存配置」时写入
     try {
       const f = CREDS_FILE();
