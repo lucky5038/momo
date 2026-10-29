@@ -556,6 +556,14 @@ function conflictLabel(c) {
 }
 
 
+async function pkColumns(p, table) {
+  try {
+    const r = await p.request().input('t', sql.NVarChar, table)
+      .query("SELECT c.name FROM sys.index_columns ic JOIN sys.indexes i ON ic.object_id=i.object_id AND ic.index_id=i.index_id JOIN sys.columns c ON ic.object_id=c.object_id AND ic.column_id=c.column_id WHERE i.is_primary_key=1 AND ic.object_id=OBJECT_ID(@t) ORDER BY ic.key_ordinal");
+    return r.recordset.map(x => x.name);
+  } catch (_) { return []; }
+}
+
 async function columnType(p, table, col) {
   try {
     const r = await p.request().input('t', sql.NVarChar, table).input('c', sql.NVarChar, col)
@@ -986,6 +994,28 @@ async function handleRun(req, res) {
   built.typeWarning = builtResults.map(x => x.typeWarning).filter(Boolean).join('；') || undefined;
 
   const p = await getPool();
+  // 精确性守卫：同一目标行匹配多条来源行时，只有“值完全一致”才允许；不一致直接拒绝。
+  if (!isInvoiceDate && !mergeDisplay) {
+    const guardDoc = CUR_DOCS.find(d => d.id === docId);
+    const guardPk = guardDoc ? await pkColumns(p, guardDoc.sub) : [];
+    const checkBuilds = allMappings.length > 1 ? builtResults : [built];
+    for (const cb of checkBuilds) {
+      if (!cb.updateSql) continue;
+      const dq = sqlgen.buildDuplicateCheckSql(cb.updateSql, guardPk);
+      if (!dq) continue;
+      try {
+        const dr = await p.request().query(dq);
+        const bad = dr.recordset.filter(r => Number(r.d) > 1);
+        if (bad.length) {
+          return sendJSON(res, 400, {
+            error: '来源匹配多条且值不一致，无法保证精确取值。请改用带序号/仓库的唯一键，或使用聚合/合并显示。',
+            duplicates: bad.slice(0, 10)
+          });
+        }
+        if (dr.recordset.length) dbg('[run] 来源多行但值一致，可安全填入: ' + dr.recordset.length + ' 组');
+      } catch (e) { dbg('[run] duplicate check skipped: ' + e.message); }
+    }
+  }
   if (!confirm) {
     const pr = await p.request().query(built.cntSql);
     const totalRows = pr.recordset[0].n; let sample = [];
@@ -1164,9 +1194,13 @@ async function handleRun(req, res) {
         // 触发器统一复用预览/执行的 UPDATE SQL（普通通道、链路、兜底都一样），
         // 只额外加 inserted 过滤，避免触发器另拼 JOIN 与预览不一致。
         const trigBuilt = await buildMapping(allMappings[0], 'fill', false);
-        trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName,
-          builtUpdateSqls(trigBuilt).filter(Boolean).map(s => sqlgen.applyInsertedFilter(sqlgen.dedupeTriggerUpdate(s, doc.sub, pkNames), pkJoin)),
-          doc.sub + '.' + tgtCol);
+        const trigStatements = [];
+        for (const u of builtUpdateSqls(trigBuilt).filter(Boolean)) {
+          const guard = sqlgen.buildUniquenessGuard(u, pkJoin, pkNames, doc.sub + '.' + tgtCol);
+          if (guard) trigStatements.push(guard);
+          trigStatements.push(sqlgen.applyInsertedFilter(sqlgen.dedupeTriggerUpdate(u, doc.sub, pkNames), pkJoin));
+        }
+        trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName, trigStatements, doc.sub + '.' + tgtCol);
         dbg('[trig] 统一触发器 SQL: ' + trigSql);
       }
       dbg('[trig] SQL: ' + trigSql);

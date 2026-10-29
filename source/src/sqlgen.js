@@ -651,6 +651,43 @@ module.exports = function makeSqlgen(sql) {
     return sql + ' WHERE ' + exists;
   }
 
+  // 解析简单的单语句 UPDATE ... FROM ... WHERE，供去重、唯一性校验复用
+  function parseSimpleUpdate(updateSql) {
+    const s = String(updateSql || '').trim().replace(/;\s*$/, '');
+    if (/^\s*WITH\b/i.test(s)) return null;
+    const m = s.match(/^UPDATE\s+b\s+SET\s+b\.\[([^\]]+)\]\s*=\s*([\s\S]*?)\s+FROM\s+([\s\S]*)$/i);
+    if (!m) return null;
+    const at = lastTopLevelWhere(m[3]);
+    if (at < 0) return null;
+    return {
+      col: m[1], valExpr: m[2],
+      fromBody: m[3].slice(0, at).trim(),
+      whereBody: m[3].slice(at + 5).replace(/^\s+/, '')
+    };
+  }
+
+  // 找出同一目标行匹配多条来源行的记录（只读）
+  function buildDuplicateCheckSql(updateSql, pkNames) {
+    const p = parseSimpleUpdate(updateSql);
+    if (!p || !Array.isArray(pkNames) || !pkNames.length) return null;
+    const cols = pkNames.map(c => 'b.[' + c + ']').join(', ');
+    const val = 'CAST(' + p.valExpr + ' AS nvarchar(max))';
+    return 'SELECT TOP 20 ' + cols + ', COUNT(*) AS n, COUNT(DISTINCT ' + val + ') AS d, MIN(' + val + ') AS minv, MAX(' + val + ') AS maxv FROM ' + p.fromBody +
+      ' WHERE ' + p.whereBody + ' GROUP BY ' + cols + ' HAVING COUNT(*) > 1';
+  }
+
+  // 触发器运行时唯一性守卫：匹配多行直接抛错，不写任何值
+  function buildUniquenessGuard(updateSql, pkJoin, pkNames, label) {
+    const p = parseSimpleUpdate(updateSql);
+    if (!p || !Array.isArray(pkNames) || !pkNames.length) return '';
+    const cols = pkNames.map(c => 'b.[' + c + ']').join(', ');
+    const ctx = String(label || '').replace(/'/g, "''");
+    const val = 'CAST(' + p.valExpr + ' AS nvarchar(max))';
+    return 'IF EXISTS (SELECT 1 FROM ' + p.fromBody +
+      ' WHERE EXISTS (SELECT 1 FROM inserted i WHERE ' + pkJoin + ') AND (' + p.whereBody + ') GROUP BY ' + cols +
+      ' HAVING COUNT(*) > 1 AND COUNT(DISTINCT ' + val + ') > 1) THROW 50002, N\'Momo触发器 ' + ctx + '：目标行匹配多条来源行且值不一致，已拒绝写入\', 1';
+  }
+
   // 同一目标行匹配多条来源行时，先按目标主键做 ROW_NUMBER，只取第一条，
   // 避免 UPDATE ... JOIN 来源表 一对多时反复更新、结果不确定。
   function dedupeTriggerUpdate(updateSql, table, pkNames) {
@@ -806,5 +843,5 @@ module.exports = function makeSqlgen(sql) {
     };
   }
 
-  return { scanDocs, scanSrcs, buildSQL, buildChainSQL, buildChainMultiSQL, buildInvoiceMixedNumberSQL, buildInvoiceMixedTimeSQL, buildInvoiceMixedNumberTriggerSQL, buildInvoiceMixedNumberTriggerUpdateSQL, buildMultiFieldTriggerSQL, applyInsertedFilter, dedupeTriggerUpdate, appendUpdateSql, buildTriggerFromStatements, mergeTriggerDefinitions, triggerTargetColumns };
+  return { scanDocs, scanSrcs, buildSQL, buildChainSQL, buildChainMultiSQL, buildInvoiceMixedNumberSQL, buildInvoiceMixedTimeSQL, buildInvoiceMixedNumberTriggerSQL, buildInvoiceMixedNumberTriggerUpdateSQL, buildMultiFieldTriggerSQL, applyInsertedFilter, dedupeTriggerUpdate, buildDuplicateCheckSql, buildUniquenessGuard, appendUpdateSql, buildTriggerFromStatements, mergeTriggerDefinitions, triggerTargetColumns };
 };
