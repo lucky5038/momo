@@ -1101,7 +1101,8 @@ async function handleRun(req, res) {
       let trigSql;
       if (mergeDisplay) {
         const mergeBuilt = await buildMapping(allMappings[0], 'fill', true);
-        trigSql = sqlgen.buildMultiFieldTriggerSQL(doc.sub, trgName, pkJoin, builtUpdateSqls(mergeBuilt).filter(Boolean));
+        trigSql = sqlgen.buildMultiFieldTriggerSQL(doc.sub, trgName, pkJoin,
+          builtUpdateSqls(mergeBuilt).filter(Boolean).map(s => sqlgen.dedupeTriggerUpdate(s, doc.sub, pkNames)));
         dbg('[trig] 合并显示触发器 SQL: ' + trigSql);
       } else if (multiFieldTrigger) {
         const specialTimeMode = mixedInvoiceNumber && ['separate', 'combined'].includes(triggerTimeMode) ? triggerTimeMode : null;
@@ -1111,13 +1112,14 @@ async function handleRun(req, res) {
           ];
           for (const mapping of allMappings.slice(1)) {
             const triggerBuilt = await buildMapping(mapping, 'fill', false);
-            triggerStatements.push(...builtUpdateSqls(triggerBuilt).map(sql => sqlgen.applyInsertedFilter(sql, pkJoin)));
+            triggerStatements.push(...builtUpdateSqls(triggerBuilt).map(sql => sqlgen.applyInsertedFilter(sqlgen.dedupeTriggerUpdate(sql, doc.sub, pkNames), pkJoin)));
           }
           trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName, triggerStatements);
         } else {
           const triggerBuilds = [];
           for (const mapping of allMappings) triggerBuilds.push(await buildMapping(mapping, 'fill', false));
-          trigSql = sqlgen.buildMultiFieldTriggerSQL(doc.sub, trgName, pkJoin, triggerBuilds.flatMap(builtUpdateSqls).filter(Boolean));
+          trigSql = sqlgen.buildMultiFieldTriggerSQL(doc.sub, trgName, pkJoin,
+            triggerBuilds.flatMap(builtUpdateSqls).filter(Boolean).map(s => sqlgen.dedupeTriggerUpdate(s, doc.sub, pkNames)));
         }
         dbg('[trig] 多字段触发器 SQL: ' + trigSql);
       } else if (mixedInvoiceNumber) {
