@@ -133,41 +133,69 @@ module.exports = function makeSqlgen(sql) {
   }
 
   async function scanSrcs(p) {
+    // 一次取回每张来源表 1-20 列的说明，按“表形态”决定 key：
+    //   单身表：单号 + 序号；单头表：单号；品号主档/库存：品号。
+    // 不能简单“优先品号”，否则 YSFGSB 这类发票单身会被改成按品号匹配。
     const r = await p.request().query(
-      "SELECT t.name AS srcTbl, CONVERT(varchar(120),s0.value) AS srcDesc, c1.name AS c1Name, CONVERT(varchar(60),s1.value) AS c1Desc, c2.name AS c2Name, CONVERT(varchar(60),s2.value) AS c2Desc, c3.name AS c3Name, CONVERT(varchar(60),s3.value) AS c3Desc " +
+      "SELECT t.name AS srcTbl, CONVERT(varchar(120),s0.value) AS srcDesc, c.column_id AS cid, c.name AS col, CONVERT(varchar(120),s.value) AS d " +
       "FROM sys.tables t " +
-      "JOIN sys.columns c1 ON c1.object_id=t.object_id AND c1.column_id=1 " +
-      "LEFT JOIN sys.columns c2 ON c2.object_id=t.object_id AND c2.column_id=2 " +
-      "LEFT JOIN sys.columns c3 ON c3.object_id=t.object_id AND c3.column_id=3 " +
+      "JOIN sys.columns c ON c.object_id=t.object_id " +
       "LEFT JOIN sys.extended_properties s0 ON s0.major_id=t.object_id AND s0.minor_id=0 AND s0.name=N'MS_Description' " +
-      "LEFT JOIN sys.extended_properties s1 ON s1.major_id=t.object_id AND s1.minor_id=c1.column_id AND s1.name=N'MS_Description' " +
-      "LEFT JOIN sys.extended_properties s2 ON s2.major_id=t.object_id AND s2.minor_id=c2.column_id AND s2.name=N'MS_Description' " +
-      "LEFT JOIN sys.extended_properties s3 ON s3.major_id=t.object_id AND s3.minor_id=c3.column_id AND s3.name=N'MS_Description' " +
-      "WHERE t.name NOT IN (N'dtproperties', N'LSMD_T') AND s0.value IS NOT NULL " +
-      "ORDER BY t.name");
+      "LEFT JOIN sys.extended_properties s ON s.major_id=t.object_id AND s.minor_id=c.column_id AND s.name=N'MS_Description' " +
+      "WHERE t.name NOT IN (N'dtproperties', N'LSMD_T') AND s0.value IS NOT NULL AND c.column_id<=20 " +
+      "ORDER BY t.name, c.column_id");
+    const by = {};
+    for (const row of r.recordset) (by[row.srcTbl] = by[row.srcTbl] || []).push(row);
+    const ITEM_DESCS = ['品号', '子件品号', '主件品号', '商品', '产品品号', '需求品号'];
+    const SEQ_RE = /序号$/;
     const srcs = [];
-    for (const row of r.recordset) {
-      const tbl = row.srcTbl;
-      const c1d = row.c1Desc || '', c2d = row.c2Desc || '', c3d = row.c3Desc || '';
-      let keyCol, keyDesc;
-      if (c1d.includes("品号")) { keyCol = row.c1Name; keyDesc = c1d; }
-      else if (c3d.includes("品号") || c3d.includes("商品")) { keyCol = row.c3Name; keyDesc = c3d; }
-      else if (c2d.includes("品号")) { keyCol = row.c2Name; keyDesc = c2d; }
-      else { keyCol = row.c1Name; keyDesc = c1d; }
+    for (const [tbl, cols] of Object.entries(by)) {
+      const dc = c => String((c && c.d) || '').trim();
+      const c1 = cols.find(c => c.cid === 1) || { col: null, d: '' };
+      const c2 = cols.find(c => c.cid === 2) || { col: null, d: '' };
+      const c3 = cols.find(c => c.cid === 3) || { col: null, d: '' };
+      const isDocNo = c => {
+        const x = dc(c);
+        if (!x || /来源|前置/.test(x)) return false;
+        return x.includes('单号') || x.endsWith('号码') || x === '计划编号' || x === '单据编号' || x === '工单编号';
+      };
+      const docNos = cols.filter(isDocNo).sort((a, b) => {
+        const ae = dc(a) === '单号' ? 0 : 1, be = dc(b) === '单号' ? 0 : 1;
+        return ae - be || a.cid - b.cid;
+      });
+      const docNo = docNos[0] || null;
+      const seqs = cols.filter(c => SEQ_RE.test(dc(c)));
+      const seq = docNo ? seqs.filter(c => Math.abs(c.cid - docNo.cid) <= 5)
+        .sort((a, b) => Math.abs(a.cid - docNo.cid) - Math.abs(b.cid - docNo.cid))[0] : null;
+      const item = ITEM_DESCS.map(w => cols.find(c => dc(c) === w)).find(Boolean) || null;
+
+      let keyCol, keyDesc, seqKey = null, shape;
+      if (docNo && seq) {
+        keyCol = docNo.col; keyDesc = dc(docNo); seqKey = [docNo.col, seq.col]; shape = 'line';
+      } else if (docNo) {
+        keyCol = docNo.col; keyDesc = dc(docNo); shape = 'header';
+      } else if (item) {
+        keyCol = item.col; keyDesc = dc(item); shape = 'item';
+      } else {
+        keyCol = c1.col; keyDesc = dc(c1); shape = 'fallback';
+      }
+
+      const c1d = dc(c1), c2d = dc(c2), c3d = dc(c3);
       let party;
-      if (c1d.includes("供应商") || c2d.includes("供应商") || c3d.includes("供应商") || tbl === 'TPADEG' || tbl === 'TPADGA') party = 'supplier';
-      else if (c1d.includes("客户") || c2d.includes("客户") || c3d.includes("客户") || tbl === 'TPADEF' || tbl === 'TPADFA') party = 'customer';
+      if (c1d.includes('供应商') || c2d.includes('供应商') || c3d.includes('供应商') || tbl === 'TPADEG' || tbl === 'TPADGA') party = 'supplier';
+      else if (c1d.includes('客户') || c2d.includes('客户') || c3d.includes('客户') || tbl === 'TPADEF' || tbl === 'TPADFA') party = 'customer';
       else party = 'item';
-      const isSeqKey = (c1d.includes("单号") && c2d.includes("序号"));
+
       srcs.push({
         id: tbl,
-        name: tbl + ' ' + (row.srcDesc || '').trim(),
-        info: /信息档/.test(String(row.srcDesc || '')),
+        name: tbl + ' ' + (String((cols[0] || {}).srcDesc || '').trim()),
+        info: /信息档/.test(String((cols[0] || {}).srcDesc || '')),
         party,
         key: [keyCol],
         keyDesc,
-        seqKey: isSeqKey ? [row.c1Name, row.c2Name] : null,
-        partyKeyCol: party !== 'item' ? row.c2Name : null,
+        seqKey,
+        shape,
+        partyKeyCol: party !== 'item' ? c2.col : null,
         valDefault: null, valCol: null, vals: {}
       });
     }
@@ -230,24 +258,14 @@ module.exports = function makeSqlgen(sql) {
         });
       }
     }
-    // 前置单号键通道：目标单有 prefCol 时，找来源档的单号列匹配
-    // 来源单身有 seqKey → 用 seqKey[0]（单号列）
-    // 来源单头无 seqKey → 用 key[0]（尾号=1 时为单号列）
-    // 只有来源键本身是“单号”时才加单号键通道；库存档/主档的键是品号，不能当单号用。
-    if (doc.prefCol && !src.seqKey && /单号/.test(src.keyDesc || '')) {
-      let srcNoCol = null;
-      if (src.seqKey) {
-        srcNoCol = src.seqKey[0]; // 单身：seqKey[0] = 单号
-      } else if (src.key[0].slice(-1) === '1') {
-        srcNoCol = src.key[0];     // 单头：key 尾号 1 = 单号列
-      }
-      if (srcNoCol && !(src.seqKey && doc.seqCol)) {
-        // 单身←单身 已有"单号+序号"精确匹配，不再重复加单号键
-        channel.push({
-          name: '单号键',
-          joins: ['s.' + srcNoCol + ' = b.' + doc.prefCol]
-        });
-      }
+    // 前置单号键通道：目标单有 prefCol 时，用来源档的单号列匹配
+    // 来源单身有 seqKey 已在上面处理；这里只处理“单头表”的单号列。
+    // 单号列不再假设必须位于第 1 列（如 SGMRFD 的单号在 RFD002）。
+    if (doc.prefCol && !src.seqKey && /单号|号码|计划编号/.test(src.keyDesc || '')) {
+      channel.push({
+        name: '单号键',
+        joins: ['s.' + src.key[0] + ' = b.' + doc.prefCol]
+      });
     }
       // 供应商/客户维度自动判断：来源档自带对方主档(如TPADGA供应商信息档/TPADFA客户信息档)，
       // 目标单据主表存在对应编号列时，自动加 m 主表 JOIN 并匹配 来源档.对方编号 = 主表.对方编号。
