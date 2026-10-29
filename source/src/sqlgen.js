@@ -611,12 +611,62 @@ module.exports = function makeSqlgen(sql) {
       list.join('; ') + '; END;';
   }
 
+  // 找最外层 WHERE（忽略字符串、方括号和括号内的子查询 WHERE）
+  function lastTopLevelWhere(sql) {
+    let depth = 0, inStr = false, inBr = false, found = -1;
+    const s = String(sql || '');
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (inStr) {
+        if (ch === "'") { if (s[i + 1] === "'") i++; else inStr = false; }
+        continue;
+      }
+      if (ch === "'") { inStr = true; continue; }
+      if (inBr) { if (ch === ']') inBr = false; continue; }
+      if (ch === '[') { inBr = true; continue; }
+      if (ch === '(') { depth++; continue; }
+      if (ch === ')') { depth--; continue; }
+      if (depth === 0 && s.slice(i, i + 5).toUpperCase() === 'WHERE') {
+        const prev = i === 0 ? ' ' : s[i - 1];
+        const next = s[i + 5] || ' ';
+        if (/[\s)]/.test(prev) && /\s/.test(next)) found = i;
+      }
+    }
+    return found;
+  }
+
   function applyInsertedFilter(updateSql, pkJoin) {
-    const marker = ' WHERE ';
-    const at = updateSql.lastIndexOf(marker);
-    if (at < 0) throw new Error('触发器更新 SQL 缺少 WHERE 条件');
-    const where = updateSql.slice(at + marker.length);
-    return updateSql.slice(0, at) + ' WHERE EXISTS (SELECT 1 FROM inserted i WHERE ' + pkJoin + ') AND (' + where + ')';
+    const sql = String(updateSql || '').trim().replace(/;\s*$/, '');
+    const at = lastTopLevelWhere(sql);
+    const exists = 'EXISTS (SELECT 1 FROM inserted i WHERE ' + pkJoin + ')';
+    if (at >= 0) {
+      const before = sql.slice(0, at);
+      const after = sql.slice(at + 5).replace(/^\s+/, '');
+      return before + 'WHERE ' + exists + ' AND (' + after + ')';
+    }
+    // 聚合/多路径 UPDATE 可能没有外层 WHERE，直接补一个
+    return sql + ' WHERE ' + exists;
+  }
+
+  // 同一目标行匹配多条来源行时，先按目标主键做 ROW_NUMBER，只取第一条，
+  // 避免 UPDATE ... JOIN 来源表 一对多时反复更新、结果不确定。
+  function dedupeTriggerUpdate(updateSql, table, pkNames) {
+    const sql = String(updateSql || '').trim().replace(/;\s*$/, '');
+    if (/^\s*WITH\b/i.test(sql)) return sql; // 多路径 SQL 已自行去重
+    if (!Array.isArray(pkNames) || !pkNames.length) return sql;
+    const m = sql.match(/^UPDATE\s+b\s+SET\s+b\.\[([^\]]+)\]\s*=\s*([\s\S]*?)\s+FROM\s+([\s\S]*)$/i);
+    if (!m) return sql;
+    const col = m[1], valExpr = m[2], rest = m[3];
+    const at = lastTopLevelWhere(rest);
+    if (at < 0) return sql;
+    const fromBody = rest.slice(0, at).trim(), whereBody = rest.slice(at + 5).replace(/^\s+/, '');
+    const pkSelect = pkNames.map(c => 'b.[' + c + '] AS _' + c).join(', ');
+    const pkPart = pkNames.map(c => 'b.[' + c + ']').join(', ');
+    const pkJoinNew = pkNames.map(c => 'm._' + c + '=b.[' + c + ']').join(' AND ');
+    return 'WITH _momo_src AS (SELECT ' + pkSelect + ', ' + valExpr + ' AS _val, ' +
+      'ROW_NUMBER() OVER(PARTITION BY ' + pkPart + ' ORDER BY (SELECT NULL)) AS _rn FROM ' + fromBody +
+      ' WHERE ' + whereBody + ') UPDATE b SET b.[' + col + ']=m._val FROM [dbo].[' + table +
+      '] b JOIN _momo_src m ON ' + pkJoinNew + ' AND m._rn=1';
   }
 
   function extractTriggerBody(definition) {
@@ -753,5 +803,5 @@ module.exports = function makeSqlgen(sql) {
     };
   }
 
-  return { scanDocs, scanSrcs, buildSQL, buildChainSQL, buildChainMultiSQL, buildInvoiceMixedNumberSQL, buildInvoiceMixedTimeSQL, buildInvoiceMixedNumberTriggerSQL, buildInvoiceMixedNumberTriggerUpdateSQL, buildMultiFieldTriggerSQL, applyInsertedFilter, appendUpdateSql, buildTriggerFromStatements, mergeTriggerDefinitions, triggerTargetColumns };
+  return { scanDocs, scanSrcs, buildSQL, buildChainSQL, buildChainMultiSQL, buildInvoiceMixedNumberSQL, buildInvoiceMixedTimeSQL, buildInvoiceMixedNumberTriggerSQL, buildInvoiceMixedNumberTriggerUpdateSQL, buildMultiFieldTriggerSQL, applyInsertedFilter, dedupeTriggerUpdate, appendUpdateSql, buildTriggerFromStatements, mergeTriggerDefinitions, triggerTargetColumns };
 };

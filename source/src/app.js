@@ -1123,17 +1123,13 @@ async function handleRun(req, res) {
       } else if (mixedInvoiceNumber) {
         trigSql = sqlgen.buildInvoiceMixedNumberTriggerSQL(doc.sub, trgName, tgtCol, pkJoin, triggerTimeMode);
         dbg('[trig] 采购发票混合来源单号 SQL: ' + trigSql);
-      } else if (built.isFallback) {
-        // 检验分流 / 计划兜底通道的 UPDATE 含 LEFT JOIN + ISNULL，无法套用普通 JOIN 链。
-        // 直接复用该通道生成的 UPDATE SQL 加 inserted 过滤：触发器与预览、执行共用同一套
-        // 表名和字段，不再在触发器里重写一遍（原先硬编码的 SGMRIB/QMSMFB/RAA026 已删除）。
+      } else {
+        // 触发器统一复用预览/执行的 UPDATE SQL（普通通道、链路、兜底都一样），
+        // 只额外加 inserted 过滤，避免触发器另拼 JOIN 与预览不一致。
         const trigBuilt = await buildMapping(allMappings[0], 'fill', false);
         trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName,
-          builtUpdateSqls(trigBuilt).filter(Boolean).map(s => sqlgen.applyInsertedFilter(s, pkJoin)));
-        dbg('[trig] 兜底通道触发器 SQL: ' + trigSql);
-      } else {
-        trigSql = "CREATE TRIGGER [dbo].[" + trgName + "] ON [dbo].[" + doc.sub + "] AFTER INSERT AS BEGIN SET NOCOUNT ON; UPDATE b SET b.[" + tgtCol + "] = " + finalValExpr + " FROM [dbo].[" + doc.sub + "] b JOIN inserted i ON " + pkJoin + " " + mJoinForTrig + " " + chain2ForTrigStr + " " + midJoinForTrig + " " + joinSql + " WHERE " + trigWhere + "; END;";
-        dbg('[trig] SQL: ' + trigSql);
+          builtUpdateSqls(trigBuilt).filter(Boolean).map(s => sqlgen.applyInsertedFilter(sqlgen.dedupeTriggerUpdate(s, doc.sub, pkNames), pkJoin)));
+        dbg('[trig] 统一触发器 SQL: ' + trigSql);
       }
       dbg('[trig] SQL: ' + trigSql);
 
@@ -1145,9 +1141,11 @@ async function handleRun(req, res) {
         if (!tchk.recordset[0].id) throw new Error('表 ' + jt + ' 在数据库 ' + cfg.database + ' 中不存在（触发器 SQL 引用了它）');
       }
 
-      const existingTools = (await p.request().input('t', sql.NVarChar, doc.sub).query(
-        "SELECT o.name, m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_id=OBJECT_ID(@t) AND o.name LIKE 'trg_' + @t + '[_]%'"
+      const allTriggers = (await p.request().input('t', sql.NVarChar, doc.sub).query(
+        "SELECT o.name, m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_id=OBJECT_ID(@t)"
       )).recordset;
+      // 只合并工具形态的触发器（UPDATE b SET b.），绝不按名字误删 ERP 触发器
+      const existingTools = allTriggers.filter(t => /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')));
       const mergedSql = existingTools.length
         ? sqlgen.mergeTriggerDefinitions(doc.sub, trgName, existingTools, trigSql, {
           mergeTargets: mergeDisplay ? [tgtCol] : [],
@@ -1165,8 +1163,10 @@ async function handleRun(req, res) {
         await triggerTx.commit();
         let orderLast = false;
         try {
-          await p.request().query("EXEC sp_settriggerorder @triggername = N'" + String(trgName).replace(/'/g, "''") + "', @order = 'Last', @stmttype = 'INSERT'");
-          orderLast = true;
+          if (await canSetTriggerLast(p, doc.sub, trgName)) {
+            await p.request().query("EXEC sp_settriggerorder @triggername = N'" + String(trgName).replace(/'/g, "''") + "', @order = 'Last', @stmttype = 'INSERT'");
+            orderLast = true;
+          } else { dbg('[trig] ERP 已有 Last INSERT 触发器，保留原顺序'); }
         } catch (e2) { dbg('[trig] set order failed: ' + e2.message); }
         dbg('[trig] created OK ' + trgName + ' merged=' + existingTools.length);
         triggerResult = { ok: true, name: trgName, mergedExisting: existingTools.length, orderLast, conflict: conflicts.length ? conflicts.map(c => c.trigName) : undefined, conflictDetail: conflicts.length ? conflicts : undefined, conflictNote: conflicts.length ? ('注意：' + conflicts.map(c => conflictLabel(c) + ' 写 ' + c.col).join('；')) : undefined };
@@ -1247,6 +1247,14 @@ async function trigBuild(req, res) {
   sendJSON(res, 200, { previewSql, triggerSql: trigSql, mode: mode || 'fill' });
 }
 
+async function canSetTriggerLast(pool, onTable, trgName) {
+  try {
+    const r = await pool.request().input('t', sql.NVarChar, onTable).input('n', sql.NVarChar, trgName)
+      .query("SELECT o.name FROM sys.triggers o WHERE o.parent_id=OBJECT_ID(@t) AND o.is_disabled=0 AND o.name<>@n AND OBJECTPROPERTY(o.object_id,'ExecIsLastInsertTrigger')=1");
+    return r.recordset.length === 0;
+  } catch (_) { return true; }
+}
+
 async function trigCreate(req, res) {
   const b = JSON.parse(await readBody(req)); const { trgName, onTable, trigSql, confirm, force } = b;
   if (!trgName || !onTable || !trigSql) return sendJSON(res, 400, { error: '缺少参数' });
@@ -1291,8 +1299,10 @@ async function trigCreate(req, res) {
   // 让工具触发器在 INSERT 事件中排最后：ERP 保存触发先执行，工具只补仍然为空的列。
   let orderSet = false;
   try {
-    await p.request().query("EXEC sp_settriggerorder @triggername = N'" + String(trgName).replace(/'/g, "''") + "', @order = 'Last', @stmttype = 'INSERT'");
-    orderSet = true;
+    if (await canSetTriggerLast(p, onTable, trgName)) {
+      await p.request().query("EXEC sp_settriggerorder @triggername = N'" + String(trgName).replace(/'/g, "''") + "', @order = 'Last', @stmttype = 'INSERT'");
+      orderSet = true;
+    } else { dbg('[trigCreate] ERP 已有 Last INSERT 触发器，保留原顺序'); }
   } catch (e) { dbg('[trigCreate] set trigger order failed: ' + e.message); }
   sendJSON(res, 200, { ok: true, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed, name: trgName, database: verifyDb, server: cfg.server, verified: true, orderLast: orderSet });
 }

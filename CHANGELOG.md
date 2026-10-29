@@ -195,6 +195,14 @@
 - `/api/meta` 的 `currentDb` 改为返回真实 `DB_NAME()`，界面不再显示“名义账套”。
 - 版本 2.2.18。
 
+### v2.2.19（2026-10-29）
+- 触发器 SQL 与预览/执行统一：普通通道、链路通道、兜底通道都直接复用同一条 UPDATE SQL 加 `inserted` 过滤，不再另拼 JOIN。
+- 触发器更新加入按目标主键的 `ROW_NUMBER` 去重，一对多来源只更新一条，避免同一目标行被反复赋值。
+- 合并触发器只认工具形态（`UPDATE b SET b.`），不再按 `trg_` 名称匹配，避免误删 ERP 触发器。
+- 设置 `sp_settriggerorder Last` 前检查 ERP 是否已有 Last 触发器；有则保留 ERP 顺序，不强行顶掉。
+- `applyInsertedFilter` 改为定位最外层 WHERE，支持 CTE/多路径 SQL；无外层 WHERE 时自动补。
+- 触发器仍保持 `AFTER INSERT`（ERP 保存时前置字段一次写齐）；`SET XACT_ABORT ON` 保留，触发器失败会回滚整单保存。
+
 ## v2.0.0 全量回归（2026-10-26）
 
 - 数据库备份与三天清理统一封装为 `backupDatabaseWithCleanup()`；正常执行传值、建立触发器、删除触发器三个入口全部改为调用同一函数。
