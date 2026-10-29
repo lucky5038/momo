@@ -28,6 +28,20 @@ function getActualPort() {
 
 let mainWindow = null;
 
+// 单实例锁：避免两个进程各自监听端口、互相覆盖 port.txt，导致窗口连错后端/账套
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1320,
@@ -124,6 +138,8 @@ if (!global.__chz_esModuleShimInstalled) {
 }
 
 app.whenReady().then(async () => {
+  // 第二个实例只负责唤起已有窗口，绝不能再启动后端/覆盖 port.txt
+  if (!gotSingleInstanceLock) return;
   // 设置后端运行模式，避免 app.js 再去开 Edge/Chrome 窗口
   process.env.CHZ_ELECTRON = '1';
 

@@ -114,6 +114,10 @@ module.exports = function makeSqlgen(sql) {
         const hit = cols.find(c => c.cid >= 1 && c.cid <= 20 && String(c.d || '').trim() === want);
         if (hit) { keyCol = hit.col; break; }
       }
+      // 前置单号优先精确匹配，避免“发票号/订单号”排在前面被误选
+      const prefExact = cols.find(c => c.cid >= 10 && c.cid <= 29 &&
+        /^(前置单号|前置单据|前置来源单号|来源单号)$/.test(String(c.d || '').trim()));
+      if (prefExact) prefCol = prefExact.col;
       docs.push({
         id: sub,
         name: sub + ' ' + ((row.subDesc || row.mainDesc || '').trim()),

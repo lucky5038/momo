@@ -207,10 +207,12 @@ function pruneInvoicePaths(paths) {
       // 只在“采购发票来源列”之间做剪枝（GSB003/GSB037），
       // 不能把 JDB013=14/A0 的免检/检验分支当成重复路径剪掉。
       const external = group.filter(path => !path[depth].internal && path[depth].fromCode && path[depth].fromCode.startsWith('GSB'));
+      const nonExternal = group.filter(path => !external.includes(path));
       const fields = new Set(external.map(path => path[depth].fromCode));
       if (fields.size > 1) {
         const minRemaining = Math.min(...external.map(path => path.length - depth));
         external.forEach(path => { if (path.length - depth === minRemaining) next.push(path); });
+        next.push(...nonExternal);
       } else {
         next.push(...group);
       }
@@ -311,6 +313,8 @@ function cleanOldBackups(daysOld, dirOverride) {
     const files = fs.readdirSync(dir);
     for (const f of files) {
       if (!f.toLowerCase().endsWith('.bak')) continue;
+      // 只清理本工具生成的 <库名>_backup_<ISO时间>.bak，绝不碰 ERP/用户自己的 .bak
+      if (!/^.+_backup_\d{4}-\d{2}-\d{2}T/.test(f)) continue;
       const fp = path.join(dir, f);
       const st = fs.statSync(fp);
       if (st.mtimeMs < cutoff) {
@@ -389,13 +393,16 @@ async function handleDatabases(req, res) {
     const r = await pool.request().query(
       "SELECT name, state_desc FROM sys.databases WHERE state_desc = N'ONLINE' AND name NOT IN (N'master',N'tempdb',N'model',N'msdb',N'ReportServer',N'ReportServerTempDB') ORDER BY name"
     );
+    const usedMaster = !!tmp;
+    let actualDb = '';
+    if (!usedMaster) { try { const d = await pool.request().query('SELECT DB_NAME() AS db'); actualDb = (d.recordset[0] && d.recordset[0].db) || ''; } catch (_) {} }
     if (tmp) { try { await tmp.close(); } catch (_) {} }
     const cfg2 = over.server ? makeConnConfig(over) : (CUR_CONFIG || CONFIG.db);
     sendJSON(res, 200, {
       ok: true,
       databases: r.recordset.map(row => ({ name: row.name, state: row.state_desc })),
       server: cfg2.server,
-      currentDb: (CUR_CONFIG || CONFIG.db).database
+      currentDb: actualDb || (CUR_CONFIG || CONFIG.db).database
     });
   } catch (e) {
     if (tmp) { try { await tmp.close(); } catch (_) {} }
@@ -441,11 +448,11 @@ async function handleTestConn(req, res) {
     let autoApplied = false;
     let applyNote = '';
     try {
-      const savedCfg = { server: cfg.server, user: cfg.user, password: cfg.password, database: dbName, options: cfg.options };
-      writeConfigFile(path.join(BASE_DIR, 'config.js'), savedCfg, (CUR_CONFIG && CUR_CONFIG.backupDir) || CONFIG.backupDir, CONFIG.httpPort);
+      const targetCfg = makeConnConfig({ server: cfg.server, user: cfg.user, password: cfg.password, database: dbName });
+      // 先真正切换连接池，成功后再落配置，避免“配置已改、池子还是旧库”
+      await switchPool(targetCfg);
+      writeConfigFile(path.join(BASE_DIR, 'config.js'), targetCfg, (CUR_CONFIG && CUR_CONFIG.backupDir) || CONFIG.backupDir, CONFIG.httpPort);
       CONFIG.db = Object.assign({}, CONFIG.db, { server: cfg.server, user: cfg.user, password: cfg.password, database: dbName });
-      await resetPool();
-      await getPool();
       autoApplied = true;
     } catch (applyErr) {
       applyNote = '连接参数已测试通过，主连接应用失败: ' + applyErr.message;
@@ -943,6 +950,7 @@ async function handleRun(req, res) {
           }
         } catch (autoErr) {
           dbg('[autoChain] fallback to base: ' + autoErr.message);
+          out.chainWarning = '自动链路不可用，已退回基础通道: ' + autoErr.message;
         }
       }
     }
@@ -992,6 +1000,7 @@ async function handleRun(req, res) {
   if (mergeDisplay) built.channelNote = (built.channelNote ? built.channelNote + ' | ' : '') + '合并显示: 目标值 + 本次值（重复值自动跳过）';
   // 通道切换后保留类型提示
   built.typeWarning = builtResults.map(x => x.typeWarning).filter(Boolean).join('；') || undefined;
+  built.chainWarning = builtResults.map(x => x.chainWarning).filter(Boolean).join('；') || undefined;
 
   const p = await getPool();
   // 精确性守卫：同一目标行匹配多条来源行时，只有“值完全一致”才允许；不一致直接拒绝。
@@ -1020,47 +1029,51 @@ async function handleRun(req, res) {
     const pr = await p.request().query(built.cntSql);
     const totalRows = pr.recordset[0].n; let sample = [];
     if (totalRows > 0) { const sr = await p.request().query(built.previewSql); sample = sr.recordset.slice(0, 50); }
-    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, channelNote: built.channelNote || '', chainNote: built.chainNote || '', typeWarning: built.typeWarning || undefined, previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)') });
+    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, channelNote: built.channelNote || '', chainNote: built.chainNote || '', typeWarning: built.typeWarning || undefined, chainWarning: built.chainWarning || undefined, previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)') });
   }
 
   const cfg = CUR_CONFIG || CONFIG.db;
   const backup = await backupDatabaseWithCleanup(p, cfg, 'handleRun');
   const bp = backup.path;
+  if (!backup.ok) {
+    return sendJSON(res, 500, { error: '数据库备份失败，已中止执行（未写库）: ' + backup.error, backupPath: bp, backupOk: false });
+  }
   const doc = CUR_DOCS.find(d => d.id === docId);
   const tblName = 'dbo.' + doc.sub;
-  const trigRows = await p.request().input('t', sql.NVarChar, tblName).query("SELECT name FROM sys.triggers WHERE parent_id=OBJECT_ID(@t) AND is_disabled=0");
-  const enTrigs = trigRows.recordset.map(r => r.name);
+  const targetCols = new Set(allMappings.map(m => String(m.tgtCol).toUpperCase()));
+  const trigRows = await p.request().input('t', sql.NVarChar, tblName).query(
+    "SELECT o.name, m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_id=OBJECT_ID(@t) AND o.is_disabled=0"
+  );
+  // 只禁用“确实写目标列”的触发器；ERP 的其它保存/审核触发器继续正常运行。
+  const enTrigs = trigRows.recordset
+    .filter(r => sqlgen.triggerTargetColumns(r.sql).some(c => targetCols.has(String(c).toUpperCase())))
+    .map(r => r.name);
   let affectedRows = 0;
   let updateSqls = builtResults.flatMap(builtUpdateSqls).filter(Boolean);
   if (mergeDisplay) updateSqls = updateSqls.map(sql => sqlgen.appendUpdateSql(sql, '   '));
   let tx = null;
   let after = null;
-  // 目标表上的触发器（含 ERP 自带）在整个更新期间被禁用，必须保证无论哪一步抛错都恢复，
-  // 否则一旦"先禁用、后出错"，ERP 的新单据会静默停止联动。恢复动作放在 finally。
+  // 禁用/更新/恢复放在同一个事务里：进程崩溃或连接断开时 SQL Server 会整体回滚，
+  // 不会留下“ERP 触发器被永久禁用”的状态。
   try {
-    for (const tn of enTrigs) { await p.request().query("DISABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
-    if (updateSqls.length > 1) {
-      tx = new sql.Transaction(p);
-      await tx.begin();
-    }
+    tx = new sql.Transaction(p);
+    await tx.begin();
+    for (const tn of enTrigs) { await new sql.Request(tx).query("DISABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
     for (const updateSql of updateSqls) {
-      const req = tx ? new sql.Request(tx) : p.request();
-      const ur = await req.query(updateSql);
+      const ur = await new sql.Request(tx).query(updateSql);
       affectedRows += (ur.rowsAffected || []).reduce((sum, n) => sum + Number(n || 0), 0);
     }
-    if (tx) await tx.commit();
-    dbg('[handleRun] UPDATE OK affected=' + affectedRows + ' statements=' + updateSqls.length);
-    after = await p.request().query("SELECT TOP 20 b.[" + (doc.refCol || doc.keyCol) + "] docNo, b.[" + tgtCol + "] filled FROM [dbo].[" + doc.sub + "] b WHERE b.[" + tgtCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max))<>N'' ORDER BY b.[" + doc.keyCol + "]");
+    for (const tn of enTrigs) { await new sql.Request(tx).query("ENABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
+    await tx.commit();
+    dbg('[handleRun] UPDATE OK affected=' + affectedRows + ' statements=' + updateSqls.length + ' disabled=' + enTrigs.join(','));
   } catch (updErr) {
     if (tx) { try { await tx.rollback(); } catch (_) {} }
     dbg('[handleRun] UPDATE FAILED: ' + updErr.message);
     return sendJSON(res, 500, { error: '执行更新失败: ' + updErr.message, backupPath: bp, updateSql: built.updateSql, updateSqls: built.updateSqls });
-  } finally {
-    for (const tn of enTrigs) {
-      try { await p.request().query("ENABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
-      catch (e2) { dbg('[handleRun] 恢复触发器失败 ' + tn + ': ' + e2.message); }
-    }
   }
+  try {
+    after = await p.request().query("SELECT TOP 20 b.[" + (doc.refCol || doc.keyCol) + "] docNo, b.[" + tgtCol + "] filled FROM [dbo].[" + doc.sub + "] b WHERE b.[" + tgtCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max))<>N'' ORDER BY b.[" + doc.keyCol + "]");
+  } catch (e) { dbg('[handleRun] after sample failed: ' + e.message); after = { recordset: [] }; }
 
   let triggerResult = null;
 
@@ -1286,8 +1299,8 @@ async function trigList(req, res) { const p = await ensurePoolDb((CUR_CONFIG || 
     } else {
       desc = (tblDescStr || row.tbl) + ' 触发器';
     }
-    // 本工具建立的触发器以 trg_ 开头
-    const isTool = row.name.startsWith('trg_');
+    // 本工具触发器按 SQL 形态识别（UPDATE b SET b.），不再按名字误判 ERP 的 trg_ 触发器
+    const isTool = /UPDATE\s+b\s+SET\s+b\./i.test(sql);
     return { name: row.name, tbl: row.tbl, disabled: row.disabled, sql: row.sql, desc, isTool, targetColumns, fieldCount: targetColumns.length };
   });
   let dbName = '';
@@ -1356,8 +1369,19 @@ async function trigCreate(req, res) {
 
   const backup = await backupDatabaseWithCleanup(p, cfg, 'trigCreate');
   const bp = backup.path;
-  await p.request().query(dropSql);
-  await p.request().query(trigSql);
+  if (!backup.ok) return sendJSON(res, 500, { error: '数据库备份失败，已中止创建触发器: ' + backup.error, backupPath: bp, backupOk: false });
+  const triggerTx = new sql.Transaction(p);
+  try {
+    await triggerTx.begin();
+    await new sql.Request(triggerTx).query(dropSql);
+    await new sql.Request(triggerTx).query(trigSql);
+    const v = await new sql.Request(triggerTx).input('n', sql.NVarChar, trgName).query("SELECT OBJECT_ID(@n,'TR') AS id");
+    if (!v.recordset[0] || !v.recordset[0].id) throw new Error('触发器创建后未找到 ' + trgName);
+    await triggerTx.commit();
+  } catch (e) {
+    try { await triggerTx.rollback(); } catch (_) {}
+    return sendJSON(res, 500, { error: '创建触发器失败（原触发器已保留）: ' + e.message, backupPath: bp, backupOk: backup.ok });
+  }
   // 创建后复核：必须能在当前账套里找到该触发器
   let verified = false, verifyDb = dbNow;
   try {
@@ -1395,9 +1419,17 @@ async function trigDrop(req, res) {
   const b = JSON.parse(await readBody(req)); if (!b.trgName) return sendJSON(res, 400, { error: '缺少 trgName' });
   const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database);
   if (!b.confirm) return sendJSON(res, 200, { preview: true, dropSql: 'DROP TRIGGER [dbo].[' + b.trgName + '];' });
+  const defRow = (await p.request().input('n', sql.NVarChar, b.trgName).query(
+    "SELECT m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.name=@n"
+  )).recordset[0];
+  if (!defRow) return sendJSON(res, 404, { error: '触发器 ' + b.trgName + ' 不存在' });
+  if (!/UPDATE\s+b\s+SET\s+b\./i.test(String(defRow.sql || '')) && !b.force) {
+    return sendJSON(res, 403, { error: '这不是本工具建立的触发器，已拒绝删除；如确认要删除 ERP 触发器，请显式传 force=true。' });
+  }
   const cfg = CUR_CONFIG || CONFIG.db;
   const backup = await backupDatabaseWithCleanup(p, cfg, 'trigDrop');
   const bp = backup.path;
+  if (!backup.ok) return sendJSON(res, 500, { error: '数据库备份失败，已中止删除触发器: ' + backup.error, backupPath: bp, backupOk: false });
   await p.request().query("IF OBJECT_ID(N'" + b.trgName + "','TR') IS NOT NULL DROP TRIGGER [dbo].[" + b.trgName + "]");
   sendJSON(res, 200, { ok: true, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed });
 }

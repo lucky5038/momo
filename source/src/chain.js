@@ -439,21 +439,22 @@ function findPath(registry, from, to) {
   return null;
 }
 
-function findAllPaths(registry, from, to, maxDepth = 9) {
+function findAllPaths(registry, from, to, maxDepth = 9, maxPaths = 50) {
   if (!registry || !from || !to) return [];
   const adj = buildAdj(registry);
   const out = [];
-  const dfs = (node, path, visited) => {
-    if (out.length >= 20 || path.length > maxDepth) return;
-    if (node === to) { if (path.length) out.push(path); return; }
-    for (const e of (adj[node] || [])) {
-      if (visited.has(e.to)) continue;
-      visited.add(e.to);
-      dfs(e.to, path.concat([{ from: node, ...e }]), visited);
-      visited.delete(e.to);
+  // BFS 按路径长度递增枚举，避免“先碰到一堆长路径把正确短路径挤掉”
+  const queue = [{ node: from, path: [], visited: new Set([from]) }];
+  while (queue.length && out.length < maxPaths) {
+    const cur = queue.shift();
+    if (cur.path.length > maxDepth) continue;
+    if (cur.path.length && cur.node === to) { out.push(cur.path); continue; }
+    for (const e of (adj[cur.node] || [])) {
+      if (cur.visited.has(e.to)) continue;
+      const visited = new Set(cur.visited); visited.add(e.to);
+      queue.push({ node: e.to, path: cur.path.concat([{ from: cur.node, ...e }]), visited });
     }
-  };
-  dfs(from, [], new Set([from]));
+  }
   return out;
 }
 
