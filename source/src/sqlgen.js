@@ -604,11 +604,14 @@ module.exports = function makeSqlgen(sql) {
     return update;
   }
 
-  function buildTriggerFromStatements(onTable, trgName, statements) {
+  function buildTriggerFromStatements(onTable, trgName, statements, label) {
     const list = (statements || []).filter(Boolean);
     if (!list.length) throw new Error('没有可生成触发器的字段映射');
+    const ctx = String(label || (onTable + ' ' + trgName)).replace(/'/g, "''");
+    const body = '; ' + list.join('; ') + ';';
     return 'CREATE TRIGGER [dbo].[' + trgName + '] ON [dbo].[' + onTable + '] AFTER INSERT AS BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; ' +
-      list.join('; ') + '; END;';
+      'BEGIN TRY' + body + ' END TRY BEGIN CATCH DECLARE @momo_msg nvarchar(2048)=N\'Momo触发器 ' + ctx +
+      ' 执行失败: \'+ERROR_MESSAGE(); THROW 50001,@momo_msg,1; END CATCH END;';
   }
 
   // 找最外层 WHERE（忽略字符串、方括号和括号内的子查询 WHERE）

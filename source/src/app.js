@@ -556,6 +556,33 @@ function conflictLabel(c) {
 }
 
 
+async function columnType(p, table, col) {
+  try {
+    const r = await p.request().input('t', sql.NVarChar, table).input('c', sql.NVarChar, col)
+      .query("SELECT TYPE_NAME(c.system_type_id) typ FROM sys.columns c JOIN sys.tables t ON c.object_id=t.object_id WHERE t.name=@t AND c.name=@c");
+    return (r.recordset[0] && r.recordset[0].typ) || '';
+  } catch (_) { return ''; }
+}
+function typeFamily(typ) {
+  const t = String(typ || '').toLowerCase();
+  if (/char|text/.test(t)) return 'text';
+  if (/int|decimal|numeric|money|float|real|bit/.test(t)) return 'number';
+  if (/date|time/.test(t)) return 'date';
+  if (/uniqueidentifier/.test(t)) return 'guid';
+  return 'other';
+}
+function typeWarningFor(tgtTable, tgtCol, tgtType, srcId, srcCol, srcType) {
+  const tf = typeFamily(tgtType), sf = typeFamily(srcType);
+  if (tf === sf || !tf || !sf) return '';
+  if ((tf === 'number' || tf === 'date') && sf === 'text') {
+    return '类型提示：目标 ' + tgtTable + '.' + tgtCol + ' 是 ' + tgtType + '，来源 ' + srcId + '.' + srcCol + ' 是 ' + srcType + '，文本不是纯数字/日期时执行会失败。';
+  }
+  if (tf === 'number' && sf === 'date') {
+    return '类型提示：目标 ' + tgtTable + '.' + tgtCol + ' 是数值，来源 ' + srcId + '.' + srcCol + ' 是日期，转换可能失败。';
+  }
+  return '';
+}
+
 async function verifyColsForTrig(p, doc, tgtCol, srcTable, srcValCol) {
   const c1 = await p.request().input('t', sql.NVarChar, doc.sub).input('c', sql.NVarChar, tgtCol)
     .query('SELECT 1 AS ok FROM sys.columns c JOIN sys.tables t ON c.object_id=t.object_id WHERE t.name=@t AND c.name=@c');
@@ -911,6 +938,12 @@ async function handleRun(req, res) {
         }
       }
     }
+    if (!isInvoiceDate) {
+      const pType = await getPool();
+      const tType = await columnType(pType, targetDoc.sub, mTgtCol);
+      const sType = await columnType(pType, mSrcId, mSrcValCol);
+      if (tType && sType) out.typeWarning = typeWarningFor(targetDoc.sub, mTgtCol, tType, mSrcId, mSrcValCol, sType);
+    }
     return out;
   }
 
@@ -949,13 +982,15 @@ async function handleRun(req, res) {
   }
   if (multiMappingNote) built.channelNote = (built.channelNote ? built.channelNote + ' | ' : '') + '多字段: ' + multiMappingNote;
   if (mergeDisplay) built.channelNote = (built.channelNote ? built.channelNote + ' | ' : '') + '合并显示: 目标值 + 本次值（重复值自动跳过）';
+  // 通道切换后保留类型提示
+  built.typeWarning = builtResults.map(x => x.typeWarning).filter(Boolean).join('；') || undefined;
 
   const p = await getPool();
   if (!confirm) {
     const pr = await p.request().query(built.cntSql);
     const totalRows = pr.recordset[0].n; let sample = [];
     if (totalRows > 0) { const sr = await p.request().query(built.previewSql); sample = sr.recordset.slice(0, 50); }
-    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, channelNote: built.channelNote || '', chainNote: built.chainNote || '', previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)') });
+    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, channelNote: built.channelNote || '', chainNote: built.chainNote || '', typeWarning: built.typeWarning || undefined, previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)') });
   }
 
   const cfg = CUR_CONFIG || CONFIG.db;
@@ -1130,7 +1165,8 @@ async function handleRun(req, res) {
         // 只额外加 inserted 过滤，避免触发器另拼 JOIN 与预览不一致。
         const trigBuilt = await buildMapping(allMappings[0], 'fill', false);
         trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName,
-          builtUpdateSqls(trigBuilt).filter(Boolean).map(s => sqlgen.applyInsertedFilter(sqlgen.dedupeTriggerUpdate(s, doc.sub, pkNames), pkJoin)));
+          builtUpdateSqls(trigBuilt).filter(Boolean).map(s => sqlgen.applyInsertedFilter(sqlgen.dedupeTriggerUpdate(s, doc.sub, pkNames), pkJoin)),
+          doc.sub + '.' + tgtCol);
         dbg('[trig] 统一触发器 SQL: ' + trigSql);
       }
       dbg('[trig] SQL: ' + trigSql);
