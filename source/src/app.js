@@ -1280,7 +1280,7 @@ async function handleRun(req, res) {
       const headerLineTrigger = !!built.triggerTable;
       if (headerLineTrigger) {
         onTable = built.triggerTable;
-        trgName = 'trg_' + onTable + '_header_momo';
+        trgName = 'trg_' + onTable + '_header_' + tgtCol + '_momo';
       }
 
       // B 方案：检测同表已启用的系统触发器是否已在写目标列
@@ -1423,6 +1423,10 @@ async function handleRun(req, res) {
       )).recordset;
       // 只合并工具形态的触发器（UPDATE b SET b.），绝不按名字误删 ERP 触发器
       const existingTools = allTriggers.filter(t => /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')) && (!headerLineTrigger || t.name === trgName));
+      // 兼容旧版：以前 960/961 合在 trg_<单身表>_header_momo，建新字段触发器时移除，避免旧语句继续写别的字段
+      const legacyTools = headerLineTrigger
+        ? allTriggers.filter(t => t.name === ('trg_' + onTable + '_header_momo') && /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')))
+        : [];
       const mergedSql = existingTools.length
         ? sqlgen.mergeTriggerDefinitions(onTable, trgName, existingTools, trigSql, {
           mergeTargets: mergeDisplay ? [tgtCol] : [],
@@ -1433,7 +1437,9 @@ async function handleRun(req, res) {
       const triggerTx = new sql.Transaction(p);
       try {
         await triggerTx.begin();
-        for (const old of existingTools) await new sql.Request(triggerTx).query('DROP TRIGGER [dbo].[' + old.name + ']');
+        for (const old of new Map([...existingTools, ...legacyTools].map(t => [t.name, t])).values()) {
+          await new sql.Request(triggerTx).query('DROP TRIGGER [dbo].[' + old.name + ']');
+        }
         await new sql.Request(triggerTx).query(mergedSql);
         const verified = await new sql.Request(triggerTx).input('n', sql.NVarChar, trgName).query("SELECT OBJECT_ID(@n,'TR') AS id");
         if (!verified.recordset[0] || !verified.recordset[0].id) throw new Error('触发器创建后未找到 ' + trgName);
