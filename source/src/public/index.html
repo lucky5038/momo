@@ -707,8 +707,9 @@ async function doRun(confirm){
   } else {
     lastPreviewKey=null;
     const aff = (d.affected !== undefined && d.affected !== null) ? d.affected : 0;
+    const cleared = (d.cleared !== undefined && d.cleared !== null) ? d.cleared : 0;
     const bp = d.backupPath || '未知路径';
-    status.textContent='完成：受影响 '+aff+' 行 · 备份 '+bp;
+    status.textContent='完成：清空旧值 '+cleared+' 行 · 更新 '+aff+' 行 · 备份 '+bp;
     let trigMsg = '';
     if(b.createTrigger && d.triggerResult){
       if(d.triggerResult.skipped){
@@ -765,7 +766,7 @@ document.getElementById('btnExec').onclick=async ()=>{
     const cr=await (await fetch('/api/config')).json();
     if(cr&&cr.backupDir){ bd=cr.backupDir; window.__backupDir=bd; }
   }catch(_){}
-  if(!confirm('确认执行写库？工具会先自动备份 '+curDb+' 到 '+bd+'\\'))return;
+  if(!confirm('确认执行写库？'+(document.getElementById('chkForce')?.checked?'强制覆盖会先清空目标列所有旧值，再填匹配行。':'')+'\n工具会先自动备份 '+curDb+' 到 '+bd+'\\'))return;
   doRun(true);
 };
 

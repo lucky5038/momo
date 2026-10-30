@@ -1224,23 +1224,32 @@ async function handleRun(req, res) {
     .filter(r => sqlgen.triggerTargetColumns(r.sql).some(c => targetCols.has(String(c).toUpperCase())))
     .map(r => r.name);
   let affectedRows = 0;
+  let clearedRows = 0;
   let updateSqls = builtResults.flatMap(builtUpdateSqls).filter(Boolean);
   if (mergeDisplay && !built.isHeaderMerge) updateSqls = updateSqls.map(sql => sqlgen.appendUpdateSql(sql, '   '));
   let tx = null;
   let after = null;
-  // 禁用/更新/恢复放在同一个事务里：进程崩溃或连接断开时 SQL Server 会整体回滚，
-  // 不会留下“ERP 触发器被永久禁用”的状态。
+  // 禁用/清空/更新/恢复放在同一个事务里：进程崩溃或连接断开时 SQL Server 会整体回滚，
+  // 不会留下“ERP 触发器被永久禁用”或“旧值已清但新值未写”的状态。
   try {
     tx = new sql.Transaction(p);
     await tx.begin();
     for (const tn of enTrigs) { await new sql.Request(tx).query("DISABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
+    if (force) {
+      const cols = [...new Set(allMappings.map(m => String(m.tgtCol)))];
+      for (const col of cols) {
+        const q = '[' + col.replace(/]/g, ']]') + ']';
+        const cr = await new sql.Request(tx).query('UPDATE [dbo].[' + doc.sub + '] SET ' + q + "=NULL WHERE " + q + " IS NOT NULL AND CAST(" + q + " AS nvarchar(max)) <> N''");
+        clearedRows += (cr.rowsAffected || []).reduce((sum, n) => sum + Number(n || 0), 0);
+      }
+    }
     for (const updateSql of updateSqls) {
       const ur = await new sql.Request(tx).query(updateSql);
       affectedRows += (ur.rowsAffected || []).reduce((sum, n) => sum + Number(n || 0), 0);
     }
     for (const tn of enTrigs) { await new sql.Request(tx).query("ENABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
     await tx.commit();
-    dbg('[handleRun] UPDATE OK affected=' + affectedRows + ' statements=' + updateSqls.length + ' disabled=' + enTrigs.join(','));
+    dbg('[handleRun] UPDATE OK cleared=' + clearedRows + ' affected=' + affectedRows + ' statements=' + updateSqls.length + ' disabled=' + enTrigs.join(','));
   } catch (updErr) {
     if (tx) { try { await tx.rollback(); } catch (_) {} }
     dbg('[handleRun] UPDATE FAILED: ' + updErr.message);
@@ -1299,7 +1308,7 @@ async function handleRun(req, res) {
         triggerResult = { ok: true, skipped: true, allowForce: true, conflict: conflicts.map(c => c.trigName),
           conflictDetail: conflicts,
           note: 'ERP 触发器已写入目标列，为避免取值冲突已跳过建立工具触发器：' + conflictText + '。如确认需要可勾选强制创建。' };
-        sendJSON(res, 200, { ok: true, mappingCount: builtResults.length, affected: affectedRows, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed, sampleAfter: after.recordset, updateSql: built.updateSql, updateSqls: built.updateSqls, triggerResult });
+        sendJSON(res, 200, { ok: true, mappingCount: builtResults.length, affected: affectedRows, cleared: clearedRows, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed, sampleAfter: after.recordset, updateSql: built.updateSql, updateSqls: built.updateSqls, triggerResult });
         return;
       }
       if (conflicts.length && b.forceCreateTrigger) {
@@ -1464,7 +1473,7 @@ async function handleRun(req, res) {
     }
   }
 
-  sendJSON(res, 200, { ok: true, mappingCount: builtResults.length, affected: affectedRows, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed, sampleAfter: after.recordset, updateSql: built.updateSql, updateSqls: built.updateSqls, triggerResult });
+  sendJSON(res, 200, { ok: true, mappingCount: builtResults.length, affected: affectedRows, cleared: clearedRows, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed, sampleAfter: after.recordset, updateSql: built.updateSql, updateSqls: built.updateSqls, triggerResult });
 }
 
 // 触发器管理
