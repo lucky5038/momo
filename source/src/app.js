@@ -1037,7 +1037,7 @@ async function handleRun(req, res) {
     CUR_DOCS = await sqlgen.scanDocs(p0);
     CUR_SRCS = await sqlgen.scanSrcs(p0);
   }
-  async function buildMapping(mapping, runMode, runForce) {
+  async function buildMapping(mapping, runMode, runForce, opts = {}) {
     const mTgtCol = String(mapping.tgtCol || '').trim();
     const mSrcId = String(mapping.srcId || '').trim();
     const mSrcValCol = String(mapping.srcValCol || '').trim();
@@ -1099,11 +1099,27 @@ async function handleRun(req, res) {
           out.chainWarning = '自动链路不可用，已退回基础通道: ' + autoErr.message;
         }
       }
-      // 单头 + 合并显示：一条单头会匹配多条单身，必须真正聚合，不能只靠 UPDATE JOIN。
-      if (mergeDisplay && !targetDoc.seqCol && autoPaths.length === 1 && autoRegistry && autoRegistry.docs) {
+      // 单头字段依赖单身：按单头主键聚合。触发时挂到第一条单身表，避免单头触发器看不到单身。
+      const firstEdge = autoPaths.length === 1 ? autoPaths[0][0] : null;
+      if (!targetDoc.seqCol && autoPaths.length === 1 && firstEdge && firstEdge.internal && autoRegistry && autoRegistry.docs) {
         try {
           const pk = await pkColumns(await getPool(), targetDoc.sub);
-          if (pk.length) out = sqlgen.buildChainMergeSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], autoRegistry.docs, pk, '   ');
+          const lineTable = firstEdge.to;
+          const lineMeta = autoRegistry.docs[lineTable] || {};
+          const targetChainMeta = autoRegistry.docs[docId] || {};
+          let lineFilter = null;
+          if (lineMeta.docNo && targetChainMeta.docNo) {
+            lineFilter = 'i.[' + lineMeta.docNo + ']=b.[' + targetChainMeta.docNo + ']';
+            if (lineMeta.typeCol && targetChainMeta.typeCol) {
+              lineFilter = 'i.[' + lineMeta.typeCol + ']=b.[' + targetChainMeta.typeCol + '] AND ' + lineFilter;
+            }
+          }
+          if (pk.length) {
+            out = sqlgen.buildChainMergeSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], autoRegistry.docs, pk, '   ', opts.triggerLineFilter ? lineFilter : null);
+            out.triggerTable = lineTable;
+            out.triggerFilter = lineFilter;
+            out.isHeaderMerge = true;
+          }
         } catch (mergeErr) {
           dbg('[headerMerge] fallback: ' + mergeErr.message);
           out.chainWarning = '表头合并聚合失败，已退回普通合并: ' + mergeErr.message;
@@ -1153,10 +1169,12 @@ async function handleRun(req, res) {
     delete built.channels; // 避免前端误读
   }
   if (multiMappingNote) built.channelNote = (built.channelNote ? built.channelNote + ' | ' : '') + '多字段: ' + multiMappingNote;
-  if (mergeDisplay) built.channelNote = (built.channelNote ? built.channelNote + ' | ' : '') + '合并显示: 目标值 + 本次值（重复值自动跳过）';
+  if (mergeDisplay) built.channelNote = (built.channelNote ? built.channelNote + ' | ' : '') + (built.isHeaderMerge ? '表头合并: 以来源聚合覆盖旧值' : '合并显示: 目标值 + 本次值（重复值自动跳过）');
   // 通道切换后保留类型提示
   built.typeWarning = builtResults.map(x => x.typeWarning).filter(Boolean).join('；') || undefined;
   built.isHeaderMerge = builtResults.some(x => x.isHeaderMerge);
+  built.triggerTable = builtResults.map(x => x.triggerTable).find(Boolean) || undefined;
+  built.triggerFilter = builtResults.map(x => x.triggerFilter).find(Boolean) || undefined;
   built.chainWarning = builtResults.map(x => x.chainWarning).filter(Boolean).join('；') || undefined;
 
   const p = await getPool();
@@ -1257,7 +1275,13 @@ async function handleRun(req, res) {
         await verifyColsForTrig(p, doc, 'GSB961', null, null);
       }
 
-      const trgName = 'trg_' + doc.sub + '_momo';
+      let onTable = doc.sub;
+      let trgName = 'trg_' + doc.sub + '_momo';
+      const headerLineTrigger = !!built.triggerTable;
+      if (headerLineTrigger) {
+        onTable = built.triggerTable;
+        trgName = 'trg_' + onTable + '_header_momo';
+      }
 
       // B 方案：检测同表已启用的系统触发器是否已在写目标列
       let conflicts = [];
@@ -1335,9 +1359,12 @@ async function handleRun(req, res) {
       //   计划路径：  s2m.RIB001 = b.RAA026 → s2m.RIB004 → s1b.IBA001
       let trigSql;
       if (mergeDisplay) {
-        const mergeBuilt = await buildMapping(allMappings[0], 'fill', true);
-        trigSql = sqlgen.buildMultiFieldTriggerSQL(doc.sub, trgName, pkJoin,
-          builtUpdateSqls(mergeBuilt).filter(Boolean).map(s => sqlgen.dedupeTriggerUpdate(s, doc.sub, pkNames)));
+        const mergeBuilt = await buildMapping(allMappings[0], 'fill', true, { triggerLineFilter: headerLineTrigger });
+        const mergeStatements = builtUpdateSqls(mergeBuilt).filter(Boolean);
+        trigSql = headerLineTrigger
+          ? sqlgen.buildTriggerFromStatements(onTable, trgName, mergeStatements, doc.sub + '.' + tgtCol)
+          : sqlgen.buildMultiFieldTriggerSQL(doc.sub, trgName, pkJoin,
+            mergeStatements.map(s => sqlgen.dedupeTriggerUpdate(s, doc.sub, pkNames)));
         dbg('[trig] 合并显示触发器 SQL: ' + trigSql);
       } else if (multiFieldTrigger) {
         const specialTimeMode = mixedInvoiceNumber && ['separate', 'combined'].includes(triggerTimeMode) ? triggerTimeMode : null;
@@ -1350,6 +1377,10 @@ async function handleRun(req, res) {
             triggerStatements.push(...builtUpdateSqls(triggerBuilt).map(sql => sqlgen.applyInsertedFilter(sqlgen.dedupeTriggerUpdate(sql, doc.sub, pkNames), pkJoin)));
           }
           trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName, triggerStatements);
+        } else if (headerLineTrigger) {
+          const triggerBuilds = [];
+          for (const mapping of allMappings) triggerBuilds.push(await buildMapping(mapping, 'fill', false, { triggerLineFilter: true }));
+          trigSql = sqlgen.buildTriggerFromStatements(onTable, trgName, triggerBuilds.flatMap(builtUpdateSqls).filter(Boolean), doc.sub + '.' + tgtCol);
         } else {
           const triggerBuilds = [];
           for (const mapping of allMappings) triggerBuilds.push(await buildMapping(mapping, 'fill', false));
@@ -1363,14 +1394,18 @@ async function handleRun(req, res) {
       } else {
         // 触发器统一复用预览/执行的 UPDATE SQL（普通通道、链路、兜底都一样），
         // 只额外加 inserted 过滤，避免触发器另拼 JOIN 与预览不一致。
-        const trigBuilt = await buildMapping(allMappings[0], 'fill', false);
-        const trigStatements = [];
-        for (const u of builtUpdateSqls(trigBuilt).filter(Boolean)) {
-          const guard = sqlgen.buildUniquenessGuard(u, pkJoin, pkNames, doc.sub + '.' + tgtCol);
-          if (guard) trigStatements.push(guard);
-          trigStatements.push(sqlgen.applyInsertedFilter(sqlgen.dedupeTriggerUpdate(u, doc.sub, pkNames), pkJoin));
+        const trigBuilt = await buildMapping(allMappings[0], 'fill', false, { triggerLineFilter: headerLineTrigger });
+        if (headerLineTrigger) {
+          trigSql = sqlgen.buildTriggerFromStatements(onTable, trgName, builtUpdateSqls(trigBuilt).filter(Boolean), doc.sub + '.' + tgtCol);
+        } else {
+          const trigStatements = [];
+          for (const u of builtUpdateSqls(trigBuilt).filter(Boolean)) {
+            const guard = sqlgen.buildUniquenessGuard(u, pkJoin, pkNames, doc.sub + '.' + tgtCol);
+            if (guard) trigStatements.push(guard);
+            trigStatements.push(sqlgen.applyInsertedFilter(sqlgen.dedupeTriggerUpdate(u, doc.sub, pkNames), pkJoin));
+          }
+          trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName, trigStatements, doc.sub + '.' + tgtCol);
         }
-        trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName, trigStatements, doc.sub + '.' + tgtCol);
         dbg('[trig] 统一触发器 SQL: ' + trigSql);
       }
       dbg('[trig] SQL: ' + trigSql);
@@ -1383,13 +1418,13 @@ async function handleRun(req, res) {
         if (!tchk.recordset[0].id) throw new Error('表 ' + jt + ' 在数据库 ' + cfg.database + ' 中不存在（触发器 SQL 引用了它）');
       }
 
-      const allTriggers = (await p.request().input('t', sql.NVarChar, doc.sub).query(
+      const allTriggers = (await p.request().input('t', sql.NVarChar, onTable).query(
         "SELECT o.name, m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_id=OBJECT_ID(@t)"
       )).recordset;
       // 只合并工具形态的触发器（UPDATE b SET b.），绝不按名字误删 ERP 触发器
-      const existingTools = allTriggers.filter(t => /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')));
+      const existingTools = allTriggers.filter(t => /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')) && (!headerLineTrigger || t.name === trgName));
       const mergedSql = existingTools.length
-        ? sqlgen.mergeTriggerDefinitions(doc.sub, trgName, existingTools, trigSql, {
+        ? sqlgen.mergeTriggerDefinitions(onTable, trgName, existingTools, trigSql, {
           mergeTargets: mergeDisplay ? [tgtCol] : [],
           replaceTargets: mergeDisplay ? [] : [tgtCol],
           separator: '   '
@@ -1405,7 +1440,7 @@ async function handleRun(req, res) {
         await triggerTx.commit();
         let orderLast = false;
         try {
-          if (await canSetTriggerLast(p, doc.sub, trgName)) {
+          if (await canSetTriggerLast(p, onTable, trgName)) {
             await p.request().query("EXEC sp_settriggerorder @triggername = N'" + String(trgName).replace(/'/g, "''") + "', @order = 'Last', @stmttype = 'INSERT'");
             orderLast = true;
           } else { dbg('[trig] ERP 已有 Last INSERT 触发器，保留原顺序'); }

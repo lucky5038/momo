@@ -1,7 +1,7 @@
 {
   "name": "chuanzhi-app",
   "productName": "Momo传值助手",
-  "version": "2.2.34",
+  "version": "2.2.35",
   "description": "ERP 跨表带值 / 触发器管理 桌面应用版",
   "main": "src/main.electron.js",
   "type": "commonjs",

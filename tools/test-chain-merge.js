@@ -25,4 +25,8 @@ const trig = sqlgen.buildTriggerFromStatements('SGMRBA', 'trg_SGMRBA_momo', [
 ]);
 assert.ok(trig.includes('EXISTS (SELECT 1 FROM inserted i'), '触发器应只处理 inserted 单头');
 assert.strictEqual((trig.match(/DECLARE\s+@momo_msg/gi) || []).length, 1, '只允许一个 @momo_msg');
+const lineBuilt = sqlgen.buildChainMergeSQL('SGMRBA', 'RBA961', 'DEA002', 'fill', true, path, docs, ['RBA001', 'RBA002'], '   ', 'i.[RBB001]=b.[RBA001] AND i.[RBB002]=b.[RBA002]');
+const lineTrig = sqlgen.buildTriggerFromStatements('SGMRBB', 'trg_SGMRBB_header_momo', [lineBuilt.updateSql]);
+assert.ok(lineTrig.includes('ON [dbo].[SGMRBB] AFTER INSERT'), '触发器应挂在领料单身');
+assert.ok(lineTrig.includes('EXISTS (SELECT 1 FROM inserted i WHERE i.[RBB001]=b.[RBA001]'), '触发器应只处理 inserted 单身对应的单头');
 console.log('PASS 表头合并聚合去重，触发器复用聚合 SQL');

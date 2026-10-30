@@ -550,10 +550,11 @@ module.exports = function makeSqlgen(sql) {
 
   // 表头合并显示：单头一行匹配多条来源行时，先按目标主键聚合去重，再一次性写回。
   // 单工单只会得到一个值；多工单会得到 "品名1   品名2   品名3"。
-  function buildChainMergeSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs, pkNames, separator = '   ') {
+  function buildChainMergeSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs, pkNames, separator = '   ', lineFilter = null) {
     if (!Array.isArray(pkNames) || !pkNames.length) throw new Error('表头合并缺少目标主键');
     const base = buildChainSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs);
-    const { showNo, fromClause, whereClause, valExpr } = base.previewParts;
+    const { showNo, fromClause, whereClause: baseWhere, valExpr } = base.previewParts;
+    const whereClause = baseWhere + (lineFilter ? ' AND EXISTS (SELECT 1 FROM inserted i WHERE ' + lineFilter + ')' : '');
     const bt = s => '[' + s + ']';
     const keys = pkNames.map(c => 'b.' + bt(c));
     const sel = keys.map((k, i) => k + ' AS _k' + i).join(', ');
