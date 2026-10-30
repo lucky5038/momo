@@ -55,6 +55,7 @@ catch (e) { sql = require('mssql'); }
 const { docs: DOC_ITEMS, srcs: SRC_ITEMS } = require('./dicts');
 const sqlgen = require('./sqlgen')(sql);
 const chainBuilder = require('./chain');
+const fieldDict = require('./field-dict');
 
 // ====== 日志 ======
 
@@ -536,6 +537,109 @@ async function handleMeta(req, res) {
 // 检测同表已启用的 ERP 触发器是否写目标列。
 // ERP 触发器分两类：保存触发（AFTER INSERT/UPDATE）与审核触发（审核动作时触发）。
 // 工具触发器形如 UPDATE b SET b.<col>，用别名 b，按定义排除，不能按名称 trg_ 排除（ERP 也可能用 trg_）。
+const FIELD_DICT_CACHE = new Map();
+async function handleFieldDicts(req, res) {
+  try {
+    const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database);
+    const cfg = CUR_CONFIG || CONFIG.db;
+    const key = (cfg.server || '') + '|' + (cfg.database || '') + '|' + chainBuilder.REGISTRY_VERSION;
+    const hit = FIELD_DICT_CACHE.get(key);
+    if (hit && Date.now() - hit.at < 10 * 60 * 1000) return sendJSON(res, 200, hit.data);
+    const reg = await getChainRegistry();
+    const hints = [...new Set(Object.values(fieldDict.FIELD_HINTS).flat())];
+    const byHint = {};
+    if (hints.length) {
+      const req = p.request();
+      hints.forEach((h, i) => req.input('h' + i, sql.NVarChar, h));
+      const r = await req.query(
+        `SELECT t.name tbl,c.name col,CONVERT(varchar(200),ep.value) d,SUM(pr.rows) n
+         FROM sys.columns c JOIN sys.tables t ON c.object_id=t.object_id
+         JOIN sys.partitions pr ON pr.object_id=t.object_id AND pr.index_id IN (0,1)
+         LEFT JOIN sys.extended_properties ep ON ep.major_id=t.object_id AND ep.minor_id=c.column_id AND ep.name=N'MS_Description'
+         WHERE t.is_ms_shipped=0 AND ep.value IN (${hints.map((_, i) => '@h' + i).join(',')})
+         GROUP BY t.name,c.name,CONVERT(varchar(200),ep.value)`
+      );
+      for (const row of r.recordset) (byHint[row.d] = byHint[row.d] || []).push(row);
+    }
+    const q = x => '[' + String(x).replace(/]/g, ']]') + ']';
+    const sampleMemo = new Map();
+    async function sample(tbl, col) {
+      const mk = tbl + '.' + col;
+      if (sampleMemo.has(mk)) return sampleMemo.get(mk);
+      let out = [];
+      try {
+        out = (await p.request().query(
+          `SELECT TOP 30 CAST(${q(col)} AS nvarchar(100)) v,COUNT(*) n
+           FROM [dbo].${q(tbl)}
+           WHERE ${q(col)} IS NOT NULL AND CAST(${q(col)} AS nvarchar(100))<>N''
+           GROUP BY CAST(${q(col)} AS nvarchar(100)) ORDER BY n DESC`
+        )).recordset;
+      } catch (_) {}
+      const vals = out.map(x => String(x.v));
+      sampleMemo.set(mk, vals);
+      return vals;
+    }
+    const sections = [];
+    for (const [name, codeMap] of Object.entries(fieldDict.DICT)) {
+      const codes = Object.entries(codeMap);
+      if (name === 'Source') {
+        sections.push({ name, codeCount: codes.length, status: 'special', codes: reg.sourceCodes, columns: [], binding: null });
+        continue;
+      }
+      if (name === 'TableID') {
+        const matched = codes.filter(([c]) => !!reg.docs[c]).length;
+        sections.push({
+          name, codeCount: codes.length,
+          status: matched === codes.length ? 'bound' : (matched ? 'partial' : 'no-match'),
+          coverage: codes.length ? matched / codes.length : null,
+          columns: [], binding: null,
+          codes: codes.map(([code, label]) => ({ code, label, exists: !!reg.docs[code] })),
+          unmatched: codes.filter(([c]) => !reg.docs[c]).map(([c]) => c)
+        });
+        continue;
+      }
+      const cand = [];
+      for (const h of (fieldDict.FIELD_HINTS[name] || [])) for (const row of (byHint[h] || [])) cand.push(row);
+      const seen = new Set(), columns = [];
+      for (const c of cand) {
+        const k = c.tbl + '.' + c.col;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const vals = await sample(c.tbl, c.col);
+        const labelSet = new Set(Object.values(codeMap));
+        const isMatch = v => Object.prototype.hasOwnProperty.call(codeMap, v) || labelSet.has(v);
+        const good = vals.filter(isMatch);
+        const bad = vals.filter(v => !isMatch(v));
+        columns.push({
+          table: c.tbl, column: c.col, desc: c.d, rows: Number(c.n || 0),
+          distinct: vals.length, matched: good.length,
+          coverage: vals.length ? good.length / vals.length : null,
+          values: vals.slice(0, 10), unmatched: bad.slice(0, 20)
+        });
+      }
+      columns.sort((a, b) => (b.coverage ?? -1) - (a.coverage ?? -1) || b.matched - a.matched || b.rows - a.rows);
+      const best = columns.find(c => c.coverage === 1) || columns[0] || null;
+      sections.push({
+        name, codeCount: codes.length, columns, binding: best,
+        status: !columns.length ? 'no-column' : (best && best.coverage === 1 ? 'bound' : (best && best.coverage > 0 ? 'partial' : 'no-match')),
+        coverage: best ? best.coverage : null,
+        codes: codes.map(([code, label]) => ({ code, label })),
+        unmatched: best ? best.unmatched : []
+      });
+    }
+    const data = {
+      ok: true, database: cfg.database, version: chainBuilder.REGISTRY_VERSION,
+      generatedAt: new Date().toISOString(),
+      sections,
+      accountingSourceCodes: (reg.unknownSourceCodes || []).map(x => ({
+        code: x.code, label: fieldDict.ACCOUNTING_SOURCE_CODES.has(x.code) ? '会计专用（待补）' : '未收录'
+      }))
+    };
+    FIELD_DICT_CACHE.set(key, { at: Date.now(), data });
+    sendJSON(res, 200, data);
+  } catch (e) { sendJSON(res, 500, { error: '字段字典核对失败: ' + e.message }); }
+}
+
 async function detectTrigConflict(pool, tbl, tgtCol) {
   try {
     const r = await pool.request().input('t', sql.NVarChar, tbl)
@@ -1656,6 +1760,7 @@ const router = {
   '/api/backup-dir': handleBackupDir,
   '/api/first-open': handleFirstOpen,
   '/api/chains': handleChains,
+  '/api/field-dicts': handleFieldDicts,
   '/api/chains/path': handleChainPath,
   '/api/chains/preview': handleChainPreview,
   '/api/chains/paths': handleChainPaths,
