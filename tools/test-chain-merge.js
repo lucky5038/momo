@@ -29,4 +29,7 @@ const lineBuilt = sqlgen.buildChainMergeSQL('SGMRBA', 'RBA961', 'DEA002', 'fill'
 const lineTrig = sqlgen.buildTriggerFromStatements('SGMRBB', 'trg_SGMRBB_header_momo', [lineBuilt.updateSql]);
 assert.ok(lineTrig.includes('ON [dbo].[SGMRBB] AFTER INSERT'), '触发器应挂在领料单身');
 assert.ok(lineTrig.includes('EXISTS (SELECT 1 FROM inserted i WHERE i.[RBB001]=b.[RBA001]'), '触发器应只处理 inserted 单身对应的单头');
-console.log('PASS 表头合并聚合去重，触发器复用聚合 SQL');
+const singleBuilt = sqlgen.buildChainMergeSQL('SGMRBA', 'RBA961', 'DEA002', 'fill', true, path, docs, ['RBA001', 'RBA002'], '   ', null, false);
+assert.ok(singleBuilt.updateSql.includes('HAVING COUNT(DISTINCT CAST(_val AS nvarchar(max)))=1'), '未勾合并时只允许唯一值');
+assert.ok(!singleBuilt.updateSql.includes('FOR XML PATH'), '未勾合并时不允许聚合拼接');
+console.log('PASS 表头合并聚合去重，未勾合并只取唯一值，触发器复用聚合 SQL');

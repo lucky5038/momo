@@ -550,7 +550,7 @@ module.exports = function makeSqlgen(sql) {
 
   // 表头合并显示：单头一行匹配多条来源行时，先按目标主键聚合去重，再一次性写回。
   // 单工单只会得到一个值；多工单会得到 "品名1   品名2   品名3"。
-  function buildChainMergeSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs, pkNames, separator = '   ', lineFilter = null) {
+  function buildChainMergeSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs, pkNames, separator = '   ', lineFilter = null, mergeAll = true) {
     if (!Array.isArray(pkNames) || !pkNames.length) throw new Error('表头合并缺少目标主键');
     const base = buildChainSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs);
     const { showNo, fromClause, whereClause: baseWhere, valExpr } = base.previewParts;
@@ -563,21 +563,25 @@ module.exports = function makeSqlgen(sql) {
     const corr = pkNames.map((_, i) => 'x._k' + i + '=a._k' + i).join(' AND ');
     const sep = String(separator).replace(/'/g, "''");
     const sepN = sep.length;
-    const cte = 'WITH _momo_src AS (SELECT ' + sel + ', ' + valExpr + ' AS _val' + fromClause + ' ' + whereClause + '), ' +
-      '_momo_agg AS (SELECT ' + group + ', STUFF((SELECT DISTINCT N\'' + sep + '\'+CAST(x._val AS nvarchar(max)) ' +
-      'FROM _momo_src x WHERE ' + corr + ' FOR XML PATH(\'\'), TYPE).value(\'.\',\'nvarchar(max)\'),1,' + sepN + ',\'\') AS _val ' +
-      'FROM _momo_src a GROUP BY ' + group + ') ';
+    const cte = mergeAll
+      ? 'WITH _momo_src AS (SELECT ' + sel + ', ' + valExpr + ' AS _val' + fromClause + ' ' + whereClause + '), ' +
+        '_momo_agg AS (SELECT ' + group + ', STUFF((SELECT DISTINCT N\'' + sep + '\'+CAST(x._val AS nvarchar(max)) ' +
+        'FROM _momo_src x WHERE ' + corr + ' FOR XML PATH(\'\'), TYPE).value(\'.\',\'nvarchar(max)\'),1,' + sepN + ',\'\') AS _val ' +
+        'FROM _momo_src a GROUP BY ' + group + ') '
+      : 'WITH _momo_src AS (SELECT ' + sel + ', ' + valExpr + ' AS _val' + fromClause + ' ' + whereClause + '), ' +
+        '_momo_agg AS (SELECT ' + group + ', MAX(_val) AS _val FROM _momo_src GROUP BY ' + group +
+        ' HAVING COUNT(DISTINCT CAST(_val AS nvarchar(max)))=1) ';
     const target = '[dbo].[' + tgtDocId + '] b';
     const joinTarget = ' FROM ' + target + ' JOIN _momo_agg m ON ' + join;
     const previewSql = cte + 'SELECT TOP 200 b.' + bt(showNo) + ' AS [单号], N\'\' AS [序号], b.' + bt(tgtCol) + ' AS [现值], m._val AS [应带]' + joinTarget + ' ORDER BY b.' + bt(showNo);
-    // 表头合并以来源聚合为准，直接覆盖旧值；否则旧错值会越拼越长。
+    // 表头以来源结果为准直接覆盖旧值；只有勾选合并显示才聚合。
     const updateSql = cte + 'UPDATE b SET b.' + bt(tgtCol) + ' = m._val' + joinTarget;
     const cntSql = cte + 'SELECT COUNT(*) AS n' + joinTarget;
     return {
       previewSql, updateSql, cntSql,
-      channelName: '表头合并显示（聚合）',
-      channelNote: '表头合并: 按' + pkNames.join('+') + '聚合去重，多工单以分隔符连接',
-      joins: [], partyNote: '表头合并', chainNote: '',
+      channelName: mergeAll ? '表头合并显示（聚合）' : '表头单值',
+      channelNote: mergeAll ? '表头合并: 按' + pkNames.join('+') + '聚合去重，多工单以分隔符连接' : '表头单值: 仅当单头对应唯一值才填，多值不猜',
+      joins: [], partyNote: mergeAll ? '表头合并' : '表头单值', chainNote: '',
       isHeaderMerge: true,
       previewParts: base.previewParts
     };

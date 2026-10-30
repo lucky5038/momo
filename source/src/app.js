@@ -1115,7 +1115,7 @@ async function handleRun(req, res) {
             }
           }
           if (pk.length) {
-            out = sqlgen.buildChainMergeSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], autoRegistry.docs, pk, '   ', opts.triggerLineFilter ? lineFilter : null);
+            out = sqlgen.buildChainMergeSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], autoRegistry.docs, pk, '   ', opts.triggerLineFilter ? lineFilter : null, !!mergeDisplay);
             out.triggerTable = lineTable;
             out.triggerFilter = lineFilter;
             out.isHeaderMerge = true;
