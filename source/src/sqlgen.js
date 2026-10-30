@@ -803,6 +803,8 @@ module.exports = function makeSqlgen(sql) {
 
   function appendUpdateSql(updateSql, separator = ' ') {
     const source = String(updateSql || '');
+    // 表头聚合/单值 SQL 已是 CTE 形式，聚合逻辑在 CTE 内完成，不能再按单条 UPDATE 追加。
+    if (/\bWITH\s+_momo_src\b/i.test(source)) return source;
     const updateMatches = [...source.matchAll(/\bUPDATE\s+b\s+SET\s+b\.\[([^\]]+)\]\s*=/gi)];
     if (!updateMatches.length) throw new Error('合并显示更新 SQL 解析失败');
     const updateMatch = updateMatches[updateMatches.length - 1];
