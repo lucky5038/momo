@@ -512,6 +512,11 @@ module.exports = function makeSqlgen(sql) {
       let cond;
       if (e.internal) {
         cond = bt(alias) + '.' + bt(toMeta.docNo) + ' = ' + bt(prevAlias) + '.' + bt(fromMeta.docNo);
+        // 同一单号可能存在于多个类别（如领料 82 / 退料 83）；头身关联必须带类别，
+        // 否则会把另一个类别的单身混进来，造成假的一对多。
+        if (toMeta.typeCol && fromMeta.typeCol) {
+          cond += ' AND ' + bt(alias) + '.' + bt(toMeta.typeCol) + ' = ' + bt(prevAlias) + '.' + bt(fromMeta.typeCol);
+        }
       } else {
         cond = bt(alias) + '.' + bt(e.toJoinCol || toMeta.docNo) + ' = ' + bt(prevAlias) + '.' + bt(e.fromNo);
         const toSeq = e.toSeqCol || toMeta.docSeq;
