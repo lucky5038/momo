@@ -1280,7 +1280,7 @@ async function handleRun(req, res) {
       const headerLineTrigger = !!built.triggerTable;
       if (headerLineTrigger) {
         onTable = built.triggerTable;
-        trgName = 'trg_' + onTable + '_header_' + tgtCol + '_momo';
+        trgName = 'trg_' + onTable + '_header_momo';
       }
 
       // B 方案：检测同表已启用的系统触发器是否已在写目标列
@@ -1422,11 +1422,10 @@ async function handleRun(req, res) {
         "SELECT o.name, m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_id=OBJECT_ID(@t)"
       )).recordset;
       // 只合并工具形态的触发器（UPDATE b SET b.），绝不按名字误删 ERP 触发器
-      const existingTools = allTriggers.filter(t => /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')) && (!headerLineTrigger || t.name === trgName));
-      // 兼容旧版：以前 960/961 合在 trg_<单身表>_header_momo，建新字段触发器时移除，避免旧语句继续写别的字段
-      const legacyTools = headerLineTrigger
-        ? allTriggers.filter(t => t.name === ('trg_' + onTable + '_header_momo') && /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')))
-        : [];
+      const existingTools = allTriggers.filter(t => /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')) &&
+        (!headerLineTrigger || t.name === trgName || t.name.startsWith('trg_' + onTable + '_header_')));
+      // 旧版按字段拆出的触发器也一起合并回单个 trg_<单身表>_header_momo
+      const legacyTools = [];
       const mergedSql = existingTools.length
         ? sqlgen.mergeTriggerDefinitions(onTable, trgName, existingTools, trigSql, {
           mergeTargets: mergeDisplay ? [tgtCol] : [],
