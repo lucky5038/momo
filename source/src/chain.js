@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 19;
+const REGISTRY_VERSION = 20;
 function registryRequest(pool) {
   const request = pool.request();
   request.timeout = 60000;
@@ -13,12 +13,15 @@ function registryRequest(pool) {
 
 // 已验证的来源编码 → 单头表（优先于自动匹配，避免同号串表）
 const KNOWN_CODES = {
-  '14': 'DCSHDB', // 采购单
-  '18': 'JSKJDB', // 进货/验退单
-  '19': 'JSKJFB', // 进货退出单
-  '89': 'SGMRGB', // 委外进/退货单
-  'A0': 'QMSMFB', // 进货检验单
-  'A3': 'SGMREB'  // 委外单
+  '14': 'DCSHDB', // 采购
+  '18': 'JSKJDB', // 进货
+  '19': 'JSKJFB', // 退货
+  '21': 'YSFGSA', // 蓝字进货发票
+  '81': 'SGMRAB', // 工单
+  '86': 'SGMREA', // 委外
+  '89': 'SGMRGB', // 委外进货
+  'A0': 'QMSMFB', // 进货检验
+  'A3': 'QMSMCB'  // 委外进货检验
 };
 
 // 单头显式引用的上游单据；按字段说明统一识别，避免逐张单据硬编码。
@@ -31,30 +34,62 @@ const HEAD_REF_TARGETS = {
   '出库单号': 'JSKLIA'
 };
 
-// ERP 来源代码 → 目标单身表；具体表/字段例外优先于全局代码。
+// ERP 后台来源代码 → 目标单身表。
+// 依据《易助match.txt》[Source] 权威代码表；代码含义与旧映射冲突时以该表为准。
 const SOURCE_CODE_MAP = {
-  '12': 'DCSHBB',  // 请购单
-  '18': 'JSKJDB',  // 进货/验退单
-  '19': 'JSKJFB',  // 进货退出单
-  '21': 'KJSNBA',  // 会计科目
-  '31': 'DCSIAB',  // 报价单
+  '01': 'JSKLCB',  // 调拨
+  '02': 'JSKLBB',  // 调整
+  '03': 'JSKLDB',  // 盘点
+  '12': 'DCSHBB',  // 请购
+  '13': 'DCSHCB',  // 采购底稿
+  '14': 'DCSHDB',  // 采购
+  '15': 'JSKJCB',  // 收料
+  '16': 'JSKJDB',  // 验收
+  '17': 'JSKJDB',  // 验退退回
+  '18': 'JSKJDB',  // 进货
+  '19': 'JSKJFB',  // 退货
+  '21': 'YSFGSA',  // 蓝字进货发票
+  '31': 'DCSIAB',  // 报价
   '32': 'DCSIBB',  // 订单
   '33': 'JSKKEB',  // 销货单
-  '54': 'YSFGDB',  // 收款单
-  '58': 'YSFGQB',  // 付款单
-  '59': 'YSFGGB',  // 销售开票单
-  '81': 'JSKJDB',  // 进货单
-  '86': 'JSKLBB',  // 调整单
-  '89': 'SGMRGB',  // 委外进/退货单
-  '89A': 'SGMRGB', // 委外进/退货单的成本分录子类型
-  '91': 'SGMRIB',  // 物料需求计划来源
-  'A0': 'QMSMFB',  // 进货检验单
-  'A1': 'QMSMAB',  // 生产检验单
-  'A3': 'SGMREB'   // 委外单
+  '45': 'JSKLHB',  // 入库单
+  '46': 'JSKLIB',  // 出库单
+  '54': 'YSFGDB',  // 收款
+  '58': 'YSFGQB',  // 付款
+  '59': 'YSFGGB',  // 蓝字销货发票
+  '60': 'YSFGGB',  // 红字发票（销货）
+  '60A': 'YSFGSB', // 红字发票（采购）
+  '81': 'SGMRAB',  // 工单
+  '82': 'SGMRBB',  // 领料
+  '83': 'SGMRBB',  // 退料
+  '8A': 'SGMRBB',  // 超耗领料
+  '8C': 'SGMRBB',  // 超领单
+  '84': 'SGMRCB',  // 生产入库
+  '85': 'SGMRCB',  // 生产退回
+  '86': 'SGMREA',  // 委外
+  '87': 'SGMRFB',  // 送料
+  '8B': 'SGMRFB',  // 超耗送料
+  '88': 'SGMRFB',  // 退料（送/退料）
+  '89': 'SGMRGB',  // 委外进货
+  '89A': 'SGMRGB', // 委外进货成本分录
+  '89C': 'SGMRGB', // 委外暂估回冲
+  '90': 'SGMRGB',  // 委外退货
+  '91': 'SGMRIB',  // 需求计划
+  '92': 'SGMRBB',  // 工艺投料
+  '94': 'SGMRCB',  // 工艺入库
+  '95': 'SGMRHB',  // 报工
+  '97': 'SGMRKB',  // 重工单
+  '98': 'SGMRLB',  // 副产品入库
+  'A0': 'QMSMFB',  // 进货检验
+  'A1': 'QMSMAB',  // 生产入库检验
+  'A2': 'QMSMBB',  // 委外进货收料
+  'A3': 'QMSMCB',  // 委外进货检验
+  'A4': 'QMSMDB',  // 委外进货验退退回
+  'A5': 'QMSMEB'   // 库存检验
 };
 
 const SOURCE_CODE_OVERRIDES = {
-  'KJSNDB.NDB017:21': 'YSFGGB', // 会计凭证单身中的来源21为销售开票单
+  'KJSNDB.NDB017:21': 'YSFGSA', // 会计凭证单身来源21=蓝字进货发票（权威代码表）
   'YSFGQC.GQC004:21': 'YSFGSA', // 付款冲账档中的来源21为采购发票
   'QMSMBB.MBB010:86': 'SGMREA',  // 委外进货收料中的来源86为委外单（全局86=调整单）
   'SGMRCB.RCB021:81': 'SGMRAB',  // 生产入库单身来源81为工单（全局81=进货单）
