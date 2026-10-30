@@ -734,11 +734,18 @@ module.exports = function makeSqlgen(sql) {
   function extractTriggerBody(definition) {
     const match = String(definition || '').match(/AS\s+BEGIN([\s\S]*?)END\s*;?\s*$/i);
     if (!match) return '';
-    return match[1]
+    let body = match[1]
       .replace(/^\s*SET\s+NOCOUNT\s+ON\s*;?/i, '')
       .replace(/^\s*SET\s+XACT_ABORT\s+ON\s*;?/i, '')
       .trim()
-      .replace(/;+\s*$/, '');
+      .replace(/^;\s*/, '');
+    // 剥掉单层 TRY/CATCH 外壳，只保留成功分支的业务语句；
+    // 合并时由 buildTriggerFromStatements 统一包一层，避免 @momo_msg 重复声明。
+    const tryMatch = body.match(/^BEGIN\s+TRY\b([\s\S]*?)\bEND\s+TRY\b/i);
+    if (tryMatch) body = tryMatch[1].replace(/^;\s*/, '').trim();
+    // 兜底：旧版本可能残留声明，不能让它在合并后的批次里再出现一次
+    body = body.replace(/\bDECLARE\s+@momo_msg\b[\s\S]*?;\s*/i, '').trim();
+    return body.replace(/;+\s*$/, '').trim();
   }
 
   function triggerTargetColumns(definition) {
