@@ -548,6 +548,42 @@ module.exports = function makeSqlgen(sql) {
     };
   }
 
+  // 表头合并显示：单头一行匹配多条来源行时，先按目标主键聚合去重，再一次性写回。
+  // 单工单只会得到一个值；多工单会得到 "品名1   品名2   品名3"。
+  function buildChainMergeSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs, pkNames, separator = '   ') {
+    if (!Array.isArray(pkNames) || !pkNames.length) throw new Error('表头合并缺少目标主键');
+    const base = buildChainSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs);
+    const { showNo, fromClause, whereClause, valExpr } = base.previewParts;
+    const bt = s => '[' + s + ']';
+    const keys = pkNames.map(c => 'b.' + bt(c));
+    const sel = keys.map((k, i) => k + ' AS _k' + i).join(', ');
+    const group = pkNames.map((_, i) => '_k' + i).join(', ');
+    const join = keys.map((k, i) => 'm._k' + i + '=' + k).join(' AND ');
+    const corr = pkNames.map((_, i) => 'x._k' + i + '=a._k' + i).join(' AND ');
+    const sep = String(separator).replace(/'/g, "''");
+    const sepN = sep.length;
+    const cte = 'WITH _momo_src AS (SELECT ' + sel + ', ' + valExpr + ' AS _val' + fromClause + ' ' + whereClause + '), ' +
+      '_momo_agg AS (SELECT ' + group + ', STUFF((SELECT DISTINCT N\'' + sep + '\'+CAST(x._val AS nvarchar(max)) ' +
+      'FROM _momo_src x WHERE ' + corr + ' FOR XML PATH(\'\'), TYPE).value(\'.\',\'nvarchar(max)\'),1,' + sepN + ',\'\') AS _val ' +
+      'FROM _momo_src a GROUP BY ' + group + ') ';
+    const target = '[dbo].[' + tgtDocId + '] b';
+    const joinTarget = ' FROM ' + target + ' JOIN _momo_agg m ON ' + join;
+    const previewSql = cte + 'SELECT TOP 200 b.' + bt(showNo) + ' AS [单号], N\'\' AS [序号], b.' + bt(tgtCol) + ' AS [现值], m._val AS [应带]' + joinTarget + ' ORDER BY b.' + bt(showNo);
+    const current = 'CAST(b.' + bt(tgtCol) + ' AS nvarchar(max))';
+    const dup = "CHARINDEX(N' '+" + 'm._val' + ",N' '+CAST(b." + bt(tgtCol) + " AS nvarchar(max)))=0";
+    const updateSql = cte + 'UPDATE b SET b.' + bt(tgtCol) + ' = CASE WHEN b.' + bt(tgtCol) + ' IS NULL OR ' + current + '=N\'\' THEN m._val ' +
+      'WHEN ' + dup + ' THEN ' + current + '+N\'' + sep + '\'+m._val ELSE b.' + bt(tgtCol) + ' END' + joinTarget;
+    const cntSql = cte + 'SELECT COUNT(*) AS n' + joinTarget;
+    return {
+      previewSql, updateSql, cntSql,
+      channelName: '表头合并显示（聚合）',
+      channelNote: '表头合并: 按' + pkNames.join('+') + '聚合去重，多工单以分隔符连接',
+      joins: [], partyNote: '表头合并', chainNote: '',
+      isHeaderMerge: true,
+      previewParts: base.previewParts
+    };
+  }
+
   function invoiceMixedNumberParts(bAlias = 'b') {
     const applies = [
       ` OUTER APPLY (SELECT TOP 1 d.HDB001,d.HDB902 FROM dbo.JSKJDB j JOIN dbo.DCSHDB d ON d.HDB001=j.JDB014 AND d.HDB002=j.JDB015 WHERE ${bAlias}.GSB003='18' AND j.JDB001=${bAlias}.GSB004 AND j.JDB002=${bAlias}.GSB005 AND j.JDB013='14') po_direct`,
@@ -878,5 +914,5 @@ module.exports = function makeSqlgen(sql) {
     };
   }
 
-  return { scanDocs, scanSrcs, buildSQL, buildChainSQL, buildChainMultiSQL, buildInvoiceMixedNumberSQL, buildInvoiceMixedTimeSQL, buildInvoiceMixedNumberTriggerSQL, buildInvoiceMixedNumberTriggerUpdateSQL, buildMultiFieldTriggerSQL, applyInsertedFilter, dedupeTriggerUpdate, buildDuplicateCheckSql, buildUniquenessGuard, appendUpdateSql, buildTriggerFromStatements, mergeTriggerDefinitions, triggerTargetColumns };
+  return { scanDocs, scanSrcs, buildSQL, buildChainSQL, buildChainMultiSQL, buildChainMergeSQL, buildInvoiceMixedNumberSQL, buildInvoiceMixedTimeSQL, buildInvoiceMixedNumberTriggerSQL, buildInvoiceMixedNumberTriggerUpdateSQL, buildMultiFieldTriggerSQL, applyInsertedFilter, dedupeTriggerUpdate, buildDuplicateCheckSql, buildUniquenessGuard, appendUpdateSql, buildTriggerFromStatements, mergeTriggerDefinitions, triggerTargetColumns };
 };

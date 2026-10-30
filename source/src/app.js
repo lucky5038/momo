@@ -1060,6 +1060,16 @@ async function handleRun(req, res) {
           out.chainWarning = '自动链路不可用，已退回基础通道: ' + autoErr.message;
         }
       }
+      // 单头 + 合并显示：一条单头会匹配多条单身，必须真正聚合，不能只靠 UPDATE JOIN。
+      if (mergeDisplay && !targetDoc.seqCol && autoPaths.length === 1 && autoRegistry && autoRegistry.docs) {
+        try {
+          const pk = await pkColumns(await getPool(), targetDoc.sub);
+          if (pk.length) out = sqlgen.buildChainMergeSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], autoRegistry.docs, pk, '   ');
+        } catch (mergeErr) {
+          dbg('[headerMerge] fallback: ' + mergeErr.message);
+          out.chainWarning = '表头合并聚合失败，已退回普通合并: ' + mergeErr.message;
+        }
+      }
     }
     if (!isInvoiceDate) {
       const pType = await getPool();
@@ -1107,6 +1117,7 @@ async function handleRun(req, res) {
   if (mergeDisplay) built.channelNote = (built.channelNote ? built.channelNote + ' | ' : '') + '合并显示: 目标值 + 本次值（重复值自动跳过）';
   // 通道切换后保留类型提示
   built.typeWarning = builtResults.map(x => x.typeWarning).filter(Boolean).join('；') || undefined;
+  built.isHeaderMerge = builtResults.some(x => x.isHeaderMerge);
   built.chainWarning = builtResults.map(x => x.chainWarning).filter(Boolean).join('；') || undefined;
 
   const p = await getPool();
@@ -1157,7 +1168,7 @@ async function handleRun(req, res) {
     .map(r => r.name);
   let affectedRows = 0;
   let updateSqls = builtResults.flatMap(builtUpdateSqls).filter(Boolean);
-  if (mergeDisplay) updateSqls = updateSqls.map(sql => sqlgen.appendUpdateSql(sql, '   '));
+  if (mergeDisplay && !built.isHeaderMerge) updateSqls = updateSqls.map(sql => sqlgen.appendUpdateSql(sql, '   '));
   let tx = null;
   let after = null;
   // 禁用/更新/恢复放在同一个事务里：进程崩溃或连接断开时 SQL Server 会整体回滚，
