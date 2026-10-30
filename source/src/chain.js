@@ -4,7 +4,16 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 20;
+const REGISTRY_VERSION = 21;
+const FIELD_DICTS = require('./source-dict');
+const SOURCE_LABELS = FIELD_DICTS.Source || {};
+// 只有这些“字段名”才使用 [Source] 代码表；主要来源/科目来源/数据来源/客户来源/来源码等
+// 属于各自字段，绝不参与来源链路。
+const SOURCE_FIELDS = new Set([
+  '来源', '前置来源', '单据来源', '来源类别', '来源类型',
+  '发票来源', '计划来源', '源工单来源', '原源工单来源',
+  '来源(预留)', '前置来源(预留)'
+]);
 function registryRequest(pool) {
   const request = pool.request();
   request.timeout = 60000;
@@ -98,10 +107,9 @@ const SOURCE_CODE_OVERRIDES = {
 
 // 同一代码在不同表里指向同一张单据、但单号/序号列不同时的字段级修正。
 const LINK_FIELD_OVERRIDES = {
-  // 生产入库：来源序号列是 000，真正的工单序号在 RCB027
-  'SGMRCB.RCB021:81': { fromCode: 'RCB025', fromNo: 'RCB026', fromSeq: 'RCB027' },
+  'SGMRCB.RCB021:81': { fromNo: 'RCB026', fromSeq: 'RCB027' },
   // 生产入库工单信息档：来源序号列是 000，行序号在 RCC022
-  'SGMRCC.RCC003:81': { fromCode: 'RCC012', fromNo: 'RCC013', fromSeq: 'RCC022' }
+  'SGMRCC.RCC003:81': { fromNo: 'RCC013', fromSeq: 'RCC022' }
 };
 
 const IGNORED_SOURCE_CODES = new Set(['18A', '18B', '35']);
@@ -110,7 +118,7 @@ function descOf(c) { return String(c.desc || '').trim(); }
 
 // 在一张表的列里找出所有「来源三件套」
 function findTriplets(cols) {
-  const codes = cols.filter(c => /^(前置来源|单据来源|来源|来源类别|前置来源\(预留\))$/.test(descOf(c)));
+  const codes = cols.filter(c => SOURCE_FIELDS.has(descOf(c)));
   const nos = cols.filter(c => /^(前置单号|前置单据|前置来源单号|来源单号|前置单号\(预留\))$/.test(descOf(c)));
   const seqs = cols.filter(c => /^(前置序号|来源序号|前置序号\(预留\))$/.test(descOf(c)));
   const out = [];
@@ -276,6 +284,8 @@ async function buildRegistry(pool) {
     links.push({
       from: g.from,
       code: g.code,
+      codeLabel: g.code ? (SOURCE_LABELS[g.code] || '未收录') : '字段引用',
+      codeKnown: g.code ? !!SOURCE_LABELS[g.code] : true,
       fromCode: g.codeCol,
       fromNo: g.no,
       fromSeq: g.seq,
@@ -403,12 +413,27 @@ async function buildRegistry(pool) {
     });
   }
 
+  const linkCount = {};
+  links.forEach(l => { linkCount[l.code] = (linkCount[l.code] || 0) + 1; });
+  const sourceCodes = Object.keys(SOURCE_LABELS).map(code => ({
+    code,
+    label: SOURCE_LABELS[code],
+    table: SOURCE_CODE_MAP[code] || null,
+    links: linkCount[code] || 0,
+    status: SOURCE_CODE_MAP[code] ? (linkCount[code] ? 'linked' : 'mapped-no-link') : 'no-table'
+  }));
+  const unknownSourceCodes = [...new Set(links.filter(l => l.code && !l.codeKnown).map(l => l.code))]
+    .map(code => ({ code, label: '未收录', links: linkCount[code] || 0 }));
   return {
     version: REGISTRY_VERSION,
     generatedAt: new Date().toISOString(),
     docs,
     links,
     allCodes,
+    sourceDict: SOURCE_LABELS,
+    sourceFields: [...SOURCE_FIELDS],
+    sourceCodes,
+    unknownSourceCodes,
     stats: {
       tables: Object.keys(docs).length,
       tripletTables: new Set(triplets.map(t => t.tbl)).size,
