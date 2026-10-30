@@ -1190,7 +1190,8 @@ async function handleRun(req, res) {
     return sendJSON(res, 500, { error: '执行更新失败: ' + updErr.message, backupPath: bp, updateSql: built.updateSql, updateSqls: built.updateSqls });
   }
   try {
-    after = await p.request().query("SELECT TOP 20 b.[" + (doc.refCol || doc.keyCol) + "] docNo, b.[" + tgtCol + "] filled FROM [dbo].[" + doc.sub + "] b WHERE b.[" + tgtCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max))<>N'' ORDER BY b.[" + doc.keyCol + "]");
+    const afterNo = doc.docNo || doc.colNo || doc.refCol || doc.keyCol;
+    after = await p.request().query("SELECT TOP 20 b.[" + afterNo + "] docNo, b.[" + tgtCol + "] filled FROM [dbo].[" + doc.sub + "] b WHERE b.[" + tgtCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max))<>N'' ORDER BY b.[" + afterNo + "]");
   } catch (e) { dbg('[handleRun] after sample failed: ' + e.message); after = { recordset: [] }; }
 
   let triggerResult = null;
