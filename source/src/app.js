@@ -1043,6 +1043,9 @@ async function handleRun(req, res) {
         dbg('[autoChain] lookup failed: ' + autoErr.message);
       }
       const internalPath = autoPaths.length > 0 && autoPaths.every(path => path.length && path.every(edge => edge.internal));
+      if (!autoPaths.length && ['TPADEA'].includes(mSrcId)) {
+        out.chainWarning = '来源是品号主档，但当前单据没有找到“主件品号→品号主档”的链路；直接按品号关联可能取到子件品名，请先补主档解析边。';
+      }
       if (out.channelName === '默认键' || internalPath) {
         try {
           if (autoPaths.length === 1) {

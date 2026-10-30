@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 21;
+const REGISTRY_VERSION = 22;
 const FIELD_DICTS = require('./source-dict');
 const SOURCE_LABELS = FIELD_DICTS.Source || {};
 // 只有这些“字段名”才使用 [Source] 代码表；主要来源/科目来源/数据来源/客户来源/来源码等
@@ -316,6 +316,8 @@ async function buildRegistry(pool) {
     // 生产检验单身 -> 工单（来源单号，81=工单）
     { from: 'QMSMAB', to: 'SGMRAA', fromNo: 'MAB006', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     { from: 'SGMRBB', to: 'SGMRAB', fromNo: 'RBB010', fromSeq: 'RBB011', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 工单头 -> 品号主档：工单界面的品名/规格不是头表字段，按主件品号查 TPADEA
+    { from: 'SGMRAA', to: 'TPADEA', fromNo: 'RAA015', fromSeq: null, toJoinCol: 'DEA001', fromCode: null, code: null, status: 'master-lookup', hits: 1, samples: 1 },
     // 重工单 -> 工单（来源工单单号）
     { from: 'SGMRKA', to: 'SGMRAA', fromNo: 'RKA010', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     // 物料需求计划发放：委外单/工单都挂同一计划编号，经 SGMRIB 互为来源
