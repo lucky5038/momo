@@ -234,7 +234,6 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
   <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center">
     <button class="btn sm" id="btnTestConn" type="button">测试连接</button>
     <button class="btn sm" id="btnSaveConfig" type="button" title="将当前连接参数保存到配置文件">保存配置</button>
-    <button class="btn sm" id="btnFieldDict" type="button" title="查看所有字段字典与数据库列覆盖">字段字典</button>
     <span id="connMetaNote" style="font-size:11px;color:#64748b"></span>
   </div>
   <div style="margin-top:6px;font-size:11px;color:#475569">提示：连接参数来自配置文件，修改后点「保存配置」即可持久化。换电脑时修改服务器地址即可。</div>
@@ -1301,53 +1300,6 @@ chainRow();
     if(m) m.style.display='none';
     const s=document.getElementById('connServer');
     if(s){ try{ s.focus(); }catch(_){} }
-  };
-})();
-</script>
-<div id="fieldDictModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:2000;padding:28px">
-  <div style="max-width:1050px;max-height:86vh;overflow:auto;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:16px;font-weight:700;color:var(--acc)">字段字典覆盖</div>
-      <button class="btn sm" id="fieldDictClose" type="button">关闭</button>
-    </div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px">
-      每个字段只匹配自己的代码表；代码不跨字段复用。展开某一段可看代码含义、数据库列、覆盖率和未匹配值。
-    </div>
-    <div id="fieldDictBody" style="font-size:12px;color:var(--muted)">加载中...</div>
-  </div>
-</div>
-<script>
-(function(){
-  const modal=document.getElementById('fieldDictModal');
-  const body=document.getElementById('fieldDictBody');
-  if(!modal||!body)return;
-  const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function close(){ modal.style.display='none'; }
-  document.getElementById('fieldDictClose').onclick=close;
-  modal.onclick=e=>{ if(e.target===modal) close(); };
-  document.getElementById('btnFieldDict').onclick=async()=>{
-    modal.style.display='block'; body.textContent='加载中...';
-    try{
-      const d=await (await fetch('/api/field-dicts')).json();
-      if(d.error){ body.innerHTML='<span style="color:#f87171">'+esc(d.error)+'</span>'; return; }
-      if(d.accountingSourceCodes&&d.accountingSourceCodes.length){
-        body.innerHTML='<div style="margin-bottom:10px;color:#fbbf24">会计专用扩展码：'+d.accountingSourceCodes.map(x=>esc(x.code)+'（'+esc(x.label)+'）').join('、')+'</div>';
-      } else body.innerHTML='';
-      const color=s=>s==='bound'?'#22c55e':(s==='partial'?'#fbbf24':(s==='special'?'#38bdf8':'#f87171'));
-      for(const s of (d.sections||[])){
-        const b=s.binding? (s.binding.table+'.'+s.binding.column) : '—';
-        const cov=s.coverage==null?'—':(Math.round(s.coverage*100)+'%');
-        const det=document.createElement('details');
-        det.style.cssText='margin:6px 0;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--input)';
-        det.innerHTML='<summary style="cursor:pointer;color:'+color(s.status)+';font-weight:600">'+esc(s.name)+
-          '（'+s.codeCount+' 个代码） · '+esc(s.status)+' · 绑定 '+esc(b)+' · 覆盖 '+cov+'</summary>'+
-          '<div style="margin-top:8px;color:var(--muted);line-height:1.7">'+
-          (s.unmatched&&s.unmatched.length?'<div style="color:#fbbf24">未匹配值：'+s.unmatched.map(esc).join(', ')+'</div>':'')+
-          '<div style="margin-top:4px;max-height:180px;overflow:auto">'+ (s.codes||[]).map(c=>esc(c.code)+' = '+esc(c.label)+(c.status?' ['+esc(c.status)+']':'')).join('<br>') +'</div>'+
-          '</div>';
-        body.appendChild(det);
-      }
-    }catch(e){ body.innerHTML='<span style="color:#f87171">'+esc(e.message)+'</span>'; }
   };
 })();
 </script>
