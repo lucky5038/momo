@@ -1379,7 +1379,7 @@ async function handleRun(req, res) {
           trigSql = sqlgen.buildTriggerFromStatements(doc.sub, trgName, triggerStatements);
         } else if (headerLineTrigger) {
           const triggerBuilds = [];
-          for (const mapping of allMappings) triggerBuilds.push(await buildMapping(mapping, 'fill', false, { triggerLineFilter: true }));
+          for (const mapping of allMappings) triggerBuilds.push(await buildMapping(mapping, 'fill', true, { triggerLineFilter: true }));
           trigSql = sqlgen.buildTriggerFromStatements(onTable, trgName, triggerBuilds.flatMap(builtUpdateSqls).filter(Boolean), doc.sub + '.' + tgtCol);
         } else {
           const triggerBuilds = [];
@@ -1394,7 +1394,7 @@ async function handleRun(req, res) {
       } else {
         // 触发器统一复用预览/执行的 UPDATE SQL（普通通道、链路、兜底都一样），
         // 只额外加 inserted 过滤，避免触发器另拼 JOIN 与预览不一致。
-        const trigBuilt = await buildMapping(allMappings[0], 'fill', false, { triggerLineFilter: headerLineTrigger });
+        const trigBuilt = await buildMapping(allMappings[0], 'fill', headerLineTrigger, { triggerLineFilter: headerLineTrigger });
         if (headerLineTrigger) {
           trigSql = sqlgen.buildTriggerFromStatements(onTable, trgName, builtUpdateSqls(trigBuilt).filter(Boolean), doc.sub + '.' + tgtCol);
         } else {
