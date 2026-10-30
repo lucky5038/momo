@@ -1350,6 +1350,23 @@ async function handleRun(req, res) {
       )).recordset;
       // 只合并工具形态的触发器（UPDATE b SET b.），绝不按名字误删 ERP 触发器
       const existingTools = allTriggers.filter(t => /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')));
+      // 跨表重复：旧版把“写单头字段”的触发器挂在单身表上，会与当前单头触发器重复。
+      // 只清理“目标表=当前目标表、写入列都在本次目标列内”的工具触发器；写 RBB* 单身字段的不动。
+      const allMomo = (await p.request().query(
+        "SELECT o.name, OBJECT_NAME(o.parent_id) tbl, CONVERT(nvarchar(max),m.definition) sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.name LIKE 'trg_%momo%'"
+      )).recordset;
+      const targetTableOf = (sqlText) => {
+        const m = String(sqlText || '').match(/\bFROM\s+\[dbo\]\.\[([A-Za-z0-9_]+)\]\s+b\b/i);
+        return m ? m[1] : null;
+      };
+      const dupTools = allMomo.filter(t => {
+        if (t.tbl === doc.sub) return false;
+        if (!t.name.includes('_header_')) return false;
+        if (!/UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || ''))) return false;
+        if (targetTableOf(t.sql) !== doc.sub) return false;
+        const cols = sqlgen.triggerTargetColumns(t.sql).map(c => String(c).toUpperCase());
+        return cols.length > 0 && cols.every(c => targetCols.has(c));
+      });
       const mergedSql = existingTools.length
         ? sqlgen.mergeTriggerDefinitions(doc.sub, trgName, existingTools, trigSql, {
           mergeTargets: mergeDisplay ? [tgtCol] : [],
@@ -1361,6 +1378,7 @@ async function handleRun(req, res) {
       try {
         await triggerTx.begin();
         for (const old of existingTools) await new sql.Request(triggerTx).query('DROP TRIGGER [dbo].[' + old.name + ']');
+        for (const old of dupTools) await new sql.Request(triggerTx).query('DROP TRIGGER [dbo].[' + old.name + ']');
         await new sql.Request(triggerTx).query(mergedSql);
         const verified = await new sql.Request(triggerTx).input('n', sql.NVarChar, trgName).query("SELECT OBJECT_ID(@n,'TR') AS id");
         if (!verified.recordset[0] || !verified.recordset[0].id) throw new Error('触发器创建后未找到 ' + trgName);
@@ -1372,8 +1390,8 @@ async function handleRun(req, res) {
             orderLast = true;
           } else { dbg('[trig] ERP 已有 Last INSERT 触发器，保留原顺序'); }
         } catch (e2) { dbg('[trig] set order failed: ' + e2.message); }
-        dbg('[trig] created OK ' + trgName + ' merged=' + existingTools.length);
-        triggerResult = { ok: true, name: trgName, mergedExisting: existingTools.length, orderLast, conflict: conflicts.length ? conflicts.map(c => c.trigName) : undefined, conflictDetail: conflicts.length ? conflicts : undefined, conflictNote: conflicts.length ? ('注意：' + conflicts.map(c => conflictLabel(c) + ' 写 ' + c.col).join('；')) : undefined };
+        dbg('[trig] created OK ' + trgName + ' merged=' + existingTools.length + ' dupRemoved=' + dupTools.map(t => t.name).join(','));
+        triggerResult = { ok: true, name: trgName, mergedExisting: existingTools.length, removedDuplicates: dupTools.map(t => t.name), orderLast, conflict: conflicts.length ? conflicts.map(c => c.trigName) : undefined, conflictDetail: conflicts.length ? conflicts : undefined, conflictNote: conflicts.length ? ('注意：' + conflicts.map(c => conflictLabel(c) + ' 写 ' + c.col).join('；')) : undefined };
       } catch (createErr) {
         try { await triggerTx.rollback(); } catch (_) {}
         dbg('[trig] CREATE FAILED: ' + createErr.message);
