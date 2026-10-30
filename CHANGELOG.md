@@ -2,6 +2,11 @@
 
 ## 版本演进（最新在前）
 
+### v2.2.30（2026-10-30）
+- 链路通道和普通通道的取值 SQL 增加来源值非空过滤：`来源值 IS NOT NULL AND CAST(来源值 AS nvarchar(max)) <> N''`。
+- 修复空字符串来源被当成有效值的问题：领料单 `RBB022 ← RAB020` 预览从 90 行回归为只显示真正有规格的行。
+- 触发器 SQL 复用同一 updateSql，自动继承该过滤。
+
 ### v2.2.29（2026-10-30）
 - 修复触发器合并时 `@momo_msg` 重复声明：合并前剥掉旧触发器的 TRY/CATCH 外壳，只保留业务语句，最后由 `buildTriggerFromStatements()` 统一包一层。
 - 新增 `tools/test-trigger-merge.js` 回归用例；合并 SQL 已在数据库事务中实际编译并回滚，确认只生成一个 `DECLARE @momo_msg`、一层 TRY/CATCH。

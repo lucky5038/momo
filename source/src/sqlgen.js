@@ -465,18 +465,19 @@ module.exports = function makeSqlgen(sql) {
       const emptyCondX = "(b.[" + tgtCol + "] IS NULL OR CAST(b.[" + tgtCol + "] AS nvarchar(max)) = N'')";
       const fixCondX = "(b.[" + tgtCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max)) <> N'') AND s.[" + srcValCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max)) <> CAST(s.[" + srcValCol + "] AS nvarchar(max))";
       const condX = force ? '1=1' : (mode === 'fix' ? ('(' + emptyCondX + ' OR ' + fixCondX + ')') : emptyCondX);
+      const valNonEmptyX = "s.[" + srcValCol + "] IS NOT NULL AND CAST(s.[" + srcValCol + "] AS nvarchar(max)) <> N''";
       const previewSqlX = 'SELECT TOP 200 b.[' + showNo + '] AS [单号], b.[' + noCol + '] AS [序号], b.[' + tgtCol + '] AS [现值], s.[' + srcValCol + '] AS [应带]' +
         ' FROM [dbo].[' + doc.sub + '] b' + mJoinSqlX + chain2Sql + midJoinSql +
         ' JOIN [dbo].[' + src.id + '] s ON ' + whereX +
-        ' WHERE ' + condX + ' ORDER BY ' + orderBy(showNo, noCol);
+        ' WHERE ' + condX + ' AND ' + valNonEmptyX + ' ORDER BY ' + orderBy(showNo, noCol);
       const updateSqlX = 'UPDATE b SET b.[' + tgtCol + ']=s.[' + srcValCol + ']' +
         ' FROM [dbo].[' + doc.sub + '] b' + mJoinSqlX + chain2Sql + midJoinSql +
         ' JOIN [dbo].[' + src.id + '] s ON ' + whereX +
-        ' WHERE ' + condX;
+        ' WHERE ' + condX + ' AND ' + valNonEmptyX;
       const cntSqlX = 'SELECT COUNT(*) AS n FROM [dbo].[' + doc.sub + '] b' +
         mJoinSqlX + chain2Sql + midJoinSql +
         ' JOIN [dbo].[' + src.id + '] s ON ' + whereX +
-        ' WHERE ' + condX;
+        ' WHERE ' + condX + ' AND ' + valNonEmptyX;
       return { channelName: chName, joins: chJoins, partyNote, previewSql: previewSqlX, updateSql: updateSqlX, cntSql: cntSqlX, mJoinSql: mJoinSqlX };
     };
 
@@ -526,7 +527,7 @@ module.exports = function makeSqlgen(sql) {
     const fixCond = "(b.[" + tgtCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max)) <> N'') AND " + valExpr + " IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max)) <> CAST(" + valExpr + " AS nvarchar(max))";
     const cond = force ? '1=1' : (mode === 'fix' ? '(' + emptyCond + ' OR ' + fixCond + ')' : emptyCond);
     const fromClause = ' FROM [dbo].[' + tgtDocId + '] b' + joins.join('');
-    const whereClause = ' WHERE ' + cond + ' AND ' + valExpr + ' IS NOT NULL';
+    const whereClause = ' WHERE ' + cond + ' AND ' + valExpr + " IS NOT NULL AND CAST(" + valExpr + " AS nvarchar(max)) <> N''";
     const seqSel = showSeq ? ('b.' + bt(showSeq)) : "N''";
     const previewSql = 'SELECT TOP 200 b.' + bt(showNo) + ' AS [单号], ' + seqSel + ' AS [序号], b.' + bt(tgtCol) + ' AS [现值], ' + valExpr + ' AS [应带]' + fromClause + whereClause + ' ORDER BY b.' + bt(showNo);
     const updateSql = 'UPDATE b SET b.' + bt(tgtCol) + '=' + valExpr + fromClause + whereClause;
@@ -568,7 +569,7 @@ module.exports = function makeSqlgen(sql) {
     const emptyCond = "(b.[" + tgtCol + "] IS NULL OR CAST(b.[" + tgtCol + "] AS nvarchar(max))=N'')";
     const fixCond = "(b.[" + tgtCol + "] IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max))<>N'') AND " + valExpr + " IS NOT NULL AND CAST(b.[" + tgtCol + "] AS nvarchar(max))<>CAST(" + valExpr + " AS nvarchar(max))";
     const cond = force ? '1=1' : (mode === 'fix' ? '(' + emptyCond + ' OR ' + fixCond + ')' : emptyCond);
-    const whereClause = ' WHERE ' + cond + ' AND ' + valExpr + ' IS NOT NULL';
+    const whereClause = ' WHERE ' + cond + ' AND ' + valExpr + " IS NOT NULL AND CAST(" + valExpr + " AS nvarchar(max)) <> N''";
     const previewSql = 'SELECT TOP 200 b.[GSB001] AS [单号], b.[GSB002] AS [序号], b.[GSB003] AS [来源类型], b.[GSB004] AS [来源单号], b.[' + tgtCol + '] AS [现值], ' + valExpr + ' AS [应带]' + fromClause + whereClause + ' ORDER BY b.[GSB001],b.[GSB002]';
     const updateSql = 'UPDATE b SET b.[' + tgtCol + ']=' + valExpr + fromClause + whereClause;
     const cntSql = 'SELECT COUNT(*) AS n' + fromClause + whereClause;
