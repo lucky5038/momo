@@ -972,6 +972,45 @@ async function getEffectiveChain(chain, srcId, srcValCol, CUR_SRCS, pool) {
   return null;
 }
 
+async function handleClearTarget(req, res) {
+  let b = {};
+  try { b = JSON.parse(await readBody(req)); } catch (_) {}
+  const docId = String(b.docId || '').trim();
+  const tgtCol = String(b.tgtCol || '').trim();
+  if (!docId || !tgtCol) return sendJSON(res, 400, { error: '请选择单据和目标列' });
+  try { await ensurePoolDb((CUR_CONFIG || CONFIG.db).database); }
+  catch (e) { return sendJSON(res, 500, { error: '账套校验失败: ' + e.message }); }
+  const doc = CUR_DOCS.find(d => d.id === docId);
+  if (!doc) return sendJSON(res, 400, { error: '单据 ' + docId + ' 不存在' });
+  const p = await getPool();
+  const chk = await p.request().input('t', sql.NVarChar, doc.sub).input('c', sql.NVarChar, tgtCol)
+    .query("SELECT c.name FROM sys.columns c WHERE c.object_id=OBJECT_ID(@t) AND c.name=@c");
+  if (!chk.recordset.length) return sendJSON(res, 400, { error: '列 ' + docId + '.' + tgtCol + ' 不存在' });
+  const col = '[' + tgtCol.replace(/]/g, ']]') + ']';
+  const tbl = '[dbo].[' + doc.sub.replace(/]/g, ']]') + ']';
+  const where = col + " IS NOT NULL AND CAST(" + col + " AS nvarchar(max)) <> N''";
+  const cnt = await p.request().query('SELECT COUNT(*) AS n FROM ' + tbl + ' WHERE ' + where);
+  const totalRows = Number(cnt.recordset[0].n || 0);
+  if (!b.confirm) {
+    let sample = [];
+    if (totalRows > 0) {
+      const noCol = doc.docNo || doc.colNo;
+      const no = noCol ? ('[' + String(noCol).replace(/]/g, ']]') + '] AS [单号]') : "N'' AS [单号]";
+      const sr = await p.request().query('SELECT TOP 50 ' + no + ', ' + col + ' AS [现值] FROM ' + tbl + ' WHERE ' + where);
+      sample = sr.recordset;
+    }
+    const cfg0 = CUR_CONFIG || CONFIG.db;
+    return sendJSON(res, 200, { preview: true, docId, tgtCol, totalRows, sample, backupDir: backupPathNow(cfg0) });
+  }
+  const cfg = CUR_CONFIG || CONFIG.db;
+  const backup = await backupDatabaseWithCleanup(p, cfg, 'clearTarget');
+  if (!backup.ok) return sendJSON(res, 500, { error: '数据库备份失败，已中止清空（未写库）: ' + backup.error, backupPath: backup.path, backupOk: false });
+  const upd = await p.request().query('UPDATE ' + tbl + ' SET ' + col + '=NULL WHERE ' + where);
+  const affected = upd.rowsAffected && upd.rowsAffected[0] !== undefined ? upd.rowsAffected[0] : totalRows;
+  dbg('[clearTarget] ' + docId + '.' + tgtCol + ' affected=' + affected + ' backup=' + backup.path);
+  return sendJSON(res, 200, { ok: true, affected, backupPath: backup.path, backupOk: true, docId, tgtCol });
+}
+
 async function handleRun(req, res) {
   const b = JSON.parse(await readBody(req));
   const { docId, tgtCol, srcId, srcValCol, partyKey, mode, confirm, force, chain, createTrigger, triggerTimeMode, mergeDisplay } = b;
@@ -1761,6 +1800,7 @@ async function handleDropCred(req, res) {
 const router = {
   '/api/meta': handleMeta,
   '/api/run': handleRun,
+  '/api/clear-target': handleClearTarget,
   '/api/databases': handleDatabases,
   '/api/switch-db': handleSwitchDb,
   '/api/test-conn': handleTestConn,

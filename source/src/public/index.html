@@ -298,6 +298,7 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
       <div class="action-buttons">
         <button class="btn" id="btnPreview">干跑预览</button>
         <button class="btn primary" id="btnExec">执行（先备份）</button>
+        <button class="btn danger" id="btnClearTarget" type="button" title="只清空当前选择的单据+目标列，清空前自动备份">清空目标列</button>
         <button class="btn" id="btnBackupDir" type="button" title="选择或修改数据库备份路径">备份路径</button>
       </div>
     </div>
@@ -735,6 +736,27 @@ async function doRun(confirm){
 }
 
 document.getElementById('btnPreview').onclick=()=>doRun(false);
+
+document.getElementById('btnClearTarget').onclick=async ()=>{
+  const docId=document.getElementById('docSel').value;
+  const tgtCol=document.getElementById('fTgt').value.trim();
+  if(!docId){alert('请先选择单据');return;}
+  if(!tgtCol){alert('请先选择目标列');return;}
+  const status=document.getElementById('status');
+  status.className='status'; status.textContent='正在统计待清空行...';
+  try{
+    const pv=await (await fetch('/api/clear-target',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({docId,tgtCol,confirm:false})})).json();
+    if(pv.error){status.className='status err';status.textContent=pv.error;return;}
+    if(!pv.totalRows){status.className='status ok';status.textContent='目标列没有非空值，无需清空。';return;}
+    const bd=pv.backupDir||window.__backupDir||'';
+    if(!confirm('将清空 '+docId+'.'+tgtCol+' 的 '+pv.totalRows+' 行非空值。\n清空前会自动备份到：'+bd+'\n\n只清空这一列，不删单据、不动其他字段。确认继续？')){status.textContent='已取消清空。';return;}
+    status.textContent='正在备份并清空...';
+    const r=await (await fetch('/api/clear-target',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({docId,tgtCol,confirm:true})})).json();
+    if(r.error){status.className='status err';status.textContent=r.error;return;}
+    status.className='status ok';
+    status.textContent='已清空 '+docId+'.'+tgtCol+'：'+r.affected+' 行 · 备份 '+(r.backupPath||'未知路径');
+  }catch(e){status.className='status err';status.textContent='清空失败：'+e.message;}
+};
 document.getElementById('btnExec').onclick=async ()=>{
   const curDb=document.getElementById('connDbSel')?document.getElementById('connDbSel').value:'DSB';
   // 实时取当前生效的备份目录（弹窗选完目录后写进 config.js，这里立即读最新值）
