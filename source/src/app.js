@@ -1370,7 +1370,6 @@ async function handleRun(req, res) {
       };
       const dupTools = allMomo.filter(t => {
         if (t.tbl === doc.sub) return false;
-        if (!t.name.includes('_header_')) return false;
         if (!/UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || ''))) return false;
         if (targetTableOf(t.sql) !== doc.sub) return false;
         const cols = sqlgen.triggerTargetColumns(t.sql).map(c => String(c).toUpperCase());
