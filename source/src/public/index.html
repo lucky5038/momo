@@ -1299,7 +1299,7 @@ function curReq(){
   const trigEl=document.getElementById('chkCreateTrigger');
   const mergeEl=document.getElementById('chkMergeDisplay');
   if(mergeEl?.checked){
-    if(!trigEl?.checked){alert('合并显示需要先勾选“建立触发器”');return null;}
+    // 合并显示可用于普通预览/执行，不强制要求先建触发器
   }
   const src2Meta=META?.srcs?.find(x=>x.id===src2Id);
   const s2Key=src2Meta?src2Meta.key[0]:(src2Id.slice(3,6)+String.fromCharCode(48)+String.fromCharCode(49));

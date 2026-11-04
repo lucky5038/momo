@@ -1188,7 +1188,20 @@ async function handleRun(req, res) {
     const pr = await p.request().query(built.cntSql);
     const totalRows = pr.recordset[0].n; let sample = [];
     if (totalRows > 0) { const sr = await p.request().query(built.previewSql); sample = sr.recordset.slice(0, 50); }
-    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, channelNote: built.channelNote || '', chainNote: built.chainNote || '', typeWarning: built.typeWarning || undefined, chainWarning: built.chainWarning || undefined, mergeNote: mergeDisplay ? (built.isHeaderMerge ? '合并显示：表头按目标主键聚合来源值' : '合并显示：按单号+序号聚合来源值') : undefined, previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)') });
+    // 合并显示的真实语义：保留目标旧值，追加本次值，重复值跳过。
+    // 预览必须展示执行后的最终值，而不是只展示来源值。
+    if (mergeDisplay) {
+      const mergeText = (current, next, sep) => {
+        if (next === null || next === undefined || String(next) === '') return current;
+        const c = (current === null || current === undefined) ? '' : String(current);
+        const n = String(next);
+        if (!c) return n;
+        if ((' ' + c).includes(' ' + n)) return c;
+        return c + sep + n;
+      };
+      sample = sample.map(row => ({ ...row, '应带': mergeText(row['现值'], row['应带'], '   ') }));
+    }
+    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, channelNote: built.channelNote || '', chainNote: built.chainNote || '', typeWarning: built.typeWarning || undefined, chainWarning: built.chainWarning || undefined, mergeNote: mergeDisplay ? (built.isHeaderMerge ? '合并显示：表头聚合来源值后追加到旧值' : '合并显示：保留旧值，追加本次值（重复值跳过）') : undefined, previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: mergeDisplay ? '合并显示（保留旧值+本次值）' : (force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)')) });
   }
 
   const cfg = CUR_CONFIG || CONFIG.db;
@@ -1219,7 +1232,7 @@ async function handleRun(req, res) {
     tx = new sql.Transaction(p);
     await tx.begin();
     for (const tn of enTrigs) { await new sql.Request(tx).query("DISABLE TRIGGER [dbo].[" + tn + "] ON [dbo].[" + doc.sub + "]"); }
-    if (force) {
+    if (force && !mergeDisplay) {
       const cols = [...new Set(allMappings.map(m => String(m.tgtCol)))];
       for (const col of cols) {
         const q = '[' + col.replace(/]/g, ']]') + ']';

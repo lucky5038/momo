@@ -571,8 +571,9 @@ module.exports = function makeSqlgen(sql) {
     const previewSql = cte + 'SELECT TOP 200 b.' + bt(showNo) + ' AS [单号], N\'\' AS [序号], b.' + bt(tgtCol) + ' AS [现值], m._val AS [应带]' + joinTarget + ' ORDER BY b.' + bt(showNo);
     const current = 'CAST(b.' + bt(tgtCol) + ' AS nvarchar(max))';
     const dup = "CHARINDEX(N' '+" + 'm._val' + ",N' '+CAST(b." + bt(tgtCol) + " AS nvarchar(max)))=0";
-    const updateSql = cte + 'UPDATE b SET b.' + bt(tgtCol) + ' = CASE WHEN b.' + bt(tgtCol) + ' IS NULL OR ' + current + '=N\'\' THEN m._val ' +
-      'WHEN ' + dup + ' THEN ' + current + '+N\'' + sep + '\'+m._val ELSE b.' + bt(tgtCol) + ' END' + joinTarget;
+    const merged = 'CASE WHEN b.' + bt(tgtCol) + ' IS NULL OR ' + current + '=N\'\' THEN m._val ' +
+      'WHEN ' + dup + ' THEN ' + current + '+N\'' + sep + '\'+m._val ELSE b.' + bt(tgtCol) + ' END';
+    const updateSql = cte + 'UPDATE b SET b.' + bt(tgtCol) + ' = ' + merged + joinTarget;
     const cntSql = cte + 'SELECT COUNT(*) AS n' + joinTarget;
     return {
       previewSql, updateSql, cntSql,
