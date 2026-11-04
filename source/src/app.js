@@ -1556,11 +1556,14 @@ async function trigToggle(req, res) {
   const b = JSON.parse(await readBody(req));
   if (!b.trgName) return sendJSON(res, 400, { error: '缺少 trgName' });
   const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database);
-  const tblRow = await p.request().input('n', sql.NVarChar, b.trgName).query("SELECT OBJECT_NAME(parent_id) AS tbl FROM sys.triggers WHERE name=@n");
-  const tbl = tblRow.recordset[0] ? tblRow.recordset[0].tbl : null;
+  const tblRow = await p.request().input('n', sql.NVarChar, b.trgName).query("SELECT OBJECT_SCHEMA_NAME(parent_id) AS sch, OBJECT_NAME(parent_id) AS tbl FROM sys.triggers WHERE name=@n");
+  const info = tblRow.recordset[0];
+  const tbl = info ? info.tbl : null;
+  const sch = (info && info.sch) || 'dbo';
   if (!tbl) return sendJSON(res, 404, { error: '触发器 ' + b.trgName + ' 不存在或无法找到所属表' });
   const op = b.enable ? 'ENABLE' : 'DISABLE';
-  await p.request().query(op + ' TRIGGER [dbo].[' + b.trgName + '] ON [dbo].[' + tbl + ']');
+  const quote = v => '[' + String(v).replace(/]/g, ']]') + ']';
+  await p.request().query(op + ' TRIGGER ' + quote(sch) + '.' + quote(b.trgName) + ' ON ' + quote(sch) + '.' + quote(tbl));
   sendJSON(res, 200, { ok: true, enabled: !!b.enable });
 }
 
@@ -1569,7 +1572,7 @@ async function trigDrop(req, res) {
   const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database);
   if (!b.confirm) return sendJSON(res, 200, { preview: true, dropSql: 'DROP TRIGGER [dbo].[' + b.trgName + '];' });
   const defRow = (await p.request().input('n', sql.NVarChar, b.trgName).query(
-    "SELECT m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.name=@n"
+    "SELECT OBJECT_SCHEMA_NAME(o.parent_id) sch, m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.name=@n"
   )).recordset[0];
   if (!defRow) return sendJSON(res, 404, { error: '触发器 ' + b.trgName + ' 不存在' });
   if (!/UPDATE\s+b\s+SET\s+b\./i.test(String(defRow.sql || '')) && !b.force) {
@@ -1579,7 +1582,9 @@ async function trigDrop(req, res) {
   const backup = await backupDatabaseWithCleanup(p, cfg, 'trigDrop');
   const bp = backup.path;
   if (!backup.ok) return sendJSON(res, 500, { error: '数据库备份失败，已中止删除触发器: ' + backup.error, backupPath: bp, backupOk: false });
-  await p.request().query("IF OBJECT_ID(N'" + b.trgName + "','TR') IS NOT NULL DROP TRIGGER [dbo].[" + b.trgName + "]");
+  const sch = defRow.sch || 'dbo';
+  const quote = v => '[' + String(v).replace(/]/g, ']]') + ']';
+  await p.request().query("DROP TRIGGER " + quote(sch) + '.' + quote(b.trgName));
   sendJSON(res, 200, { ok: true, backupPath: bp, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed });
 }
 
