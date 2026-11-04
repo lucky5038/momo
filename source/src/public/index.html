@@ -239,6 +239,7 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
 .source-flow .flow-step span{background:rgba(34,197,94,.12);color:var(--ok);}
 .flow-arrow{display:flex;align-items:center;justify-content:center;color:#334155;font-size:30px;font-weight:300;}
 .advanced-panel{margin-top:16px;border:1px solid var(--line);border-radius:8px;background:var(--input);padding:11px 12px;}
+.clear-col-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
 .adv-title{font-size:12px;color:#94a3b8;margin-bottom:9px;letter-spacing:.3px;}
 .adv-body{display:flex;padding:0;gap:14px;flex-wrap:wrap;}
 .adv-body.open{display:flex;}
@@ -849,6 +850,10 @@ input[type=text]:focus,input[type=password]:focus,select:focus,
         <div id="cbTgt" class="cb-list"></div>
       </div>
       <div class="sub" id="tgtSub"></div>
+      <div class="clear-col-row">
+        <button class="btn sm danger" id="btnClearCol" type="button" disabled>清除目标字段</button>
+        <span class="sub">清除当前目标字段的所有非空值，执行前备份</span>
+      </div>
     </section>
 
     <div class="flow-arrow">→</div>
@@ -997,6 +1002,7 @@ input[type=text]:focus,input[type=password]:focus,select:focus,
       throw new Error('/api/meta 多次重试仍失败，请点「重新连接」');
     },
     run: async b=>{ const r=await fetch("/api/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}); const d=await r.json(); return d.error?{ok:false,error:d.error}:{ok:true,data:d}; },
+    clearColumn: async b=>{ const r=await fetch("/api/clear-column",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}); const d=await r.json(); return d.error?{ok:false,error:d.error}:{ok:true,data:d}; },
     listTriggers: async ()=>{ const r=await fetch("/api/triggers"); return { ok:true, data: await r.json() }; },
     buildTrigger: async b=>{ const r=await fetch("/api/triggers/build",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}); const d=await r.json(); return d.error?{ok:false,error:d.error}:{ok:true,data:d}; },
     createTrigger: async b=>{ const r=await fetch("/api/triggers/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}); const d=await r.json(); return d.error?{ok:false,error:d.error}:{ok:true,data:d}; },
@@ -1143,6 +1149,7 @@ function pickCb(fid,listId,col){
   document.getElementById(fid).value=col;
   closeCb(listId);
   if(listId==='cbVal') refreshJoin();
+  if(listId==='cbTgt') updateClearColBtn();
 }
 
 function currentSrc(){ return META?.srcs.find(s=>s.id===document.getElementById('srcSel').value); }
@@ -1181,6 +1188,7 @@ function onDocChange(){
   tgtCols=(META.tgtAllCols?.[doc.id])||[];
   document.getElementById('fTgt').value='';
   document.getElementById('tgtSub').textContent='共 '+tgtCols.length+' 个可选目标列（请选择）';
+  updateClearColBtn();
 
   const ss=document.getElementById('srcSel');
   ss.innerHTML='';
@@ -1398,6 +1406,42 @@ document.getElementById('btnExec').onclick=async ()=>{
   try { await doRun(true); }
   finally {
     if(btn){ btn.disabled=false; btn.classList.remove('loading'); btn.textContent='执行'; }
+  }
+};
+
+function updateClearColBtn(){
+  const btn=document.getElementById('btnClearCol');
+  const docId=document.getElementById('docSel')?document.getElementById('docSel').value:'';
+  const col=document.getElementById('fTgt')?document.getElementById('fTgt').value.trim():'';
+  const ok=!!(docId && col && Array.isArray(tgtCols) && tgtCols.some(c=>c.col===col));
+  if(btn) btn.disabled=!ok;
+}
+
+document.getElementById('fTgt').addEventListener('input', updateClearColBtn);
+setTimeout(updateClearColBtn, 0);
+document.getElementById('btnClearCol').onclick=async ()=>{
+  const docId=document.getElementById('docSel').value;
+  const col=document.getElementById('fTgt').value.trim();
+  const doc=META?.docs.find(d=>d.id===docId);
+  const btn=document.getElementById('btnClearCol');
+  const st=document.getElementById('status');
+  if(!doc || !col){ if(st){st.className='status err';st.textContent='请先选择目标单据和目标字段';} return; }
+  if(btn){ btn.disabled=true; btn.classList.add('loading'); btn.textContent='清除中...'; }
+  try{
+    const pv=await window.chuanzhi.clearColumn({docId, tgtCol:col});
+    if(!pv.ok){ if(st){st.className='status err';st.textContent=pv.error;} return; }
+    const n=Number(pv.data.count||0);
+    if(!n){ if(st){st.className='status';st.textContent='该目标字段没有可清除的值';} if(window.showMomoToast) window.showMomoToast('该目标字段没有可清除的值','ok'); return; }
+    if(!confirm('目标字段：'+doc.name+' · '+col+'\n\n共有 '+n+' 个非空值。\n确认清除？会先备份数据库。')) return;
+    const r=await window.chuanzhi.clearColumn({docId, tgtCol:col, confirm:true});
+    if(!r.ok){ if(st){st.className='status err';st.textContent=r.error;} return; }
+    if(st){ st.className='status ok'; st.textContent='已清除目标字段 '+r.data.affected+' 个值 · 备份 '+r.data.backupPath; }
+    const result=document.getElementById('result'); if(result) result.innerHTML='';
+    if(window.showMomoToast) window.showMomoToast('已清除目标字段 '+r.data.affected+' 个值','ok');
+  }catch(e){
+    if(st){st.className='status err';st.textContent='清除失败：'+e.message;}
+  }finally{
+    if(btn){ btn.classList.remove('loading'); btn.textContent='清除目标字段'; updateClearColBtn(); }
   }
 };
 

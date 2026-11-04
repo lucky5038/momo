@@ -976,6 +976,41 @@ async function getEffectiveChain(chain, srcId, srcValCol, CUR_SRCS, pool) {
   return null;
 }
 
+async function handleClearColumn(req, res) {
+  const b = JSON.parse(await readBody(req));
+  const docs = CUR_DOCS || DOC_ITEMS;
+  const doc = (docs || []).find(d => d.id === b.docId);
+  const col = String(b.tgtCol || '').trim();
+  if (!doc) return sendJSON(res, 400, { error: '目标单据不存在' });
+  if (!/^[A-Za-z0-9_]+$/.test(col)) return sendJSON(res, 400, { error: '目标字段不合法' });
+  const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database);
+  const meta = (await p.request()
+    .input('t', sql.NVarChar, doc.sub)
+    .input('c', sql.NVarChar, col)
+    .query("SELECT OBJECT_SCHEMA_NAME(t.object_id) sch FROM sys.tables t JOIN sys.columns c ON c.object_id=t.object_id WHERE t.name=@t AND c.name=@c")
+  ).recordset[0];
+  if (!meta) return sendJSON(res, 404, { error: '目标字段 ' + doc.sub + '.' + col + ' 不存在' });
+  const q = v => '[' + String(v).replace(/]/g, ']]') + ']';
+  const table = q(meta.sch || 'dbo') + '.' + q(doc.sub);
+  const column = q(col);
+  const countRow = (await p.request().query(
+    "SELECT COUNT_BIG(1) AS n FROM " + table + " WHERE " + column + " IS NOT NULL AND CAST(" + column + " AS nvarchar(max)) <> N''"
+  )).recordset[0];
+  const count = Number(countRow ? countRow.n : 0);
+  if (!b.confirm) {
+    return sendJSON(res, 200, { ok: true, preview: true, doc: doc.name, table: doc.sub, column: col, count });
+  }
+  if (count === 0) return sendJSON(res, 200, { ok: true, count: 0, affected: 0, message: '该列没有可清除的值' });
+  const cfg = CUR_CONFIG || CONFIG.db;
+  const backup = await backupDatabaseWithCleanup(p, cfg, 'clearColumn');
+  if (!backup.ok) return sendJSON(res, 500, { error: '数据库备份失败，已中止清除: ' + backup.error, backupPath: backup.path, backupOk: false });
+  const clearRes = await p.request().query(
+    "UPDATE " + table + " SET " + column + "=NULL WHERE " + column + " IS NOT NULL AND CAST(" + column + " AS nvarchar(max)) <> N''"
+  );
+  const affected = (clearRes.rowsAffected || []).reduce((sum, n) => sum + Number(n || 0), 0);
+  sendJSON(res, 200, { ok: true, count, affected, backupPath: backup.path, backupOk: backup.ok, removedOldBackups: backup.cleanup.removed });
+}
+
 async function handleRun(req, res) {
   const b = JSON.parse(await readBody(req));
   const { docId, tgtCol, srcId, srcValCol, partyKey, mode, confirm, force, chain, createTrigger, triggerTimeMode, mergeDisplay } = b;
@@ -1832,6 +1867,7 @@ async function handleDropCred(req, res) {
 const router = {
   '/api/meta': handleMeta,
   '/api/run': handleRun,
+  '/api/clear-column': handleClearColumn,
   '/api/databases': handleDatabases,
   '/api/switch-db': handleSwitchDb,
   '/api/test-conn': handleTestConn,
