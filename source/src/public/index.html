@@ -761,6 +761,8 @@ input[type=text]:focus,input[type=password]:focus,select:focus,
   #onboardWelcomeModal .onboard-card{padding:40px 20px;}
   #onboardWelcomeModal h1{font-size:34px;}
 }
+/* 最终欢迎页标题保持单行 */
+#welcomeScreen h1{font-size:clamp(26px,4.2vw,52px);white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -964,7 +966,7 @@ input[type=text]:focus,input[type=password]:focus,select:focus,
 <div id="welcomeScreen" class="onboard-screen onboard-fullscreen">
   <div class="onboard-card onboard-welcome onboard-glow">
     <div class="onboard-eyebrow">WELCOME</div>
-    <h1>科技不是高高在上，<br>而是服务于人民</h1>
+    <h1>科技不是高高在上，而是服务于人民</h1>
     <p>跨表带值、执行前备份、触发器联动，都在一个工作台里。</p>
     <div class="onboard-cards">
       <div class="onboard-feature"><i>📥</i><b>极速映射</b><span>跨表数据一键流转</span></div>
@@ -1063,8 +1065,8 @@ function labelOf(col, desc, vals){
   return col + (desc ? '（' + desc + '）' : '');
 }
 
-async function init(){
-  META=await (await window.chuanzhi.getMeta()).data;
+async function init(metaOverride){
+  META = metaOverride || (await (await window.chuanzhi.getMeta()).data);
   const ds=document.getElementById('docSel');
   ds.innerHTML=''; // 重新加载时先清空，避免重复追加
   const dph=document.createElement('option'); dph.value=''; dph.textContent='—— 请选择单据 ——'; ds.appendChild(dph);
@@ -1635,6 +1637,17 @@ if(_reconBtn){_reconBtn.onclick = async () => {
       };
     }
     let _creds={}; try{ const cr=await (await fetch('/api/creds')).json(); if(cr&&cr.ok){ _creds=cr.data||{}; window.__creds=_creds; } }catch(_){}
+    // 提前加载单据字典，复用本次 /api/meta 结果，避免进入工作台后再次请求造成“缓冲”
+    const hasMeta = initMeta && Array.isArray(initMeta.docs) && initMeta.docs.length;
+    if (cfgData.server) {
+      window.__momoReady = (hasMeta ? init(initMeta) : init()).catch(e => {
+        console.error('meta load error:', e);
+        const status=document.getElementById('status');
+        if(status){ status.className='status err'; status.textContent='加载单据字典失败：'+e.message; }
+      });
+    } else {
+      window.__momoReady = Promise.resolve();
+    }
     // 启动时立即刷 banner + 账套列表（只建一次连接，不额外触发测试连接）
     await initDbConn();
     await loadConnBanner();
@@ -1672,14 +1685,8 @@ if(_reconBtn){_reconBtn.onclick = async () => {
     const el=document.getElementById('connBanner');
     if(txt && el){ el.className='err'; txt.innerHTML='<b style="color:#FF4D6D">初始化失败</b>：'+esc(e.message)+'。请点"重新连接"。'; }
   }
-  // 没有保存服务器时不做字典加载，避免首次打开显示"字典加载失败"
-  if (cfgData.server) {
-    init().catch(e => {
-      console.error('meta load error:', e);
-      const status=document.getElementById('status');
-      if(status){ status.className='status err'; status.textContent='加载单据字典失败：'+e.message; }
-    });
-  } else {
+  // 字典已在上面提前加载；此处只处理没有服务器配置的提示
+  if (!cfgData.server) {
     const status=document.getElementById('status');
     if(status){ status.className='status'; status.textContent='等待数据库连接后加载单据字典'; }
   }
@@ -2032,9 +2039,22 @@ chainRow();
   };
 
   $('obEnter').onclick = async () => {
-    try { await postJSON('/api/onboarding', {}); } catch (_) {}
-    sessionStorage.removeItem('momo_after_setup');
-    show('welcomeScreen', false);
+    const btn = $('obEnter');
+    if (btn) { btn.disabled = true; btn.classList.add('loading'); btn.textContent = '正在加载数据...'; }
+    try {
+      // 等单据字典真正加载完再进入工作台，避免进去后才缓冲
+      if (window.__momoReady) {
+        await Promise.race([
+          window.__momoReady,
+          new Promise(resolve => setTimeout(resolve, 12000))
+        ]);
+      }
+      try { await postJSON('/api/onboarding', {}); } catch (_) {}
+      sessionStorage.removeItem('momo_after_setup');
+      show('welcomeScreen', false);
+    } finally {
+      if (btn) { btn.disabled = false; btn.classList.remove('loading'); btn.textContent = '进入工作台'; }
+    }
   };
 
   initOnboarding();
