@@ -228,6 +228,35 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
 .pv-empty{margin-top:16px;padding:28px 20px;border:1px dashed var(--line);border-radius:6px;color:var(--muted);font-size:13px;text-align:center;}
 .pv-foot{margin-top:10px;font-size:11px;color:var(--muted);}
 
+/* ===== cross-table flow ===== */
+.sync-card{padding-bottom:88px;}
+.flow-grid{display:grid;grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr);gap:14px;align-items:stretch;}
+.flow-card{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0;}
+.flow-card.target-flow{border-top:2px solid var(--acc);}
+.flow-card.source-flow{border-top:2px solid var(--ok);}
+.flow-step{font-size:10px;letter-spacing:1.8px;color:#64748b;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.flow-step span{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:rgba(56,189,248,.12);color:var(--acc);font-size:10px;font-weight:700;}
+.source-flow .flow-step span{background:rgba(34,197,94,.12);color:var(--ok);}
+.flow-arrow{display:flex;align-items:center;justify-content:center;color:#334155;font-size:30px;font-weight:300;}
+.advanced-panel{margin-top:16px;border:1px solid var(--line);border-radius:8px;background:var(--input);padding:0 12px;}
+.adv-toggle{background:none;border:none;color:#94a3b8;font-size:12px;padding:11px 0;cursor:pointer;width:100%;text-align:left;}
+.adv-toggle:hover{color:var(--text);}
+.adv-body{display:none;padding:0 0 13px;gap:14px;flex-wrap:wrap;}
+.adv-body.open{display:flex;}
+.workspace-action-bar{position:fixed;left:212px;right:0;bottom:0;z-index:850;background:rgba(15,23,42,.97);border-top:1px solid var(--line);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;backdrop-filter:blur(12px);}
+.workspace-action-bar .action-buttons{display:flex;gap:10px;}
+#toastWrap{position:fixed;right:22px;top:72px;z-index:12000;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:rgba(15,23,42,.96);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:8px;padding:11px 14px;color:var(--text);font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,.4);max-width:360px;animation:toastIn .2s ease-out;}
+.toast.ok{border-left-color:var(--ok);}
+.toast.err{border-left-color:var(--warn);}
+@keyframes toastIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+@media(max-width:900px){
+  .flow-grid{grid-template-columns:1fr;}
+  .flow-arrow{transform:rotate(90deg);height:30px;}
+  .workspace-action-bar{left:0;padding:10px 14px;}
+  .workspace-action-bar .sub{display:none;}
+}
+
 /* ===== onboarding ===== */
 .onboard-screen{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(5,10,18,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
 .onboard-screen.show{display:flex;}
@@ -298,6 +327,7 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
   <div class="app-brand"><span class="brand-mark">M</span><span>Momo传值助手<small>ERP 数据流转</small></span></div>
   <button class="db-dot loading" id="topDbDot" type="button" title="数据库状态 / 点击打开系统设置"><i></i><span id="topDbText">正在连接数据库...</span></button>
 </header>
+<div id="toastWrap"></div>
 <aside class="app-sidebar">
   <div class="nav-label">工作台</div>
   <button class="navbtn active" data-nav="sync" type="button"><span class="nav-ico">📌</span>跨表带值</button>
@@ -345,14 +375,20 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
     <span id="connMetaNote" style="font-size:11px;color:#64748b"></span>
   </div>
   <div style="margin-top:6px;font-size:11px;color:#475569">提示：连接参数来自配置文件，修改后点「保存配置」即可持久化。换电脑时修改服务器地址即可。</div>
+  <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">
+    <div class="card-title" style="margin-bottom:10px">备份路径</div>
+    <div class="sub" id="backupDirNote" style="margin-bottom:8px">备份路径：读取中...</div>
+    <button class="btn sm" id="btnBackupDir" type="button" title="选择或修改数据库备份路径">备份路径</button>
+  </div>
 </div>
 
 <div id="tab-sync" data-page="sync">
-<div class="card">
+<div class="card sync-card">
   <div class="card-title">跨表带值</div>
-  <div class="grid3">
-    <div>
-      <label class="lbl">① 单据（主表）</label>
+  <div class="flow-grid">
+    <section class="flow-card target-flow">
+      <div class="flow-step"><span>01</span> 目标</div>
+      <label class="lbl">目标单据（主表）</label>
       <select id="docSel"></select>
       <div class="sub" id="docSub"></div>
       <div class="maintbl" id="mainBox">
@@ -362,58 +398,61 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
         <span class="lbl2">取</span>
         <span class="val" id="subTbl">—</span>
       </div>
-    </div>
-    <div>
-      <label class="lbl">② 目标列（要写入哪一列）</label>
+      <label class="lbl" style="margin-top:16px">目标列（要写入哪一列）</label>
       <div class="combobox">
         <input type="text" id="fTgt" placeholder="搜索目标列..." autocomplete="off"
           onclick="openCb('fTgt','cbTgt')" oninput="openCb('fTgt','cbTgt')" onfocus="openCb('fTgt','cbTgt')" onblur="setTimeout(()=>closeCb('cbTgt'),150)">
         <div id="cbTgt" class="cb-list"></div>
       </div>
       <div class="sub" id="tgtSub"></div>
-    </div>
-    <div id="srcWrap">
-      <label class="lbl">③ 来源档（自动排除已选单据）</label>
-      <select id="srcSel" class="disabled"></select>
-    </div>
-    <div id="src2Wrap" style="display:none">
-      <label class="lbl">③½ 来源档②（可选·链式取值）</label>
+    </section>
+
+    <div class="flow-arrow">→</div>
+
+    <section class="flow-card source-flow">
+      <div class="flow-step"><span>02</span> 来源</div>
+      <div id="srcWrap">
+        <label class="lbl">来源档（自动排除已选单据）</label>
+        <select id="srcSel" class="disabled"></select>
+      </div>
+      <div id="src2Wrap" style="display:none">
+        <label class="lbl">来源档②（可选·链式取值）</label>
+      </div>
+      <div id="valWrap" style="margin-top:16px">
+        <label class="lbl">来源值列（取哪一列的值，可搜索切换）</label>
+        <div class="combobox">
+          <input type="text" id="fVal" placeholder="先选择来源档，再选来源值列..." autocomplete="off"
+            onclick="openCb('fVal','cbVal')" oninput="openCb('fVal','cbVal')" onfocus="openCb('fVal','cbVal')" onblur="setTimeout(()=>closeCb('cbVal'),150)">
+          <div id="cbVal" class="cb-list"></div>
+        </div>
+        <div class="sub" id="valSub"></div>
+        <div id="val2Wrap" style="display:none">
+          <div style="margin-top:8px">
+            <label class="chk" style="display:inline"><input type="checkbox" id="chkAllVals" checked onchange="onSrcChange()"> 显示全部列（默认只显示常用列）</label>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="advanced-panel">
+    <button class="adv-toggle" id="advToggle" type="button">▼ 高级选项</button>
+    <div class="adv-body" id="advBody">
+      <label class="chk"><input type="checkbox" id="chkForce"> 强制覆盖</label>
+      <label class="chk"><input type="checkbox" id="chkCreateTrigger"> 建立触发器</label>
+      <label class="chk"><input type="checkbox" id="chkMergeDisplay"> 合并显示</label>
     </div>
   </div>
-  <div class="grid">
-    <div id="valWrap">
-      <label class="lbl">④ 来源值列（取哪一列的值，可搜索切换）</label>
-      <div class="combobox">
-        <input type="text" id="fVal" placeholder="先选择来源档，再选来源值列..." autocomplete="off"
-          onclick="openCb('fVal','cbVal')" oninput="openCb('fVal','cbVal')" onfocus="openCb('fVal','cbVal')" onblur="setTimeout(()=>closeCb('cbVal'),150)">
-        <div id="cbVal" class="cb-list"></div>
-      </div>
-      <div class="sub" id="valSub"></div>
-      <div id="val2Wrap" style="display:none">
-      <div style="margin-top:8px">
-        <label class="chk" style="display:inline"><input type="checkbox" id="chkAllVals" checked onchange="onSrcChange()"> 显示全部列（默认只显示常用列）</label>
-      </div>
-    </div>
-    
-  </div>
-  </div>
-  <div class="action-panel">
-    <div class="action-main">
-      <div class="action-settings">
-        <label class="chk"><input type="checkbox" id="chkForce"> 强制覆盖</label>
-        <label class="chk"><input type="checkbox" id="chkCreateTrigger"> 建立触发器</label>
-        <label class="chk"><input type="checkbox" id="chkMergeDisplay"> 合并显示</label>
-      </div>
-      <div class="action-buttons">
-        <button class="btn" id="btnPreview">干跑预览</button>
-        <button class="btn primary" id="btnExec">执行（先备份）</button>
-        <button class="btn" id="btnBackupDir" type="button" title="选择或修改数据库备份路径">备份路径</button>
-      </div>
-    </div>
-  </div>
-  <div class="sub" id="backupDirNote" style="margin-top:-6px">备份路径：读取中...</div>
+
   <span class="status" id="status"></span>
   <div id="result"></div>
+</div>
+<div class="workspace-action-bar">
+  <div class="sub">执行前自动备份；强制覆盖/触发器/合并在高级选项里。</div>
+  <div class="action-buttons">
+    <button class="btn" id="btnPreview">干跑预览</button>
+    <button class="btn primary" id="btnExec">执行（先备份）</button>
+  </div>
 </div>
 </div>
 
@@ -868,6 +907,7 @@ async function doRun(confirm){
     const aff = (d.affected !== undefined && d.affected !== null) ? d.affected : 0;
     const bp = d.backupPath || '未知路径';
     status.textContent='完成：受影响 '+aff+' 行 · 备份 '+bp;
+    if (window.showMomoToast) window.showMomoToast('执行完成：更新 '+aff+' 行', 'ok');
     let trigMsg = '';
     if(b.createTrigger && d.triggerResult){
       if(d.triggerResult.skipped){
@@ -1560,20 +1600,23 @@ chainRow();
     if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
   };
 
-  // 备份路径属于系统设置：保留原按钮和事件，只移动到设置页
-  const settings = document.querySelector('[data-page="settings"]');
-  const backupBtn = document.getElementById('btnBackupDir');
-  const backupNote = document.getElementById('backupDirNote');
-  if (settings && backupBtn) {
-    const box = document.createElement('div');
-    box.style.marginTop = '18px';
-    box.style.paddingTop = '16px';
-    box.style.borderTop = '1px solid var(--line)';
-    box.innerHTML = '<div class="card-title" style="margin-bottom:10px">备份路径</div>';
-    if (backupNote) box.appendChild(backupNote);
-    box.appendChild(backupBtn);
-    settings.appendChild(box);
-  }
+  const advToggle = document.getElementById('advToggle');
+  const advBody = document.getElementById('advBody');
+  if (advToggle && advBody) advToggle.onclick = () => {
+    const open = advBody.classList.toggle('open');
+    advToggle.textContent = (open ? '▲' : '▼') + ' 高级选项';
+  };
+
+  window.showMomoToast = (text, type) => {
+    const wrap = document.getElementById('toastWrap');
+    if (!wrap) return;
+    const el = document.createElement('div');
+    el.className = 'toast ' + (type || '');
+    el.textContent = text;
+    wrap.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .2s'; setTimeout(() => el.remove(), 220); }, 3200);
+  };
+
   showPage('sync');
 })();
 </script>
