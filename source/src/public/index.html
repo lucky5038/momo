@@ -24,6 +24,38 @@ body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--
 /* ===== main container ===== */
 .container{max-width:1200px;margin:0 auto;padding:20px 24px 40px;}
 
+/* ===== desktop shell ===== */
+body{padding-top:58px;padding-left:212px;}
+.app-topbar{position:fixed;top:0;left:0;right:0;height:58px;z-index:900;background:rgba(15,23,42,.96);
+  border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;backdrop-filter:blur(12px);}
+.app-brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:15px;letter-spacing:.3px;}
+.app-brand .brand-mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#38bdf8);display:flex;align-items:center;justify-content:center;color:#04111d;font-size:13px;font-weight:900;}
+.app-brand small{font-size:11px;font-weight:400;color:#64748b;margin-left:2px;}
+.db-dot{border:1px solid var(--line);background:var(--card2);color:var(--muted);border-radius:999px;padding:7px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:7px;}
+.db-dot i{width:7px;height:7px;border-radius:50%;background:#64748b;display:inline-block;}
+.db-dot.ok i{background:var(--ok);box-shadow:0 0 8px rgba(34,197,94,.7);}
+.db-dot.err i{background:var(--warn);box-shadow:0 0 8px rgba(239,68,68,.55);}
+.db-dot.loading i{background:var(--acc);}
+.app-sidebar{position:fixed;left:0;top:58px;bottom:0;width:212px;z-index:890;background:rgba(15,23,42,.97);border-right:1px solid var(--line);padding:18px 12px;}
+.nav-label{font-size:10px;letter-spacing:1.6px;color:#475569;padding:0 10px 10px;text-transform:uppercase;}
+.navbtn{width:100%;text-align:left;border:none;background:transparent;color:#94a3b8;border-radius:7px;padding:11px 12px;margin-bottom:4px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:9px;}
+.navbtn:hover{background:rgba(148,163,184,.08);color:var(--text);}
+.navbtn.active{background:rgba(34,197,94,.12);color:#22c55e;font-weight:600;}
+.navbtn .nav-ico{width:18px;text-align:center;}
+.nav-divider{height:1px;background:var(--line);margin:12px 8px;}
+.nav-tip{font-size:11px;color:#475569;line-height:1.7;padding:8px 10px;}
+#appMain.container{max-width:none;margin:0;padding:24px 28px 84px;}
+[data-page]{display:none;}
+[data-page].active{display:block;}
+#connBanner{display:none!important;}
+@media(max-width:900px){
+  body{padding-left:0;padding-top:56px;}
+  .app-sidebar{position:static;width:auto;height:auto;border-right:none;border-bottom:1px solid var(--line);padding:8px;display:flex;gap:4px;overflow:auto;}
+  .nav-label,.nav-divider,.nav-tip{display:none;}
+  .navbtn{white-space:nowrap;width:auto;margin:0;}
+  #appMain.container{padding:16px;}
+}
+
 /* ===== conn banner ===== */
 #connBanner{border-radius:var(--radius);padding:11px 64px;margin-bottom:16px;font-size:13px;line-height:1.5;
   position:relative;background:var(--input);border:1px solid var(--line);text-align:center;}
@@ -262,13 +294,26 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
 </head>
 <body>
 
+<header class="app-topbar">
+  <div class="app-brand"><span class="brand-mark">M</span><span>Momo传值助手<small>ERP 数据流转</small></span></div>
+  <button class="db-dot loading" id="topDbDot" type="button" title="数据库状态 / 点击打开系统设置"><i></i><span id="topDbText">正在连接数据库...</span></button>
+</header>
+<aside class="app-sidebar">
+  <div class="nav-label">工作台</div>
+  <button class="navbtn active" data-nav="sync" type="button"><span class="nav-ico">📌</span>跨表带值</button>
+  <button class="navbtn" data-nav="triggers" type="button"><span class="nav-ico">🔧</span>触发器管理</button>
+  <button class="navbtn" data-nav="settings" type="button"><span class="nav-ico">⚙️</span>系统设置</button>
+  <div class="nav-divider"></div>
+  <div class="nav-tip">目标先选，来源后选；执行前自动备份。</div>
+</aside>
+
 <main class="container" id="appMain">
 <div style="text-align:center;padding:14px 0 10px;font-size:13px;color:var(--muted);letter-spacing:.5px;font-weight:500">科技不是高高在上，而是服务于人民</div>
 
 <div id="connBanner" class="loading"><div class="banner-row"><span id="connBannerText">正在连接数据库...</span><button id="btnReconnect" class="btn sm" type="button" style="display:none">重新连接</button></div><span class="gx-mark">GX</span></div>
 
 <!-- 数据库连接管理 -->
-<div class="card" id="dbConnCard">
+<div class="card" id="dbConnCard" data-page="settings">
   <div class="card-title">数据库连接</div>
   <div class="conn-grid">
     <div class="conn-field">
@@ -302,7 +347,7 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
   <div style="margin-top:6px;font-size:11px;color:#475569">提示：连接参数来自配置文件，修改后点「保存配置」即可持久化。换电脑时修改服务器地址即可。</div>
 </div>
 
-<div id="tab-sync">
+<div id="tab-sync" data-page="sync">
 <div class="card">
   <div class="card-title">跨表带值</div>
   <div class="grid3">
@@ -351,6 +396,7 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
     </div>
     
   </div>
+  </div>
   <div class="action-panel">
     <div class="action-main">
       <div class="action-settings">
@@ -372,7 +418,7 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
 </div>
 
 <!-- ============ 已建立触发器 ============ -->
-<div class="card" style="margin-top:16px">
+<div class="card" style="margin-top:16px" data-page="triggers">
   <div class="card-title" style="cursor:pointer" id="trigPanelTitle">▼ 已建立触发器（点击展开）</div>
   <div id="trigPanelBody" style="display:none">
     <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
@@ -866,7 +912,9 @@ async function loadConnBanner(){
   const el=document.getElementById("connBanner");
   const txt=document.getElementById("connBannerText");
   const btn=document.getElementById("btnReconnect");
+  const setDot=(state,text)=>{const d=document.getElementById('topDbDot');const t=document.getElementById('topDbText');if(d)d.className='db-dot '+state;if(t)t.textContent=text;};
   el.className="loading";
+  setDot('loading','正在连接数据库...');
   if(txt) txt.textContent='等待数据库连接...';
 
   // 还没保存服务器时属于"等待填写"，不发起连接检测，避免显示成错误
@@ -874,6 +922,7 @@ async function loadConnBanner(){
   try{ cfg=(await (await fetch('/api/config')).json())||{}; }catch(_){ cfg={}; }
   if(!cfg.server){
     el.className="loading";
+    setDot('loading','未配置数据库');
     if(txt) txt.innerHTML='<b>等待数据库连接</b> · 请填写服务器、账号、密码后点「测试连接」';
     if(btn) btn.style.display="none";
     return;
@@ -884,10 +933,12 @@ async function loadConnBanner(){
   try{ m=await (await fetch('/api/meta')).json(); }catch(_){ m={}; }
   if(m.docs){
     el.className="ok";
+    setDot('ok',(m.server||'数据库')+' · '+(m.currentDb||''));
     if(txt) txt.innerHTML='<b style="color:#22c55e">数据库已连接</b> · 服务器 <code>'+esc(m.server||'-')+'</code> · 账套 <code>'+esc(m.currentDb||'-')+'</code>';
     if(btn) btn.style.display="none";
   } else {
     el.className="err";
+    setDot('err','数据库连接失败');
     const msg=m.error||'未知错误';
     if(txt) txt.innerHTML='<b style="color:#ef4444">数据库连接失败</b>：'+esc(msg)+'。点"重新连接"重试。';
     if(btn) btn.style.display="";
@@ -1487,6 +1538,43 @@ chainRow();
   };
 
   initOnboarding();
+})();
+</script>
+<script>
+(function(){
+  const pages = [...document.querySelectorAll('[data-page]')];
+  const navs = [...document.querySelectorAll('.navbtn')];
+  function showPage(name){
+    pages.forEach(p => p.classList.toggle('active', p.getAttribute('data-page') === name));
+    navs.forEach(b => b.classList.toggle('active', b.getAttribute('data-nav') === name));
+    if (name === 'triggers') {
+      const body = document.getElementById('trigPanelBody');
+      if (body) body.style.display = '';
+    }
+  }
+  navs.forEach(b => b.onclick = () => showPage(b.getAttribute('data-nav')));
+  const dot = document.getElementById('topDbDot');
+  if (dot) dot.onclick = () => {
+    showPage('settings');
+    const card = document.getElementById('dbConnCard');
+    if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  // 备份路径属于系统设置：保留原按钮和事件，只移动到设置页
+  const settings = document.querySelector('[data-page="settings"]');
+  const backupBtn = document.getElementById('btnBackupDir');
+  const backupNote = document.getElementById('backupDirNote');
+  if (settings && backupBtn) {
+    const box = document.createElement('div');
+    box.style.marginTop = '18px';
+    box.style.paddingTop = '16px';
+    box.style.borderTop = '1px solid var(--line)';
+    box.innerHTML = '<div class="card-title" style="margin-bottom:10px">备份路径</div>';
+    if (backupNote) box.appendChild(backupNote);
+    box.appendChild(backupBtn);
+    settings.appendChild(box);
+  }
+  showPage('sync');
 })();
 </script>
 </body>
