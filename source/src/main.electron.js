@@ -6,6 +6,20 @@ const { app, BrowserWindow, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
+// 最终效果预览：使用独立临时 userData，不读取/覆盖真实配置。
+// 启动参数：Momo传值助手.exe --preview
+const isPreview = process.argv.includes('--preview');
+if (isPreview) {
+  try {
+    const previewDir = path.join(app.getPath('temp'), 'MomoChuanzhiPreviewRun');
+    fs.mkdirSync(previewDir, { recursive: true });
+    app.setPath('userData', previewDir);
+    console.log('[preview] 使用临时配置目录: ' + previewDir);
+  } catch (e) {
+    console.error('[preview] 初始化临时目录失败: ' + e.message);
+  }
+}
+
 // 与 app.js 的 BASE_DIR 保持一致：便携版用 PORTABLE_EXECUTABLE_DIR，
 // 安装版用用户数据目录。port.txt 由后端写在这里。
 function baseDir() {
