@@ -1556,11 +1556,16 @@ async function trigToggle(req, res) {
   const b = JSON.parse(await readBody(req));
   if (!b.trgName) return sendJSON(res, 400, { error: '缺少 trgName' });
   const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database);
-  const tblRow = await p.request().input('n', sql.NVarChar, b.trgName).query("SELECT OBJECT_SCHEMA_NAME(parent_id) AS sch, OBJECT_NAME(parent_id) AS tbl FROM sys.triggers WHERE name=@n");
+  const tblRow = await p.request().input('n', sql.NVarChar, b.trgName).query(
+    "SELECT OBJECT_SCHEMA_NAME(o.parent_id) AS sch, OBJECT_NAME(o.parent_id) AS tbl, m.definition AS sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.name=@n"
+  );
   const info = tblRow.recordset[0];
   const tbl = info ? info.tbl : null;
   const sch = (info && info.sch) || 'dbo';
   if (!tbl) return sendJSON(res, 404, { error: '触发器 ' + b.trgName + ' 不存在或无法找到所属表' });
+  if (!/UPDATE\s+b\s+SET\s+b\./i.test(String((info && info.sql) || ''))) {
+    return sendJSON(res, 403, { error: '系统默认触发器为只读，禁止停用/启用' });
+  }
   const op = b.enable ? 'ENABLE' : 'DISABLE';
   const quote = v => '[' + String(v).replace(/]/g, ']]') + ']';
   await p.request().query(op + ' TRIGGER ' + quote(sch) + '.' + quote(b.trgName) + ' ON ' + quote(sch) + '.' + quote(tbl));
@@ -1575,8 +1580,8 @@ async function trigDrop(req, res) {
     "SELECT OBJECT_SCHEMA_NAME(o.parent_id) sch, m.definition sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.name=@n"
   )).recordset[0];
   if (!defRow) return sendJSON(res, 404, { error: '触发器 ' + b.trgName + ' 不存在' });
-  if (!/UPDATE\s+b\s+SET\s+b\./i.test(String(defRow.sql || '')) && !b.force) {
-    return sendJSON(res, 403, { error: '这不是本工具建立的触发器，已拒绝删除；如确认要删除 ERP 触发器，请显式传 force=true。' });
+  if (!/UPDATE\s+b\s+SET\s+b\./i.test(String(defRow.sql || ''))) {
+    return sendJSON(res, 403, { error: '系统默认触发器为只读，禁止删除' });
   }
   const cfg = CUR_CONFIG || CONFIG.db;
   const backup = await backupDatabaseWithCleanup(p, cfg, 'trigDrop');
