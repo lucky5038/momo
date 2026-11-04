@@ -10,7 +10,7 @@
 <style>
 :root{
   --bg:#0f172a;--card:#1e293b;--card2:#172033;--line:#2d3a4f;
-  --acc:#38bdf8;--ok:#22c55e;--warn:#ef4444;--text:#e2e8f0;--muted:#94a3b8;
+  --acc:#5B8FF9;--ok:#5AD8A6;--warn:#D97777;--text:#e2e8f0;--muted:#94a3b8;
   --input:#0b1220;--radius:8px;
 }
 *{box-sizing:border-box;}
@@ -29,7 +29,7 @@ body{padding-top:58px;padding-left:212px;}
 .app-topbar{position:fixed;top:0;left:0;right:0;height:58px;z-index:900;background:rgba(15,23,42,.96);
   border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;backdrop-filter:blur(12px);}
 .app-brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:15px;letter-spacing:.3px;}
-.app-brand .brand-mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#38bdf8);display:flex;align-items:center;justify-content:center;color:#04111d;font-size:13px;font-weight:900;}
+.app-brand .brand-mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#5AD8A6,#5B8FF9);display:flex;align-items:center;justify-content:center;color:#04111d;font-size:13px;font-weight:900;}
 .app-brand small{font-size:11px;font-weight:400;color:#64748b;margin-left:2px;}
 .db-dot{border:1px solid var(--line);background:var(--card2);color:var(--muted);border-radius:999px;padding:7px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:7px;}
 .db-dot i{width:7px;height:7px;border-radius:50%;background:#64748b;display:inline-block;}
@@ -40,7 +40,7 @@ body{padding-top:58px;padding-left:212px;}
 .nav-label{font-size:10px;letter-spacing:1.6px;color:#475569;padding:0 10px 10px;text-transform:uppercase;}
 .navbtn{width:100%;text-align:left;border:none;background:transparent;color:#94a3b8;border-radius:7px;padding:11px 12px;margin-bottom:4px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:9px;}
 .navbtn:hover{background:rgba(148,163,184,.08);color:var(--text);}
-.navbtn.active{background:rgba(34,197,94,.12);color:#22c55e;font-weight:600;}
+.navbtn.active{background:rgba(34,197,94,.12);color:#5AD8A6;font-weight:600;}
 .navbtn .nav-ico{width:18px;text-align:center;}
 .nav-divider{height:1px;background:var(--line);margin:12px 8px;}
 .nav-tip{font-size:11px;color:#475569;line-height:1.7;padding:8px 10px;}
@@ -211,12 +211,12 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
 .pv-title{font-size:14px;font-family:Consolas,monospace;color:var(--text);line-height:1.8;word-break:break-all;}
 .pv-target{color:var(--acc);font-weight:600;}
 .pv-arrow{color:var(--muted);margin:0 6px;}
-.pv-source{color:#7dd3fc;}
+.pv-source{color:#8CB4FF;}
 .pv-count{font-size:12px;color:var(--muted);white-space:nowrap;letter-spacing:.3px;}
 .pv-count b{font-size:24px;color:var(--ok);margin-right:6px;font-weight:700;}
 .pv-tags{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;}
 .pv-tags .tag{margin:0;}
-.tag-blue{background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#7dd3fc;}
+.tag-blue{background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#8CB4FF;}
 .pv-table-wrap{margin-top:16px;max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:6px;}
 .pv-table{margin:0;font-size:13px;}
 .pv-table thead th{position:sticky;top:0;background:var(--card2);z-index:2;}
@@ -261,19 +261,19 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
 .onboard-screen.show{display:flex;}
 .onboard-card{width:min(520px,calc(100vw - 40px));background:rgba(15,23,42,.88);border:1px solid rgba(148,163,184,.28);border-radius:18px;padding:30px 32px;box-shadow:0 30px 90px rgba(0,0,0,.55);color:#e2e8f0;position:relative;overflow:hidden;}
 .onboard-card::before{content:"";position:absolute;width:260px;height:260px;right:-100px;top:-130px;background:radial-gradient(circle,rgba(34,197,94,.22),transparent 68%);pointer-events:none;}
-.onboard-eyebrow{font-size:11px;letter-spacing:2px;color:#22c55e;text-transform:uppercase;margin-bottom:10px;}
+.onboard-eyebrow{font-size:11px;letter-spacing:2px;color:#5AD8A6;text-transform:uppercase;margin-bottom:10px;}
 .onboard-title{font-size:22px;font-weight:700;line-height:1.35;margin:0 0 10px;}
 .onboard-desc{font-size:13px;line-height:1.8;color:#94a3b8;margin:0 0 22px;}
 .onboard-field{margin-bottom:14px;position:relative;}
 .onboard-field label{display:block;font-size:12px;color:#94a3b8;margin-bottom:7px;}
 .onboard-field input,.onboard-field select{width:100%;height:42px;border-radius:8px;border:1px solid rgba(148,163,184,.28);background:rgba(2,6,23,.55);color:#e2e8f0;padding:0 12px;font-size:13px;outline:none;box-sizing:border-box;}
-.onboard-field input:focus,.onboard-field select:focus{border-color:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.12);}
+.onboard-field input:focus,.onboard-field select:focus{border-color:#5AD8A6;box-shadow:0 0 0 3px rgba(34,197,94,.12);}
 .onboard-field select:disabled{opacity:.55;}
 .onboard-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;flex-wrap:wrap;}
 .onboard-status{min-height:20px;font-size:12px;line-height:1.6;margin-top:12px;}
-.onboard-status.ok{color:#22c55e;}
-.onboard-status.err{color:#ef4444;}
-.onboard-status.loading{color:#38bdf8;}
+.onboard-status.ok{color:#5AD8A6;}
+.onboard-status.err{color:#D97777;}
+.onboard-status.loading{color:#5B8FF9;}
 .btn{transition:opacity .15s,transform .15s;}
 .btn:active{transform:translateY(1px);}
 .btn:disabled{opacity:.35;cursor:not-allowed;}
@@ -318,6 +318,65 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
   #welcomeScreen .onboard-cards{flex-wrap:wrap;}
   #welcomeScreen .onboard-feature{flex:1 1 100%;}
 }
+/* ===== quiet carbon theme ===== */
+:root{
+  --bg:#121212;--card:#1E1E1E;--card2:#242424;--line:#404040;
+  --acc:#5B8FF9;--ok:#5AD8A6;--warn:#D97777;--text:#EDEDED;--muted:#A3A3A3;
+  --input:#2D2D2D;--radius:8px;
+}
+body{background:#121212;color:#EDEDED;}
+.app-topbar,.app-sidebar{background:rgba(18,18,18,.97);border-color:#404040;}
+.app-brand .brand-mark{background:linear-gradient(135deg,#5AD8A6,#5B8FF9);color:#121212;}
+.app-brand small,.nav-label,.nav-tip,.sub,.flow-step,.onboard-desc,.onboard-feature span{color:#A3A3A3;}
+.navbtn{color:#A3A3A3;}
+.navbtn:hover{background:rgba(255,255,255,.05);color:#EDEDED;}
+.navbtn.active{background:rgba(91,143,249,.14);color:#8CB4FF;}
+.card,.flow-card,.onboard-card{background:#1E1E1E;border-color:#404040;color:#EDEDED;}
+.flow-card.target-flow{border-top-color:#5B8FF9;}
+.flow-card.source-flow{border-top-color:#5AD8A6;}
+.flow-step span{background:rgba(91,143,249,.14);color:#8CB4FF;}
+.source-flow .flow-step span{background:rgba(90,216,166,.12);color:#5AD8A6;}
+input[type=text],input[type=password],select,.onboard-field input,.onboard-field select{
+  background:#2D2D2D;border-color:#404040;color:#EDEDED;
+}
+input[type=text]:focus,input[type=password]:focus,select:focus,
+.onboard-field input:focus,.onboard-field select:focus{
+  border-color:#5B8FF9;box-shadow:0 0 0 3px rgba(91,143,249,.14);
+}
+.onboard-field input.valid,.onboard-field select.valid{
+  border-color:#5AD8A6;box-shadow:0 0 0 3px rgba(90,216,166,.13);
+}
+.btn{background:#5B8FF9;color:#fff;}
+.btn.primary{background:#E5E5E5;color:#121212;}
+.btn.danger{background:#D97777;color:#fff;}
+.btn.loading{opacity:.82;cursor:wait;}
+.btn.loading::before{content:'↻';display:inline-block;margin-right:6px;animation:momoSpin .9s linear infinite;}
+@keyframes momoSpin{to{transform:rotate(360deg);}}
+.onboard-screen{background:rgba(18,18,18,.82);}
+.onboard-card{background:rgba(30,30,30,.96);border-color:#404040;box-shadow:0 30px 90px rgba(0,0,0,.55);}
+.onboard-eyebrow{color:#5AD8A6;}
+.onboard-feature{background:#1E1E1E;border-color:#404040;}
+.onboard-feature b{color:#EDEDED;}
+.onboard-status.ok{color:#5AD8A6;}
+.onboard-status.err{color:#D97777;}
+.onboard-status.loading{color:#5B8FF9;}
+#welcomeScreen.onboard-fullscreen{
+  background:
+    radial-gradient(900px 520px at 18% 18%, rgba(90,216,166,.10), transparent 68%),
+    radial-gradient(820px 480px at 82% 82%, rgba(91,143,249,.10), transparent 70%),
+    #121212;
+}
+#welcomeScreen .onboard-card{background:transparent;border:none;box-shadow:none;}
+.advanced-panel{background:#2D2D2D;border-color:#404040;}
+.adv-title{color:#A3A3A3;}
+.workspace-action-bar{background:rgba(18,18,18,.97);border-color:#404040;}
+.toast{background:#1E1E1E;border-color:#404040;color:#EDEDED;}
+.db-dot{background:#1E1E1E;border-color:#404040;color:#A3A3A3;}
+.db-dot.ok i{background:#5AD8A6;box-shadow:0 0 8px rgba(90,216,166,.6);}
+.db-dot.err i{background:#D97777;box-shadow:0 0 8px rgba(217,119,119,.5);}
+.db-dot.loading i{background:#5B8FF9;}
+.status.ok{color:#5AD8A6;}
+.status.err{color:#D97777;}
 </style>
 </head>
 <body>
@@ -871,7 +930,7 @@ function renderPreview(b, d){
     + '</div>'
     + (tags ? '<div class="pv-tags">' + tags + '</div>' : '')
     + (d.typeWarning ? '<div style="margin:8px 0;padding:8px 10px;border-left:3px solid #f59e0b;background:rgba(245,158,11,.08);color:#fbbf24;font-size:12px;line-height:1.6">⚠ ' + esc(d.typeWarning) + '</div>' : '')
-    + (d.chainWarning ? '<div style="margin:8px 0;padding:8px 10px;border-left:3px solid #38bdf8;background:rgba(56,189,248,.08);color:#7dd3fc;font-size:12px;line-height:1.6">ⓘ ' + esc(d.chainWarning) + '</div>' : '')
+    + (d.chainWarning ? '<div style="margin:8px 0;padding:8px 10px;border-left:3px solid #5B8FF9;background:rgba(56,189,248,.08);color:#8CB4FF;font-size:12px;line-height:1.6">ⓘ ' + esc(d.chainWarning) + '</div>' : '')
     + body
     + '</div>';
 }
@@ -913,23 +972,23 @@ async function doRun(confirm){
         const forceHint = d.triggerResult.allowForce ? '<br><span style="color:#94a3b8">勾选「强制创建」可忽略此冲突。</span>' : '';
         trigMsg = '<div style="margin-top:8px;padding:8px 12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:6px;color:#f59e0b;font-size:12px">⚠ '+esc(d.triggerResult.note||'检测到系统冲突，已跳过建立触发器')+forceHint+'</div>';
       } else if(d.triggerResult.conflict && d.triggerResult.conflict.length){
-        trigMsg = '<div style="margin-top:8px;color:#22c55e">✓ 触发器已创建：'+esc(d.triggerResult.name)+'</div>'
+        trigMsg = '<div style="margin-top:8px;color:#5AD8A6">✓ 触发器已创建：'+esc(d.triggerResult.name)+'</div>'
           + '<div style="margin-top:4px;padding:6px 10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:6px;color:#f59e0b;font-size:11px">⚠ '+esc(d.triggerResult.conflictNote||('系统触发器 '+d.triggerResult.conflict.join('、')+' 也在写此列'))+'</div>';
       } else if(d.triggerResult.ok){
-        trigMsg = '<div style="margin-top:8px;color:#22c55e">✓ 触发器已创建：'+esc(d.triggerResult.name)+'</div>';
+        trigMsg = '<div style="margin-top:8px;color:#5AD8A6">✓ 触发器已创建：'+esc(d.triggerResult.name)+'</div>';
       } else {
-        trigMsg = '<div style="margin-top:8px;color:#ef4444">✗ 触发器创建失败：'+esc(d.triggerResult.error||'未知错误')+'</div>';
+        trigMsg = '<div style="margin-top:8px;color:#D97777">✗ 触发器创建失败：'+esc(d.triggerResult.error||'未知错误')+'</div>';
       }
     }
     document.getElementById('result').innerHTML=`
-      <div class="summary"><b>已写入数据库</b> 受影响 <span style="color:#22c55e">${aff}</span> 行 · 备份文件 <code>${esc(bp)}</code></div>
+      <div class="summary"><b>已写入数据库</b> 受影响 <span style="color:#5AD8A6">${aff}</span> 行 · 备份文件 <code>${esc(bp)}</code></div>
       <div><b>执行后抽样（前 20）</b>
         <table><thead><tr><th>单号</th><th>已填值</th></tr></thead><tbody>
-        ${(d.sampleAfter||[]).map(s=>'<tr><td>'+esc(s.docNo)+'</td><td style="white-space:pre-wrap"><b style="color:#22c55e">'+esc(s.filled)+'</b></td></tr>').join('')}
+        ${(d.sampleAfter||[]).map(s=>'<tr><td>'+esc(s.docNo)+'</td><td style="white-space:pre-wrap"><b style="color:#5AD8A6">'+esc(s.filled)+'</b></td></tr>').join('')}
         </tbody></table>
       </div>
       ${trigMsg}
-      <div class="sub" style="margin-top:8px">⚠ 前台易助需<b style="color:#ef4444">关闭该单后重新查询</b>才会显示新值（前台读缓存）。</div>`;
+      <div class="sub" style="margin-top:8px">⚠ 前台易助需<b style="color:#D97777">关闭该单后重新查询</b>才会显示新值（前台读缓存）。</div>`;
   }
 }
 
@@ -943,7 +1002,12 @@ document.getElementById('btnExec').onclick=async ()=>{
     if(cr&&cr.backupDir){ bd=cr.backupDir; window.__backupDir=bd; }
   }catch(_){}
   if(!confirm('确认执行写库？工具会先自动备份 '+curDb+' 到 '+bd+'\\'))return;
-  doRun(true);
+  const btn=document.getElementById('btnExec');
+  if(btn){ btn.disabled=true; btn.classList.add('loading'); btn.textContent='执行中...'; }
+  try { await doRun(true); }
+  finally {
+    if(btn){ btn.disabled=false; btn.classList.remove('loading'); btn.textContent='执行（先备份）'; }
+  }
 };
 
 // ---- 连接状态 banner ----
@@ -973,13 +1037,13 @@ async function loadConnBanner(){
   if(m.docs){
     el.className="ok";
     setDot('ok',(m.server||'数据库')+' · '+(m.currentDb||''));
-    if(txt) txt.innerHTML='<b style="color:#22c55e">数据库已连接</b> · 服务器 <code>'+esc(m.server||'-')+'</code> · 账套 <code>'+esc(m.currentDb||'-')+'</code>';
+    if(txt) txt.innerHTML='<b style="color:#5AD8A6">数据库已连接</b> · 服务器 <code>'+esc(m.server||'-')+'</code> · 账套 <code>'+esc(m.currentDb||'-')+'</code>';
     if(btn) btn.style.display="none";
   } else {
     el.className="err";
     setDot('err','数据库连接失败');
     const msg=m.error||'未知错误';
-    if(txt) txt.innerHTML='<b style="color:#ef4444">数据库连接失败</b>：'+esc(msg)+'。点"重新连接"重试。';
+    if(txt) txt.innerHTML='<b style="color:#D97777">数据库连接失败</b>：'+esc(msg)+'。点"重新连接"重试。';
     if(btn) btn.style.display="";
   }
 }
@@ -1035,11 +1099,11 @@ async function onServerChanged() {
     if (pick < 0 && sel.options.length > 0) pick = 0;
     if (pick >= 0) sel.selectedIndex = pick;
     note.textContent = '已识别 ' + sv + ' 的 ' + dbs.length + ' 个账套' + (kept ? '，保留当前账套 ' + kept : '，已选中第一个');
-    note.style.color = '#22c55e';
+    note.style.color = '#5AD8A6';
     loadConnBanner();
   } else {
     note.textContent = '无法连接 ' + sv + '：' + (r.error || '登录失败');
-    note.style.color = '#ef4444';
+    note.style.color = '#D97777';
   }
 }
 document.getElementById("btnLoadDbs").onclick = async () => {
@@ -1057,11 +1121,11 @@ document.getElementById("btnLoadDbs").onclick = async () => {
       ).join('');
       if (sel.options.length > 0 && !(cur && dbs.some(x => x.name === cur))) { sel.selectedIndex = 0; }
       note.textContent = '服务器 ' + esc(d.server) + ' · 共 ' + dbs.length + ' 个账套' + (src==='fallback'?'（已用保存配置）':'');
-      note.style.color = "#22c55e";
+      note.style.color = "#5AD8A6";
     } else {
       sel.innerHTML = '<option value="">（无法加载账套列表）</option>';
       note.textContent = d.error || '连接失败';
-      note.style.color = "#ef4444";
+      note.style.color = "#D97777";
     }
   };
   // 有密码时优先用界面参数；失败则自动回退到 GET（后端保存的配置）
@@ -1086,7 +1150,7 @@ document.getElementById("btnLoadDbs").onclick = async () => {
     apply(d.databases ? { ok: true, ...d } : { ok: false, error: d.error || '连接失败' }, 'fallback');
   } catch (e) {
     note.textContent = '请求失败: ' + e.message;
-    note.style.color = "#ef4444";
+    note.style.color = "#D97777";
   }
 };
 
@@ -1110,7 +1174,7 @@ document.getElementById("btnTestConn").onclick = async () => {
   } catch(e) { r = {ok:false, error:e.message}; }
   if (r.ok) {
     status.textContent = '连接成功，正在应用并重载...';
-    status.style.color = '#22c55e';
+    status.style.color = '#5AD8A6';
     // 后端 test-conn 已写配置+重连主池；现在切账套 + 重拉字典 + 刷 banner，一步到位
     await initDbConn();
     if (db) {
@@ -1125,7 +1189,7 @@ document.getElementById("btnTestConn").onclick = async () => {
     status.textContent = '连接成功';
   } else {
     status.textContent = '连接失败: ' + (r.error || '未知错误') + (r.hint ? ' ' + r.hint : '');
-    status.style.color = '#ef4444';
+    status.style.color = '#D97777';
   }
 };;
 
@@ -1136,8 +1200,8 @@ document.getElementById("connDbSel").onchange = async () => {
   note.textContent = '切换账套中...'; note.style.color = '';
   if (db) {
     const sw = await window.chuanzhi.switchDb({ database: db });
-    if (sw.ok) { window.__curDb = db; await initDbConn(); await loadConnBanner(); note.textContent = '已切换到 ' + db; note.style.color = '#22c55e'; }
-    else { note.textContent = '切换失败: ' + (sw.error||'未知'); note.style.color = '#ef4444'; }
+    if (sw.ok) { window.__curDb = db; await initDbConn(); await loadConnBanner(); note.textContent = '已切换到 ' + db; note.style.color = '#5AD8A6'; }
+    else { note.textContent = '切换失败: ' + (sw.error||'未知'); note.style.color = '#D97777'; }
   }
 };
 
@@ -1217,7 +1281,7 @@ if(_reconBtn){_reconBtn.onclick = async () => {
     console.error('db init error:', e);
     const txt=document.getElementById('connBannerText');
     const el=document.getElementById('connBanner');
-    if(txt && el){ el.className='err'; txt.innerHTML='<b style="color:#ef4444">初始化失败</b>：'+esc(e.message)+'。请点"重新连接"。'; }
+    if(txt && el){ el.className='err'; txt.innerHTML='<b style="color:#D97777">初始化失败</b>：'+esc(e.message)+'。请点"重新连接"。'; }
   }
   // 没有保存服务器时不做字典加载，避免首次打开显示"字典加载失败"
   if (cfgData.server) {
@@ -1322,14 +1386,14 @@ document.getElementById("btnSaveConfig").onclick = async () => {
       // 保存配置 = 权威来源：把当前界面填的 服务器/账号/密码 写进 creds.json（含 _last），重启即还原
       try{ await fetch('/api/creds/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({[server]:{user:user,pass:password},_last:{user:user,pass:password}})}); }catch(_){}
       note.textContent = "配置已保存，重启后自动使用；需要立即切换请点「测试连接」";
-      note.style.color = "#22c55e";
+      note.style.color = "#5AD8A6";
     } else {
       note.textContent = "保存失败: " + (d.error || "未知错误");
-      note.style.color = "#ef4444";
+      note.style.color = "#D97777";
     }
   } catch (e) {
     note.textContent = "保存失败: " + e.message;
-    note.style.color = "#ef4444";
+    note.style.color = "#D97777";
   }
 };
 </script>
@@ -1490,6 +1554,11 @@ chainRow();
   const show = (id, on) => { const el = $(id); if (el) el.classList.toggle('show', !!on); };
   const status = (text, kind) => { const el = $('obStatus'); if (!el) return; el.textContent = text || ''; el.className = 'onboard-status' + (kind ? ' ' + kind : ''); };
   let tested = false;
+  const setValid = (on) => {
+    ['obServer','obUser','obPass','obDatabase'].forEach(id => {
+      const el = $(id); if (el) el.classList.toggle('valid', !!on);
+    });
+  };
 
   async function postJSON(url, body) {
     const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body || {}) });
@@ -1520,9 +1589,9 @@ chainRow();
     const user = $('obUser').value.trim();
     const password = $('obPass').value;
     if (!server || !user) { status('请填写服务器地址和账号', 'err'); return; }
-    const btn = $('obTest'); btn.disabled = true; btn.textContent = '测试中...';
+    const btn = $('obTest'); btn.disabled = true; btn.classList.add('loading'); btn.textContent = '正在连接...';
     status('正在测试连接...', 'loading');
-    tested = false; $('obSave').disabled = true;
+    tested = false; $('obSave').disabled = true; setValid(false);
     try {
       const tr = await postJSON('/api/test-conn', { server, user, password, database:'master', dryRun:true });
       if (!tr.ok) { status((tr.error || '连接失败') + (tr.hint || ''), 'err'); return; }
@@ -1533,19 +1602,22 @@ chainRow();
       sel.innerHTML = dbs.map(x => '<option value="'+String(x.name).replace(/"/g,'&quot;')+'">'+String(x.name)+'</option>').join('');
       const cur = dl.currentDb || '';
       if (cur && dbs.some(x => x.name === cur)) sel.value = cur;
+      if (!sel.value && sel.options.length) sel.selectedIndex = 0;
       sel.disabled = false;
       tested = true;
       $('obSave').disabled = !sel.value;
+      setValid(!$('obSave').disabled);
       status('✔ 连接成功，请选择账套', 'ok');
     } catch (e) {
       status('连接失败：' + e.message, 'err');
     } finally {
-      btn.disabled = false; btn.textContent = '测试连接';
+      btn.disabled = false; btn.classList.remove('loading'); btn.textContent = '测试连接';
     }
   };
 
   $('obDatabase').onchange = () => {
     $('obSave').disabled = !(tested && $('obDatabase').value);
+    setValid(!$('obSave').disabled);
   };
 
   $('obSave').onclick = async () => {
