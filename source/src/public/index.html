@@ -238,10 +238,9 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
 .flow-step span{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:rgba(56,189,248,.12);color:var(--acc);font-size:10px;font-weight:700;}
 .source-flow .flow-step span{background:rgba(34,197,94,.12);color:var(--ok);}
 .flow-arrow{display:flex;align-items:center;justify-content:center;color:#334155;font-size:30px;font-weight:300;}
-.advanced-panel{margin-top:16px;border:1px solid var(--line);border-radius:8px;background:var(--input);padding:0 12px;}
-.adv-toggle{background:none;border:none;color:#94a3b8;font-size:12px;padding:11px 0;cursor:pointer;width:100%;text-align:left;}
-.adv-toggle:hover{color:var(--text);}
-.adv-body{display:none;padding:0 0 13px;gap:14px;flex-wrap:wrap;}
+.advanced-panel{margin-top:16px;border:1px solid var(--line);border-radius:8px;background:var(--input);padding:11px 12px;}
+.adv-title{font-size:12px;color:#94a3b8;margin-bottom:9px;letter-spacing:.3px;}
+.adv-body{display:flex;padding:0;gap:14px;flex-wrap:wrap;}
 .adv-body.open{display:flex;}
 .workspace-action-bar{position:fixed;left:212px;right:0;bottom:0;z-index:850;background:rgba(15,23,42,.97);border-top:1px solid var(--line);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;backdrop-filter:blur(12px);}
 .workspace-action-bar .action-buttons{display:flex;gap:10px;}
@@ -436,7 +435,7 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
   </div>
 
   <div class="advanced-panel">
-    <button class="adv-toggle" id="advToggle" type="button">▼ 高级选项</button>
+    <div class="adv-title">高级选项</div>
     <div class="adv-body" id="advBody">
       <label class="chk"><input type="checkbox" id="chkForce"> 强制覆盖</label>
       <label class="chk"><input type="checkbox" id="chkCreateTrigger"> 建立触发器</label>
@@ -1590,6 +1589,8 @@ chainRow();
     if (name === 'triggers') {
       const body = document.getElementById('trigPanelBody');
       if (body) body.style.display = '';
+      // 进入触发器页自动刷新一次，不再要求用户先点刷新
+      setTimeout(() => { const b = document.getElementById('trigRefresh'); if (b) b.click(); }, 60);
     }
   }
   navs.forEach(b => b.onclick = () => showPage(b.getAttribute('data-nav')));
@@ -1598,13 +1599,6 @@ chainRow();
     showPage('settings');
     const card = document.getElementById('dbConnCard');
     if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
-  };
-
-  const advToggle = document.getElementById('advToggle');
-  const advBody = document.getElementById('advBody');
-  if (advToggle && advBody) advToggle.onclick = () => {
-    const open = advBody.classList.toggle('open');
-    advToggle.textContent = (open ? '▲' : '▼') + ' 高级选项';
   };
 
   window.showMomoToast = (text, type) => {
