@@ -195,11 +195,43 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
 .pv-new{color:var(--ok);font-weight:700;font-family:Consolas,monospace;}
 .pv-empty{margin-top:16px;padding:28px 20px;border:1px dashed var(--line);border-radius:6px;color:var(--muted);font-size:13px;text-align:center;}
 .pv-foot{margin-top:10px;font-size:11px;color:var(--muted);}
+
+/* ===== onboarding ===== */
+.onboard-screen{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(5,10,18,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+.onboard-screen.show{display:flex;}
+.onboard-card{width:min(520px,calc(100vw - 40px));background:rgba(15,23,42,.88);border:1px solid rgba(148,163,184,.28);border-radius:18px;padding:30px 32px;box-shadow:0 30px 90px rgba(0,0,0,.55);color:#e2e8f0;position:relative;overflow:hidden;}
+.onboard-card::before{content:"";position:absolute;width:260px;height:260px;right:-100px;top:-130px;background:radial-gradient(circle,rgba(34,197,94,.22),transparent 68%);pointer-events:none;}
+.onboard-eyebrow{font-size:11px;letter-spacing:2px;color:#22c55e;text-transform:uppercase;margin-bottom:10px;}
+.onboard-title{font-size:22px;font-weight:700;line-height:1.35;margin:0 0 10px;}
+.onboard-desc{font-size:13px;line-height:1.8;color:#94a3b8;margin:0 0 22px;}
+.onboard-field{margin-bottom:14px;position:relative;}
+.onboard-field label{display:block;font-size:12px;color:#94a3b8;margin-bottom:7px;}
+.onboard-field input,.onboard-field select{width:100%;height:42px;border-radius:8px;border:1px solid rgba(148,163,184,.28);background:rgba(2,6,23,.55);color:#e2e8f0;padding:0 12px;font-size:13px;outline:none;box-sizing:border-box;}
+.onboard-field input:focus,.onboard-field select:focus{border-color:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.12);}
+.onboard-field select:disabled{opacity:.55;}
+.onboard-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;flex-wrap:wrap;}
+.onboard-status{min-height:20px;font-size:12px;line-height:1.6;margin-top:12px;}
+.onboard-status.ok{color:#22c55e;}
+.onboard-status.err{color:#ef4444;}
+.onboard-status.loading{color:#38bdf8;}
+.btn{transition:opacity .15s,transform .15s;}
+.btn:active{transform:translateY(1px);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.onboard-welcome .onboard-card{text-align:center;width:min(580px,calc(100vw - 40px));}
+.onboard-welcome h1{font-size:26px;line-height:1.5;margin:10px 0 8px;}
+.onboard-welcome p{color:#94a3b8;font-size:13px;line-height:1.8;}
+.onboard-cards{display:flex;gap:12px;justify-content:center;margin:24px 0 4px;flex-wrap:wrap;}
+.onboard-feature{width:150px;padding:16px 12px;border-radius:12px;border:1px solid rgba(148,163,184,.22);background:rgba(2,6,23,.45);text-align:left;}
+.onboard-feature b{display:block;font-size:13px;color:#e2e8f0;margin-bottom:5px;}
+.onboard-feature span{font-size:11px;line-height:1.6;color:#64748b;}
+.onboard-feature i{font-style:normal;font-size:20px;display:block;margin-bottom:8px;}
+.onboard-glow{animation:onboardPulse 5s ease-in-out infinite;}
+@keyframes onboardPulse{0%,100%{box-shadow:0 0 0 rgba(34,197,94,0);}50%{box-shadow:0 0 38px rgba(34,197,94,.16);}}
 </style>
 </head>
 <body>
 
-<main class="container">
+<main class="container" id="appMain">
 <div style="text-align:center;padding:14px 0 10px;font-size:13px;color:var(--muted);letter-spacing:.5px;font-weight:500">科技不是高高在上，而是服务于人民</div>
 
 <div id="connBanner" class="loading"><div class="banner-row"><span id="connBannerText">正在连接数据库...</span><button id="btnReconnect" class="btn sm" type="button" style="display:none">重新连接</button></div><span class="gx-mark">GX</span></div>
@@ -324,10 +356,61 @@ input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--input) inset 
 
 </main>
 
-<div id="firstOpenModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:28px 36px;min-width:320px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5);">
-    <div style="font-size:15px;color:var(--text);margin-bottom:22px;line-height:1.8;">科技不是高高在上，而是服务于人民</div>
-    <button class="btn" id="firstOpenOk" type="button">确定</button>
+<div id="onboardWelcomeModal" class="onboard-screen">
+  <div class="onboard-card onboard-welcome">
+    <div class="onboard-eyebrow">Momo 传值助手</div>
+    <h1>🎉 欢迎使用 Momo 传值助手</h1>
+    <p>软件已完成安装，请先完成初始配置。</p>
+    <div class="onboard-actions" style="justify-content:center">
+      <button class="btn primary" id="obStart" type="button">开始配置</button>
+    </div>
+  </div>
+</div>
+
+<div id="setupScreen" class="onboard-screen">
+  <div class="onboard-card">
+    <div class="onboard-eyebrow">STEP 1 / 2 · DATABASE</div>
+    <h2 class="onboard-title">连接数据库</h2>
+    <p class="onboard-desc">填写 SQL Server 连接信息，测试通过后选择账套。</p>
+    <div class="onboard-field">
+      <label>服务器地址</label>
+      <input id="obServer" type="text" placeholder="例如 192.168.0.142" autocomplete="off">
+    </div>
+    <div class="onboard-field">
+      <label>账号</label>
+      <input id="obUser" type="text" placeholder="sa" autocomplete="off">
+    </div>
+    <div class="onboard-field">
+      <label>密码</label>
+      <input id="obPass" type="password" placeholder="数据库密码" autocomplete="current-password">
+    </div>
+    <div class="onboard-field">
+      <label>账套</label>
+      <select id="obDatabase" disabled>
+        <option value="">请先测试连接</option>
+      </select>
+    </div>
+    <div id="obStatus" class="onboard-status"></div>
+    <div class="onboard-actions">
+      <button class="btn" id="obTest" type="button">测试连接</button>
+      <button class="btn primary" id="obSave" type="button" disabled>保存并进入软件</button>
+    </div>
+  </div>
+</div>
+
+<div id="welcomeScreen" class="onboard-screen">
+  <div class="onboard-card onboard-welcome onboard-glow">
+    <div class="onboard-eyebrow">WELCOME</div>
+    <h1>科技不是高高在上，<br>而是服务于人民</h1>
+    <p>跨表带值、执行前备份、触发器联动，都在一个工作台里。</p>
+    <div class="onboard-cards">
+      <div class="onboard-feature"><i>📥</i><b>极速映射</b><span>跨表数据一键流转</span></div>
+      <div class="onboard-feature"><i>🛡️</i><b>安全无忧</b><span>执行前自动备份，干跑防错</span></div>
+      <div class="onboard-feature"><i>⚡</i><b>触发联动</b><span>高级触发器建立</span></div>
+    </div>
+    <div class="onboard-actions" style="justify-content:center;margin-top:26px">
+      <button class="btn primary" id="obEnter" type="button">进入工作台</button>
+    </div>
   </div>
 </div>
 
@@ -1034,19 +1117,7 @@ if(_reconBtn){_reconBtn.onclick = async () => {
     sv.addEventListener('change', function(){ rememberSrv(); applyCred(sv.value.trim()); onServerChanged(); });
   })();
 
-  // 首次打开提示：应用内弹窗（不使用原生 alert，避免关闭后窗口失焦无法输入）
-  try {
-    const fo = await (await fetch('/api/first-open')).json();
-    if (fo && fo.ok && !fo.seen) {
-      await fetch('/api/first-open', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      const modal = document.getElementById('firstOpenModal');
-      if (modal) {
-        modal.style.display = 'flex';
-        const ok = document.getElementById('firstOpenOk');
-        if (ok) ok.focus();
-      }
-    }
-  } catch (e) {}
+  // 首次打开提示由 onboarding 流程接管
 })();
 
 // ---- 高级选项 展开/收起 ----
@@ -1294,13 +1365,97 @@ chainRow();
 </script>
 <script>
 (function(){
-  const m=document.getElementById('firstOpenModal');
-  const b=document.getElementById('firstOpenOk');
-  if(b) b.onclick=function(){
-    if(m) m.style.display='none';
-    const s=document.getElementById('connServer');
-    if(s){ try{ s.focus(); }catch(_){} }
+  const $ = id => document.getElementById(id);
+  const show = (id, on) => { const el = $(id); if (el) el.classList.toggle('show', !!on); };
+  const status = (text, kind) => { const el = $('obStatus'); if (!el) return; el.textContent = text || ''; el.className = 'onboard-status' + (kind ? ' ' + kind : ''); };
+  let tested = false;
+
+  async function postJSON(url, body) {
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body || {}) });
+    return await r.json();
+  }
+
+  async function initOnboarding() {
+    let st = {};
+    try { st = await (await fetch('/api/onboarding')).json(); } catch (_) {}
+    if (st.needsSetup) {
+      show('onboardWelcomeModal', true);
+      return;
+    }
+    // 首次配置保存成功后，刷新前会留下这个标记，用来只显示一次欢迎页
+    if (sessionStorage.getItem('momo_after_setup') === '1') {
+      show('welcomeScreen', true);
+    }
+  }
+
+  $('obStart').onclick = () => {
+    show('onboardWelcomeModal', false);
+    show('setupScreen', true);
+    setTimeout(() => { const el = $('obServer'); if (el) el.focus(); }, 100);
   };
+
+  $('obTest').onclick = async () => {
+    const server = $('obServer').value.trim();
+    const user = $('obUser').value.trim();
+    const password = $('obPass').value;
+    if (!server || !user) { status('请填写服务器地址和账号', 'err'); return; }
+    const btn = $('obTest'); btn.disabled = true; btn.textContent = '测试中...';
+    status('正在测试连接...', 'loading');
+    tested = false; $('obSave').disabled = true;
+    try {
+      const tr = await postJSON('/api/test-conn', { server, user, password, database:'master', dryRun:true });
+      if (!tr.ok) { status((tr.error || '连接失败') + (tr.hint || ''), 'err'); return; }
+      const dl = await postJSON('/api/databases', { server, user, password });
+      const dbs = Array.isArray(dl.databases) ? dl.databases : [];
+      if (!dbs.length) { status('连接成功，但没有读取到账套列表', 'err'); return; }
+      const sel = $('obDatabase');
+      sel.innerHTML = dbs.map(x => '<option value="'+String(x.name).replace(/"/g,'&quot;')+'">'+String(x.name)+'</option>').join('');
+      const cur = dl.currentDb || '';
+      if (cur && dbs.some(x => x.name === cur)) sel.value = cur;
+      sel.disabled = false;
+      tested = true;
+      $('obSave').disabled = !sel.value;
+      status('✔ 连接成功，请选择账套', 'ok');
+    } catch (e) {
+      status('连接失败：' + e.message, 'err');
+    } finally {
+      btn.disabled = false; btn.textContent = '测试连接';
+    }
+  };
+
+  $('obDatabase').onchange = () => {
+    $('obSave').disabled = !(tested && $('obDatabase').value);
+  };
+
+  $('obSave').onclick = async () => {
+    const database = $('obDatabase').value;
+    if (!tested || !database) { status('请先测试连接并选择账套', 'err'); return; }
+    const btn = $('obSave'); btn.disabled = true; btn.textContent = '保存中...';
+    status('正在保存配置...', 'loading');
+    try {
+      const r = await postJSON('/api/save-config', {
+        server: $('obServer').value.trim(),
+        user: $('obUser').value.trim(),
+        password: $('obPass').value,
+        database
+      });
+      if (!r.ok) { status('保存失败：' + (r.error || '未知错误'), 'err'); btn.disabled = false; btn.textContent = '保存并进入软件'; return; }
+      try { await postJSON('/api/onboarding', {}); } catch (_) {}
+      sessionStorage.setItem('momo_after_setup', '1');
+      location.reload();
+    } catch (e) {
+      status('保存失败：' + e.message, 'err');
+      btn.disabled = false; btn.textContent = '保存并进入软件';
+    }
+  };
+
+  $('obEnter').onclick = async () => {
+    try { await postJSON('/api/onboarding', {}); } catch (_) {}
+    sessionStorage.removeItem('momo_after_setup');
+    show('welcomeScreen', false);
+  };
+
+  initOnboarding();
 })();
 </script>
 </body>
