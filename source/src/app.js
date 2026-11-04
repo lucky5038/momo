@@ -1615,20 +1615,22 @@ function handleConfig(req, res) {
 // 备份路径：GET 返回当前值；POST 不传 dir 时弹出原生目录选择框
 const FIRST_OPEN_FLAG = () => path.join(BASE_DIR, 'first_open.flag');
 const ONBOARDING_FLAG = () => path.join(BASE_DIR, 'onboarding_done.flag');
+const FRESH_INSTALL_FLAG = () => path.join(BASE_DIR, 'fresh_install.flag');
 
 function onboardingState() {
   const c = CONFIG.db || {};
   const configured = !!(String(c.server || '').trim() && String(c.user || '').trim() && String(c.database || '').trim());
   const done = fs.existsSync(ONBOARDING_FLAG());
+  // 安装器只在全新安装时写这个标记；覆盖升级不会写。
+  const freshInstall = fs.existsSync(FRESH_INSTALL_FLAG());
   return {
     ok: true,
     configured,
     onboardingDone: done,
-    needsSetup: !configured,
-    // 老版本用户：已有配置，直接进工作台，不重新引导
-    existingInstall: configured,
-    // 仅“没有配置、也没有完成引导”的新环境需要欢迎页
-    newInstall: !configured && !done
+    needsSetup: freshInstall || !configured,
+    // 老版本用户：已有配置且不是全新安装，直接进工作台
+    existingInstall: !freshInstall && configured,
+    newInstall: freshInstall || (!configured && !done)
   };
 }
 
@@ -1636,6 +1638,7 @@ async function handleOnboarding(req, res) {
   if (req.method === 'GET') return sendJSON(res, 200, onboardingState());
   try {
     fs.writeFileSync(ONBOARDING_FLAG(), new Date().toISOString(), 'utf8');
+    try { if (fs.existsSync(FRESH_INSTALL_FLAG())) fs.unlinkSync(FRESH_INSTALL_FLAG()); } catch (_) {}
     return sendJSON(res, 200, { ok: true, ...onboardingState(), onboardingDone: true });
   } catch (e) {
     return sendJSON(res, 500, { error: '写入引导完成标记失败: ' + e.message });
