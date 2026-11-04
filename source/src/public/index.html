@@ -765,6 +765,15 @@ input[type=text]:focus,input[type=password]:focus,select:focus,
 }
 /* 最终欢迎页标题保持单行 */
 #welcomeScreen h1{font-size:clamp(26px,4.2vw,52px);white-space:nowrap;}
+/* 执行结果不要形成独立滚动层，避免滚轮被表格锁住 */
+html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
+#result{overflow:visible;}
+#result .pv-table-wrap{
+  max-height:none !important;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior:auto;
+}
 </style>
 </head>
 <body>
