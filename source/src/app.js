@@ -1067,7 +1067,9 @@ async function handleRun(req, res) {
         }
         out = autoPaths.length === 1
           ? sqlgen.buildChainSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], reg.docs)
-          : sqlgen.buildChainMultiSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths, reg.docs);
+          : sqlgen.buildChainMultiSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths, reg.docs, {
+              aggregateDistinct: !!mergeDisplay
+            });
       }
     } else {
       const mappingChain = mapping.chain || (mSrcId === srcId ? chain : null);
@@ -1091,7 +1093,7 @@ async function handleRun(req, res) {
             out = sqlgen.buildChainSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], autoRegistry.docs);
           } else if (autoPaths.length > 1) {
             out = sqlgen.buildChainMultiSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths, autoRegistry.docs, {
-              aggregateDistinct: aggregatePurchase
+              aggregateDistinct: !!mergeDisplay || aggregatePurchase
             });
           }
         } catch (autoErr) {
@@ -1186,7 +1188,7 @@ async function handleRun(req, res) {
     const pr = await p.request().query(built.cntSql);
     const totalRows = pr.recordset[0].n; let sample = [];
     if (totalRows > 0) { const sr = await p.request().query(built.previewSql); sample = sr.recordset.slice(0, 50); }
-    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, channelNote: built.channelNote || '', chainNote: built.chainNote || '', typeWarning: built.typeWarning || undefined, chainWarning: built.chainWarning || undefined, previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)') });
+    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, channelNote: built.channelNote || '', chainNote: built.chainNote || '', typeWarning: built.typeWarning || undefined, chainWarning: built.chainWarning || undefined, mergeNote: mergeDisplay ? (built.isHeaderMerge ? '合并显示：表头按目标主键聚合来源值' : '合并显示：按单号+序号聚合来源值') : undefined, previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)') });
   }
 
   const cfg = CUR_CONFIG || CONFIG.db;

@@ -1340,6 +1340,7 @@ function renderPreview(b, d){
     + (tags ? '<div class="pv-tags">' + tags + '</div>' : '')
     + (d.typeWarning ? '<div style="margin:8px 0;padding:8px 10px;border-left:3px solid #f59e0b;background:rgba(245,158,11,.08);color:#fbbf24;font-size:12px;line-height:1.6">⚠ ' + esc(d.typeWarning) + '</div>' : '')
     + (d.chainWarning ? '<div style="margin:8px 0;padding:8px 10px;border-left:3px solid #00E5FF;background:rgba(56,189,248,.08);color:#7BEAFF;font-size:12px;line-height:1.6">ⓘ ' + esc(d.chainWarning) + '</div>' : '')
+    + (d.mergeNote ? '<div style="margin:8px 0;padding:8px 10px;border-left:3px solid #39FF88;background:rgba(57,255,136,.06);color:#A7F3D0;font-size:12px;line-height:1.6">✓ ' + esc(d.mergeNote) + '</div>' : '')
     + body
     + '</div>';
 }
