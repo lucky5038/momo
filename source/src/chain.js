@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 22;
+const REGISTRY_VERSION = 23;
 const FIELD_DICTS = require('./source-dict');
 const SOURCE_LABELS = FIELD_DICTS.Source || {};
 // 只有这些“字段名”才使用 [Source] 代码表；主要来源/科目来源/数据来源/客户来源/来源码等
@@ -316,6 +316,10 @@ async function buildRegistry(pool) {
     // 生产检验单身 -> 工单（来源单号，81=工单）
     { from: 'QMSMAB', to: 'SGMRAA', fromNo: 'MAB006', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     { from: 'SGMRBB', to: 'SGMRAB', fromNo: 'RBB010', fromSeq: 'RBB011', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    // 报工单 -> 移转单：两者不是上下游，共享同一工单；
+    // 报工单身 RHB004 / 移转单身 RDB004 都是工单单号。
+    // 不能经移转单头转接，否则一张移转单对应多张工单时会按单号错配。
+    { from: 'SGMRHB', to: 'SGMRDB', fromNo: 'RHB004', fromSeq: null, toJoinCol: 'RDB004', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     // 工单头 -> 品号主档：工单界面的品名/规格不是头表字段，按主件品号查 TPADEA
     { from: 'SGMRAA', to: 'TPADEA', fromNo: 'RAA015', fromSeq: null, toJoinCol: 'DEA001', fromCode: null, code: null, status: 'master-lookup', hits: 1, samples: 1 },
     // 重工单 -> 工单（来源工单单号）
