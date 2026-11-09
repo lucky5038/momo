@@ -517,6 +517,10 @@ module.exports = function makeSqlgen(sql) {
         if (toMeta.typeCol && fromMeta.typeCol) {
           cond += ' AND ' + bt(alias) + '.' + bt(toMeta.typeCol) + ' = ' + bt(prevAlias) + '.' + bt(fromMeta.typeCol);
         }
+      } else if (e.joinSql) {
+        cond = String(e.joinSql)
+          .replace(/\{a\}/g, bt(alias))
+          .replace(/\{b\}/g, bt(prevAlias));
       } else {
         cond = bt(alias) + '.' + bt(e.toJoinCol || toMeta.docNo) + ' = ' + bt(prevAlias) + '.' + bt(e.fromNo);
         const toSeq = e.toSeqCol || toMeta.docSeq;

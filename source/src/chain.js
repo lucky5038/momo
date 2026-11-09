@@ -4,7 +4,7 @@
 
 const SAFE = /^[A-Za-z0-9_]+$/;
 const q = (name) => '[' + name + ']';
-const REGISTRY_VERSION = 23;
+const REGISTRY_VERSION = 27;
 const FIELD_DICTS = require('./source-dict');
 const SOURCE_LABELS = FIELD_DICTS.Source || {};
 // 只有这些“字段名”才使用 [Source] 代码表；主要来源/科目来源/数据来源/客户来源/来源码等
@@ -87,6 +87,7 @@ const SOURCE_CODE_MAP = {
   '92': 'SGMRBB',  // 工艺投料
   '94': 'SGMRCB',  // 工艺入库
   '95': 'SGMRHB',  // 报工
+  '96': 'SGMSAA',  // 生产计划
   '97': 'SGMRKB',  // 重工单
   '98': 'SGMRLB',  // 副产品入库
   'A0': 'QMSMFB',  // 进货检验
@@ -109,7 +110,9 @@ const SOURCE_CODE_OVERRIDES = {
 const LINK_FIELD_OVERRIDES = {
   'SGMRCB.RCB021:81': { fromNo: 'RCB026', fromSeq: 'RCB027' },
   // 生产入库工单信息档：来源序号列是 000，行序号在 RCC022
-  'SGMRCC.RCC003:81': { fromNo: 'RCC013', fromSeq: 'RCC022' }
+  'SGMRCC.RCC003:81': { fromNo: 'RCC013', fromSeq: 'RCC022' },
+  // 收款核销单的发票序号常为空，按发票单号匹配开票单身
+  'YSFGHC.GHC003:59': { fromNo: 'GHC004', fromSeq: null }
 };
 
 const IGNORED_SOURCE_CODES = new Set(['18A', '18B', '35']);
@@ -322,16 +325,35 @@ async function buildRegistry(pool) {
     { from: 'SGMRHB', to: 'SGMRDB', fromNo: 'RHB004', fromSeq: null, toJoinCol: 'RDB004', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     // 工单头 -> 品号主档：工单界面的品名/规格不是头表字段，按主件品号查 TPADEA
     { from: 'SGMRAA', to: 'TPADEA', fromNo: 'RAA015', fromSeq: null, toJoinCol: 'DEA001', fromCode: null, code: null, status: 'master-lookup', hits: 1, samples: 1 },
-    // 重工单 -> 工单（来源工单单号）
+    // 移转单身 -> 工单头：RDB004 是工单单号；不能经移转单头（单头没有工单号）
+    { from: 'SGMRDB', to: 'SGMRAA', fromNo: 'RDB004', fromSeq: null, toJoinCol: 'RAA001', fromCode: null, code: null, status: 'adapter', prefer: true, hits: 1, samples: 1 },
+    // 工单主件 -> 工艺路线：主件品号的 DEA045 指向 SGMQBB.QBB001
+    { from: 'TPADEA', to: 'SGMQBB', fromNo: 'DEA045', fromSeq: null, toJoinCol: 'QBB001', fromCode: null, code: null, status: 'adapter', prefer: true, hits: 1, samples: 1 },
+    // 工艺路线的主要材料 -> 品号主档
+    { from: 'SGMQBB', to: 'TPADEA', fromNo: 'QBB003', fromSeq: null, toJoinCol: 'DEA001', fromCode: null, code: null, status: 'master-lookup', prefer: true, hits: 1, samples: 1 },
+    // 移转单身 -> 工艺路线：经工单主件找路线；用于取 QBB003 主要材料
+    {
+      from: 'SGMRDB', to: 'SGMQBB',
+      joinSql: '{a}.[QBB001] = (SELECT TOP 1 d.[DEA045] FROM [dbo].[SGMRAA] wa JOIN [dbo].[TPADEA] d ON d.[DEA001] = wa.[RAA015] WHERE wa.[RAA001] = {b}.[RDB004])',
+      status: 'adapter', hits: 1, samples: 1
+    },
+    // 移转单身 -> 主要材料品号主档：工单主件 -> 工艺路线 -> QBB003 -> TPADEA.DEA057
+    {
+      from: 'SGMRDB', to: 'TPADEA',
+      joinSql: '{a}.[DEA001] = (SELECT TOP 1 q.[QBB003] FROM [dbo].[SGMRAA] wa JOIN [dbo].[TPADEA] d ON d.[DEA001] = wa.[RAA015] JOIN [dbo].[SGMQBB] q ON q.[QBB001] = d.[DEA045] WHERE wa.[RAA001] = {b}.[RDB004])',
+      status: 'adapter', hits: 1, samples: 1
+    },
+    // 重工单 -> 工单（来源工单单号）；反向边供“工单取重工单”使用
     { from: 'SGMRKA', to: 'SGMRAA', fromNo: 'RKA010', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'SGMRAA', to: 'SGMRKA', fromNo: 'RAA001', fromSeq: null, toJoinCol: 'RKA010', fromCode: null, code: null, status: 'adapter', prefer: true, hits: 1, samples: 1 },
+    { from: 'SGMRAA', to: 'SGMRNA', fromNo: 'RAA001', fromSeq: null, toJoinCol: 'RNA023', fromCode: null, code: null, status: 'adapter', prefer: true, hits: 1, samples: 1 },
     // 物料需求计划发放：委外单/工单都挂同一计划编号，经 SGMRIB 互为来源
-    { from: 'SGMREA', to: 'SGMRIB', fromNo: 'REA049', fromSeq: 'REA050', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
-    { from: 'SGMRAA', to: 'SGMRIB', fromNo: 'RAA026', fromSeq: 'RAA027', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'SGMREA', to: 'SGMRIB', fromNo: 'REA049', fromSeq: 'REA050', toJoinCol: 'RIB001', toSeqCol: 'RIB002', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
+    { from: 'SGMRAA', to: 'SGMRIB', fromNo: 'RAA026', fromSeq: 'RAA027', toJoinCol: 'RIB001', toSeqCol: 'RIB002', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     { from: 'SGMRIB', to: 'SGMRAA', fromNo: 'RIB001', fromSeq: 'RIB002', toJoinCol: 'RAA026', toSeqCol: 'RAA027', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     { from: 'SGMRIB', to: 'SGMREA', fromNo: 'RIB001', fromSeq: 'RIB002', toJoinCol: 'REA049', toSeqCol: 'REA050', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
     // 收款核销 -> 销售开票单头；销售开票 -> 订单单头（来源序号为空时按单头取）
-    { from: 'YSFGHC', to: 'YSFGGA', fromNo: 'GHC004', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 },
-    { from: 'YSFGGB', to: 'DCSIBA', fromNo: 'GGB004', fromSeq: null, fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 }
+    { from: 'YSFGHC', to: 'YSFGGA', fromNo: 'GHC004', fromSeq: null, toJoinCol: 'GGA001', fromCode: null, code: null, status: 'adapter', hits: 1, samples: 1 }
   ];
   // 单头显式引用上游单据时自动接边，覆盖付款单、收款单、计划建议等同类结构。
   for (const [tbl, cols] of Object.entries(byTable)) {
@@ -342,6 +364,7 @@ async function buildRegistry(pool) {
       if (links.some(l => l.from === tbl && l.to === to)) continue;
       ADAPTERS.push({
         from: tbl, to, fromNo: ref.col, fromSeq: null,
+        ...(to === 'SGMRIB' ? { toJoinCol: 'RIB001' } : {}),
         fromCode: null, code: null, status: 'head-reference', hits: 1, samples: 1
       });
     }
@@ -419,6 +442,18 @@ async function buildRegistry(pool) {
     });
   }
 
+  // 少数中间表没有「单号」列（如计划单据来源档），用其固定的来源单号/序号列补全目标键。
+  const TARGET_KEY_DEFAULTS = {
+    SGMRIB: { col: 'RIB001', seq: 'RIB002' }
+  };
+  for (const l of links) {
+    const def = TARGET_KEY_DEFAULTS[l.to];
+    if (def && !l.toNo && !l.toJoinCol) {
+      l.toJoinCol = def.col;
+      if (!l.toSeqCol) l.toSeqCol = def.seq;
+    }
+  }
+
   const linkCount = {};
   links.forEach(l => { linkCount[l.code] = (linkCount[l.code] || 0) + 1; });
   const sourceCodes = Object.keys(SOURCE_LABELS).map(code => ({
@@ -466,6 +501,8 @@ function buildAdj(registry) {
       fromSeq: l.fromSeq,
       toJoinCol: l.toJoinCol,
       toSeqCol: l.toSeqCol,
+      joinSql: l.joinSql,
+      prefer: l.prefer,
       link: l
     });
   });

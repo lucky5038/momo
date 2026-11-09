@@ -190,8 +190,15 @@ async function getChainRegistry() {
   }
 }
 function resolvedChainPaths(registry, from, to) {
-  return chainBuilder.findAllPaths(registry, from, to)
+  const paths = chainBuilder.findAllPaths(registry, from, to)
     .filter(path => path.length && path.every(e => e.internal || (e.link && e.link.status !== 'ambiguous')));
+  // 复合关联已经把多跳关系收进一条 SQL 条件，不能再和普通多跳路径一起聚合取值。
+  const compound = paths.filter(path => path.some(e => e.joinSql));
+  if (compound.length) {
+    const min = Math.min(...compound.map(path => path.length));
+    return compound.filter(path => path.length === min);
+  }
+  return paths;
 }
 function pruneInvoicePaths(paths) {
   let kept = Array.isArray(paths) ? paths.slice() : [];
@@ -1084,10 +1091,14 @@ async function handleRun(req, res) {
         dbg('[autoChain] lookup failed: ' + autoErr.message);
       }
       const internalPath = autoPaths.length > 0 && autoPaths.every(path => path.length && path.every(edge => edge.internal));
+      // 单跳适配边（重工单/委外变更等）方向与默认“单号键”不同，必须优先走注册表，
+      // 否则会按来源单号错连，出现“有映射但预览 0 行”。
+      const registryOneHop = autoPaths.length === 1 && autoPaths[0].length === 1 &&
+        ['adapter', 'head-reference', 'field-override'].includes(autoPaths[0][0].link && autoPaths[0][0].link.status);
       if (!autoPaths.length && ['TPADEA'].includes(mSrcId)) {
         out.chainWarning = '来源是品号主档，但当前单据没有找到“主件品号→品号主档”的链路；直接按品号关联可能取到子件品名，请先补主档解析边。';
       }
-      if (out.channelName === '默认键' || internalPath) {
+      if (out.channelName === '默认键' || internalPath || registryOneHop) {
         try {
           if (autoPaths.length === 1) {
             out = sqlgen.buildChainSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], autoRegistry.docs);
