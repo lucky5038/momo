@@ -1206,10 +1206,10 @@ function onDocChange(){
   ss.classList.remove('disabled');
   const ph=document.createElement('option'); ph.value=''; ph.textContent='—— 请选择来源档 ——'; ss.appendChild(ph);
   const exSet=new Set((META.srcExcluded||{})[doc.id]||[]);
-  // 业务流向：上游单据不能取下游单据的值，后台自动排除
+  // 后台只排除同一单据家族；能关联取值的下游来源也允许直接选择
   const infoGroup=document.createElement('optgroup'); infoGroup.label='信息档';
   META.srcs.forEach(src=>{
-    if(exSet.has(src.id))return;      // 业务流向：下游单据自动排除
+    if(exSet.has(src.id))return;
     if(src.id===doc.id)return;        // 来源档不能与主表是同一张表
     const o=document.createElement('option');
     o.value=src.id; o.textContent=src.name;

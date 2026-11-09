@@ -531,14 +531,12 @@ async function handleMeta(req, res) {
   if (srcIds.length) await scanColsBatch(srcIds, null, (row) => { (srcAllCols[row.tbl] = srcAllCols[row.tbl] || []).push({ col: row.col, maxLen: row.maxLen, desc: row.desc }); });
   if (tgtIds.length) await scanColsBatch(tgtIds, 'c.column_id>=4', (row) => { const k = docs.find(d => d.sub === row.tbl)?.id; if (k) (tgtAllCols[k] = tgtAllCols[k] || []).push({ col: row.col, maxLen: row.maxLen, desc: row.desc }); });
   CUR_DOCS = docs; CUR_SRCS = srcs;
-  // 业务流向过滤：上游单据不能取下游单据的值，后台自动计算，前端静默排除
-  const allDocIds = docs.map(x => x.id);
+  // 只排除同一单据家族（头/单/选配），不按业务流向排除下游：
+  // 只要字段能关联、数据能流通，反向直接取值也允许。
   const srcExcluded = {};
   for (const d of docs) {
-    const ex = excludedSrcIdsFor(d.id, allDocIds);
     const famEx = docs.filter(x => x.id !== d.id && sameFamily(x.id, d.id)).map(x => x.id);
-    const merged = [...new Set([...ex, ...famEx])];
-    if (merged.length) srcExcluded[d.id] = merged;
+    if (famEx.length) srcExcluded[d.id] = famEx;
   }
   // 返回真实 DB_NAME()，避免“界面显示 DSB、实际连着 XBK”
   const actualDb = (await poolDbName(p)) || (CUR_CONFIG || CONFIG.db).database;
@@ -724,73 +722,6 @@ async function verifyColsForTrig(p, doc, tgtCol, srcTable, srcValCol) {
   }
 }
 
-// ===== 业务流向白名单：上游 → 直接下游（数据只能 下游取上游，不能 上游取下游）=====
-// 依据 ERP 单据业务链：采购链/销售链/生产链/委外链。
-// 可达上游 = 白名单中所有"能一路流到该单据"的上游节点；这些节点（及其单身/选配/变更子档）都可以作为来源档。
-// 不在白名单内的单据（基础档/报表/系统档）不参与方向判定，不做排除。
-const DOC_FLOW = {
-  // ---- 采购链（含询价/核价/变更/收货）----
-  DCSHAA: ['DCSHBA'],              // 询价 → 请购
-  DCSHBA: ['DCSHCA'],              // 请购 → 采购底稿
-  DCSHCA: ['DCSHDA'],              // 采购底稿 → 采购单
-  DCSHDA: ['JSKJCA', 'YSFGQA'],    // 采购单 → 收料单 / 付款单
-  JSKJCA: ['JSKJDA'],              // 收料单 → 验收/进货单
-  QMSMFA: ['JSKJDA'],               // 进货检验单 → 验收(退)/进货单
-  JSKJDA: ['YSFGSA'],               // 验收(退)/进货单 → 采购发票
-  QMSMCA: ['QMSMBA'],             // 委外进货检验 → 委外进货收料
-  QMSMBA: ['QMSMDA'],             // 委外进货收料 → 委外进货验退退回
-  // ---- 销售链 ----
-  DCSIAA: ['DCSIBA', 'DCSIDA', 'DCSDAA'],  // 报价 → 订单 / 订单合同
-  DCSIBA: ['DCSICA', 'JSKKEA', 'YSFGDA'], // 订单 → 订单变更 / 销货单 / 收款单
-  DCSICA: ['JSKKEA'],                      // 订单变更 → 销货单
-  DCSDAA: ['DCSIBA'],                      // 订单合同 → 订单
-  DCSIDA: ['DCSIBA'],                      // 订单合同(另一档) → 订单
-  JSKKEA: ['JSKKEC', 'YSFGGA', 'YSFGEA'],  // 销货单 → 销货批号 / 销售开票 / 应收开账
-  JSKKFA: ['YSFGAA'],                       // 销退单 → 其他应收
-  JSKKFC: ['YSFGHA'],                       // 客户到款核销 → 收款核销单
-  YSFGGA: ['YSFGFA', 'YYSOBA'],            // 销售开票 → 发票档案 / 销项凭证
-  YSFGEA: ['YSFGDA'],                        // 应收开账 → 收款单
-  YSFGDA: ['YSFGHA'],                        // 收款单 → 收款核销单
-  YSFGSA: ['YSFGQA'],                        // 采购发票 → 付款单
-  YSFGQA: ['YSFGTA'],                        // 付款单 → 付款核销单
-  SGMRIB: ['SGMRJA'],                        // 计划来源 → 计划建议
-  // ---- 生产链 ----
-  SGMRIA: ['SGMRJA', 'SGMSAA'],             // 物需计划 → 计划建议 / 生产计划
-  SGMRAA: ['SGMRBA', 'SGMRDA', 'QMSMAA'],   // 工单 → 领/退料 / 移转 / 生产检验
-  SGMRBA: ['SGMRCA', 'SGMRCB'],            // 领/退料 → 生产入/出库
-  SGMRCA: ['SGMRCC'],                       // 生产入/出库单头
-  SGMRCB: ['SGMRCC'],
-  SGMREA: ['SGMRFA', 'SGMRGA'],            // 委外单 → 送/退料 / 委外进退货
-  SGMRFA: ['SGMRGA'],
-  SGMRGB: ['SGMRGC'],
-  SGMRGA: ['QMSMCA'],                       // 委外进/退货 → 委外进货检验
-  SGMRLA: ['JSKLHA'],                        // 副产品入库 → 入库单
-  SGMQOB: ['SGMQAA'],                         // 产品结构变更 → 产品结构
-};
-
-// 计算每个单据的"可达上游"集合（沿 DOC_FLOW 反向传递闭包）
-function computeReachableUpstream() {
-  // 下游 → 上游直接列表
-  const down2up = {};
-  for (const [up, downs] of Object.entries(DOC_FLOW)) {
-    for (const d of downs) (down2up[d] = down2up[d] || new Set()).add(up);
-  }
-  const reach = {}; // id -> Set(所有可达上游)
-  const compute = (id) => {
-    if (reach[id]) return reach[id];
-    const set = new Set(down2up[id] || []);
-    (down2up[id] || []).forEach((up) => {
-      set.add(up);
-      compute(up).forEach((x) => set.add(x));
-    });
-    reach[id] = set;
-    return set;
-  };
-  for (const id of Object.keys(down2up)) compute(id);
-  return reach;
-}
-const REACHABLE_UP = computeReachableUpstream();
-
 // 单据 id 前缀匹配：判断某 id 是否属于某"单据家族"（头档+单身+选配+变更...）
 // 例：'DCSIBA' 家族 = DCSIBA/DCSIBB/DCSIBC/DCSICB... 简化为前 4 字符匹配
 // 子档家族映射：头档 id → 同家族的所有子档 id（手维护，避免前缀误判）
@@ -853,30 +784,6 @@ function sameFamily(a, b) {
   const fa = _famRev[a] || a;
   const fb = _famRev[b] || b;
   return fa === fb;
-}
-
-// 给出主表单据 id，返回"不允许作为来源档"的单据 id 列表：
-// 即该主表在业务流上的所有"下游"（直接+间接）家族。上游取下游 = 不合理。
-// 注意：只走 DOC_FLOW 正向边（cur → DOC_FLOW[cur]），绝不反向，否则会把上游单据误判为下游。
-function excludedSrcIdsFor(docId, allIds) {
-  // 从 docId 出发，正向 DFS 找所有可达下游
-  const visited = new Set();
-  const stack = [docId];
-  while (stack.length) {
-    const cur = stack.pop();
-    for (const d of (DOC_FLOW[cur] || [])) {
-      if (!visited.has(d)) { visited.add(d); stack.push(d); }
-    }
-  }
-  // 把下游家族展开到 allIds（4 字符前缀同家族：头档/单身/选配/变更子档）
-  const excluded = new Set();
-  for (const ds of visited) {
-    for (const id of allIds) {
-      if (id === ds || sameFamily(id, ds)) excluded.add(id);
-    }
-  }
-  excluded.delete(docId); // 自己排除（前端本来就不列）
-  return [...excluded];
 }
 
 // ===== 自动链式取值检测（合并自 autochain_detect.js）=====
@@ -1028,16 +935,6 @@ async function handleRun(req, res) {
   if (isInvoiceDate && (!tgtCol || !srcId || !srcValCol)) return sendJSON(res, 400, { error: '请选择目标列、来源档和来源值列' });
   if (!isInvoiceDate && docId && srcId && docId === srcId) {
     return sendJSON(res, 400, { error: '来源档不能与单据主表相同，请选择其他来源档。' });
-  }
-  // 业务流向兜底：来源档若是主表的下游单据 → 直接拒绝（上游不能取下游的值）
-  if (!isInvoiceDate) {
-    const ex = excludedSrcIdsFor(docId, (CUR_DOCS || []).map(x => x.id));
-    const sameDocFamily = docId && srcId &&
-      docId.slice(0, 5) === srcId.slice(0, 5) &&
-      /[AB]$/.test(docId) && /[AB]$/.test(srcId);
-    if (ex.includes(srcId) && !sameDocFamily) {
-      return sendJSON(res, 400, { error: '业务流向不合理：' + srcId + ' 是 ' + docId + ' 的下游单据，上游单据不能取下游单据的值（如报价单不能取进货单）。请改选上游来源档。', flowRejected: true });
-    }
   }
   if (CUR_DOCS === DOC_ITEMS || CUR_SRCS === SRC_ITEMS) {
     const p0 = await getPool();
