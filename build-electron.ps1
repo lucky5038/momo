@@ -1,4 +1,4 @@
-﻿# 用 electron-builder 生成 portable 单文件 exe（NSIS 自解压，行为与 release 基线一致）
+# 用 electron-builder 生成 portable 单文件 exe（NSIS 自解压，行为与 release 基线一致）
 param(
   [string]$OutDir = ""
 )
@@ -38,6 +38,15 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "electron-builder 构建失败，exit=$LASTEXITCODE" }
 } finally {
   Pop-Location
+}
+
+# 只保留可发布的便携版/安装包，避免 win-unpacked 和调试文件堆积
+$stale = @(
+  (Join-Path $OutDir "win-unpacked"),
+  (Join-Path $OutDir "builder-debug.yml")
+)
+foreach ($p in $stale) {
+  if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force }
 }
 
 Write-Host "==== 输出 ===="
