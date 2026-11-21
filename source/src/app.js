@@ -1878,6 +1878,16 @@ async function handleCleaningInspect(req, res) {
   }
 }
 
+async function handleCleaningRemember(req, res) {
+  try {
+    const body = JSON.parse((await readBody(req)) || '{}');
+    const r = await cleaningService.remember(body);
+    sendJSON(res, 200, r);
+  } catch (e) {
+    sendJSON(res, 400, { error: e.message });
+  }
+}
+
 async function handleCleaningPreview(req, res) {
   try {
     const body = JSON.parse((await readBody(req)) || '{}');
@@ -1919,6 +1929,7 @@ async function handleCleaningReveal(req, res) {
 const router = {
   '/api/meta': handleMeta,
   '/api/cleaning/inspect': handleCleaningInspect,
+  '/api/cleaning/remember': handleCleaningRemember,
   '/api/cleaning/preview': handleCleaningPreview,
   '/api/cleaning/generate': handleCleaningGenerate,
   '/api/cleaning/reveal': handleCleaningReveal,

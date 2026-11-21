@@ -200,6 +200,11 @@ function cleanText(s) {
 function parseNumber(v) {
   if (v == null || String(v).trim() === '') return { empty: true };
   const s = cleanText(v).replace(/,/g, '').replace(/[¥￥元]/g, '').trim();
+  const ratio = s.match(/^([0-9]+(?:\.[0-9]+)?)\s*:\s*([0-9]+(?:\.[0-9]+)?)$/);
+  if (ratio) {
+    const b = Number(ratio[2]);
+    if (b) return { value: Number(ratio[1]) / b };
+  }
   if (!/^-?\d+(\.\d+)?$/.test(s)) return { error: '不是有效数字: ' + v };
   return { value: Number(s) };
 }
@@ -235,13 +240,14 @@ function transformValue(raw, kind) {
 const SYNONYMS = {
   '客户编码': ['客户编码', '客户编号', '客户代码', '客户号', '客户id'],
   '客户简称': ['客户简称', '客户名称', '客户名', '客户', '简称'],
+  '国外客户否': ['国外客户否', '是否国外客户', '国外客户', '海外客户', '出口客户'],
   '业务员': ['业务员', '销售员', '业务人员', '销售'],
   '联系人': ['联系人', '联络人', '对接人', '联系人姓名'],
   '电话': ['电话', '联系电话', '手机', '手机号', '联系方式'],
   '地址': ['地址', '客户地址', '联系地址', '送货地址', '收货地址', '注册地址'],
   '邮箱': ['email', '邮箱', '电子邮箱', '邮件', '电子邮件'],
-  '商品编号': ['商品编号', '品号', '物料编码', '产品编码', '存货编码', '商品编码'],
-  '商品名称': ['商品名称', '品名', '物料名称', '产品名称', '存货名称', '商品名'],
+  '商品编号': ['商品编号', '品号', '料号', '料品编号', '物料编码', '物料号', '产品编码', '产品料号', '存货编码', '存货编号', '商品编码'],
+  '商品名称': ['商品名称', '品名', '料品名称', '物料名称', '产品名称', '存货名称', '商品名'],
   '单位': ['库存单位', '单位', '计量单位', '主单位'],
   '主件品号': ['主件', '主件品号', '母件', '父件', '主产品'],
   '子件品号': ['元件', '子件', '子件品号', '组件', '用料'],
@@ -250,6 +256,67 @@ const SYNONYMS = {
   '人工分摊权数': ['人工权数', '人工分摊权数', '人工费用权数'],
   '制费分摊权数': ['制费权数', '制造费用权数', '制费分摊权数']
 };
+
+// 从模板批注里提炼规则：必填、可选值、固定值。
+// 例：T：是、F：否；1.零售价 / 2.定价一；请一律给预设值F。
+function parseCommentRule(comment) {
+  // 批注里的换行是“一行一个选项”的天然分隔，不能用 cleanText 把换行折叠掉。
+  const text = String(comment == null ? '' : comment)
+    .normalize('NFKC')
+    .replace(/[\u200b-\u200d\ufeff]/g, '')
+    .replace(/\r/g, '')
+    .replace(/\n+/g, ' / ')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+  if (!text) return { required: false, options: [], fixed: false, defaultValue: '', sameAs: '' };
+  const required = /必须输入|必须|必填|必需|必要/.test(text) &&
+    !/非必要|非必须|不必要|非必填/.test(text);
+  const options = [];
+  const add = (value, label) => {
+    const v = cleanText(value);
+    if (!v || v.length > 8) return;
+    if (!options.some(o => o.value === v)) options.push({ value: v, label: cleanText(label || '') });
+  };
+  // “选项值 : + , -”这种写法
+  const optionLine = text.match(/选项值\s*[:：]\s*([^\/]+)/);
+  if (optionLine) {
+    optionLine[1].split(/[,，、\s]+/).map(x => x.trim()).filter(Boolean).forEach(x => add(x, ''));
+  }
+  for (const part of text.split(/[\/；;、，,\n\r]+/).map(x => x.trim()).filter(Boolean)) {
+    let m = part.match(/^([A-Za-z0-9+\-]+)\s*[：:＝=.]\s*(.+)$/);
+    if (m) { add(m[1], m[2]); continue; }
+    // 只接受“数字 1 先进先出”这类数字枚举；不接受“EMAIL 40 非必要”这种列宽说明。
+    m = part.match(/^([0-9]+(?:\.[0-9]+)?)\s+(.+)$/);
+    if (m && !/非必要|必要|非必须|必须|长度|字段/.test(m[2])) add(m[1], m[2]);
+  }
+  if (!options.length) {
+    // 只有整段都是纯代码（例如 T / F）才当作枚举，避免把说明文字误判。
+    const tokens = text.split(/[\/、,，;；\s]+/).filter(Boolean);
+    if (tokens.length >= 2 && tokens.length <= 8 && tokens.every(x => /^[A-Za-z0-9+\-]+$/.test(x))) {
+      tokens.forEach(x => add(x, ''));
+    }
+  }
+  const fixedMatch = text.match(/(?:一律|统一|固定|预设值|只可|只允许|必须为|必须填|必须使用)\s*(?:(?:给|填|为|是|使用|设置|设为|预设值)\s*)*([A-Za-z0-9+\-]+)/);
+  let fixed = !!fixedMatch;
+  let defaultValue = fixedMatch ? fixedMatch[1] : '';
+  if (!fixed && options.length === 1 && /(一律|统一|只能|固定|预设值|只可)/.test(text)) {
+    fixed = true;
+    defaultValue = options[0].value;
+  }
+  if (!defaultValue) {
+    const d = options.find(o => /缺省|默认/.test(o.label || ''));
+    if (d) defaultValue = d.value;
+  }
+  if (fixed && !options.some(o => o.value === defaultValue)) {
+    options.unshift({ value: defaultValue, label: '' });
+  }
+  // “需要与库存单位相同”这类批注不写死具体字段代码，按字段名在当前模板内解析。
+  const same = text.match(/(?:与|同)\s*([^\s\/、,，;；:：]{2,20}?)\s*相同/);
+  // 条件必填：IF 寄售客户=‘T’ 则必须要填 否则为空。
+  const ifMatch = text.match(/IF\s*([^\s=＝]+)\s*[=＝]\s*['‘’"]?([^'"‘’\s]+)/i);
+  const requiredIf = ifMatch ? { fieldName: cleanText(ifMatch[1]), value: cleanText(ifMatch[2]) } : null;
+  return { required, options, fixed, defaultValue, sameAs: same ? cleanText(same[1]) : '', requiredIf };
+}
 
 function findSynonym(targetName) {
   const n = normText(targetName);
@@ -322,63 +389,12 @@ function keyCodes(template) {
   return guess.length ? [guess[0]] : [];
 }
 
-function presetFor(template) {
-  const profile = profileOf(template);
-  const p = { profile, defaults: {}, derived: {}, transforms: {}, note: {}, optional: new Set(), ignore: new Set(), noAuto: new Set(), autoAliases: {} };
-  if (profile === 'TPADFA') {
-    Object.assign(p.defaults, {
-      DFA009: 'F', DFA029: 'RMB', DFA030: '0', DFA033: 'A', DFA034: '1',
-      DFA035: '0', DFA036: '31', DFA037: '0', DFA038: '31', DFA039: '1',
-      DFA040: '0', DFA041: '31', DFA042: '1', DFA043: '0', DFA044: '0',
-      DFA045: '31', DFA048: '1', DFA073: '0.13', DFA074: '1', DFA121: 'F', DFA122: 'F'
-    });
-    p.autoAliases.DFA009 = ['国外客户否', '是否国外客户', '国外客户', '海外客户', '出口客户'];
-    // 选项/开关字段只允许精确的专用别名，不能被“业务员/客户简称”等泛化列误配。
-    p.noAuto = new Set(['DFA009', 'DFA007', 'DFA013', 'DFA030', 'DFA033', 'DFA043', 'DFA046',
-      'DFA049', 'DFA051', 'DFA052', 'DFA055', 'DFA073', 'DFA074', 'DFA077', 'DFA105',
-      'DFA110', 'DFA111', 'DFA112', 'DFA121', 'DFA122', 'DFA123']);
-    p.optional = new Set(['DFA046', 'DFA105', 'DFA110', 'DFA111', 'DFA112', 'DFA123']);
-    p.ignore = new Set(['DFA046', 'DFA105', 'DFA110', 'DFA111', 'DFA112', 'DFA123']);
-    p.autoAliases.DFA003 = ['客户全称', '客户全名', '客户名称全称', '客户名称'];
-    p.derived.DFA004 = 'DFA001';
-    p.transforms.DFA016 = 'phone';
-    p.transforms.DFA073 = 'number';
-    p.transforms.DFA009 = 'text';
-    p.note.DFA073 = '税率按用户确认填 0.13；易助存 0.130000';
-    p.note.DFA046 = '伪必填，按用户要求留空';
-    p.note.DFA105 = '伪必填，按用户要求留空';
-    p.note.DFA110 = '伪必填，按用户要求留空';
-    p.note.DFA111 = '伪必填，按用户要求留空';
-    p.note.DFA112 = '伪必填，按用户要求留空';
-  } else if (profile === 'TPADEA') {
-    Object.assign(p.defaults, {
-      DEA007: 'T', DEA013: 'F', DEA017: 'T', DEA030: 'B', DEA033: 'F',
-      DEA043: 'T', DEA046: 'F', DEA049: 'F', DEA051: 'F', DEA052: 'F',
-      DEA055: 'F', DEA073: 'F', DEA074: 'F', DEA077: 'T'
-    });
-    p.derived.DEA044 = 'DEA003';
-    p.derived.DEA078 = 'DEA003';
-    p.transforms.DEA047 = 'number';
-    p.transforms.DEA048 = 'number';
-    p.transforms.DEA073 = 'text';
-    p.note.DEA047 = '人工权数，按来源数值写入';
-    p.note.DEA048 = '制费权数，按来源数值写入';
-  } else if (profile === 'SGMQAA') {
-    Object.assign(p.defaults, { QAA003: '1', QAB005: '1', QAB006: '1', QAB007: '0' });
-    p.transforms.QAA003 = 'number';
-    p.transforms.QAB005 = 'ratio';
-    p.transforms.QAB006 = 'number';
-    p.transforms.QAB007 = 'number';
-    p.note.QAA003 = '模板要求批量>0，默认 1';
-    p.note.QAB005 = '源表组成用量 1:1，填 1';
-    p.note.QAB006 = '模板默认底数 1';
-    p.note.QAB007 = '损耗率默认 0';
-  }
-  return p;
+function templateKey(template) {
+  const sig = (template.columns || []).map(c => [c.code, c.name, c.comment || ''].join(':')).join('|');
+  return crypto.createHash('sha256').update(sig).digest('hex').slice(0, 24);
 }
 
-function transformFor(templateCol, preset) {
-  if (preset.transforms[templateCol.code]) return preset.transforms[templateCol.code];
+function transformFor(templateCol) {
   const n = templateCol.name || '';
   if (/日期/.test(n)) return 'date';
   if (/(金额|价格|税率|比例|数量|用量|权数|额度|天数|月数|人数|注册资本|营业额)/.test(n)) return 'number';
@@ -388,7 +404,21 @@ function transformFor(templateCol, preset) {
 
 function inspectService(baseDir) {
   const root = path.join(baseDir, 'cleaning');
+  const profilesDir = path.join(root, 'templates');
   fs.mkdirSync(root, { recursive: true });
+  fs.mkdirSync(profilesDir, { recursive: true });
+  const profilePath = key => path.join(profilesDir, key + '.json');
+  const readProfile = key => {
+    try {
+      const f = profilePath(key);
+      return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null;
+    } catch (_) { return null; }
+  };
+  const writeProfile = (key, templateName, defaults) => {
+    const body = { key, templateName, defaults, updatedAt: new Date().toISOString() };
+    fs.writeFileSync(profilePath(key), JSON.stringify(body, null, 2), 'utf8');
+    return body;
+  };
   return {
     root,
     async runExcel(action, input) {
@@ -421,47 +451,50 @@ function inspectService(baseDir) {
       }
     },
     suggest(template, source) {
-      const preset = presetFor(template);
+      const profile = profileOf(template);
       const keys = keyCodes(template);
+      const byName = new Map();
+      template.columns.forEach(c => {
+        const n = normText(c.name);
+        if (n && !byName.has(n)) byName.set(n, c.code);
+      });
       const columns = template.columns.map(c => {
-        let defaultValue = preset.defaults[c.code] || '';
-        let derivedFrom = preset.derived[c.code] || '';
-        if (!derivedFrom && ['DFA023', 'DFA025', 'DFA027'].includes(c.code) && preset.defaults[c.code] == null) {
-          // 地址三列统一：优先使用 DFA023 的来源
-          if (c.code !== 'DFA023') derivedFrom = 'DFA023';
-        }
+        const rule = c.rule || parseCommentRule(c.comment);
+        const options = (rule.options || []).map(o => ({ ...o }));
+        const defaultValue = rule.defaultValue || '';
+        let derivedFrom = rule.sameAs ? (byName.get(normText(rule.sameAs)) || '') : '';
+        if (derivedFrom === c.code) derivedFrom = '';
         const exactSource = source.columns.find(sc =>
           normText(sc.name || sc.code) === normText(c.name) || normText(sc.code) === normText(c.code));
-        let sourceIndex = preset.ignore.has(c.code)
+        // 有枚举/固定值的字段只接受精确匹配，避免“客户简称”误配到“寄售客户”等选项列。
+        let sourceIndex = rule.fixed || derivedFrom
           ? null
-          : preset.noAuto.has(c.code)
+          : (rule.options.length
             ? (exactSource ? exactSource.index : null)
-            : sourceMatch(c, source.columns, source.rows);
-        if (preset.autoAliases[c.code]) {
-          const aliases = preset.autoAliases[c.code].map(normText);
-          const hit = source.columns.find(sc => {
-            const sn = normText(sc.name || sc.code);
-            return sn && aliases.some(a => sn === a || sn.includes(a) || a.includes(sn));
-          });
-          sourceIndex = hit ? hit.index : null;
+            : sourceMatch(c, source.columns, source.rows));
+        if (defaultValue && options.length && !options.some(o => o.value === defaultValue)) {
+          options.unshift({ value: defaultValue, label: '' });
         }
-        if (derivedFrom) sourceIndex = null;
         return {
           code: c.code,
           name: c.name,
           comment: c.comment,
           index: c.index,
           green: !!c.green,
-          required: !!c.required && !preset.optional.has(c.code),
+          required: !!c.required || !!rule.required,
+          requiredIf: rule.requiredIf || null,
           sourceIndex,
-          transform: transformFor(c, preset),
+          transform: transformFor(c),
           defaultValue,
           derivedFrom,
-          note: preset.note[c.code] || ''
+          options,
+          fixed: !!rule.fixed,
+          editable: !rule.fixed,
+          note: ''
         };
       });
       return {
-        profile: preset.profile,
+        profile,
         keyCodes: keys,
         columns
       };
@@ -486,12 +519,32 @@ function inspectService(baseDir) {
       try {
         const template = await this.runExcel('parse', { file: tFile.path, template: true });
         const source = await this.runExcel('parse', { file: sFile.path, template: false });
+        // Excel 解析拿到的是临时文件名，界面必须显示用户实际选择的文件名。
+        template.fileName = tFile.name;
+        source.fileName = sFile.name;
+        // 每条模板字段都带上批注规则，后续 UI/校验共用，不再靠单据类型硬编码。
+        template.columns = (template.columns || []).map(c => ({ ...c, rule: parseCommentRule(c.comment) }));
+        const key = templateKey(template);
+        const saved = readProfile(key);
         const suggested = this.suggest(template, source);
+        suggested.profileKey = key;
+        suggested.rememberedCount = 0;
+        if (saved && saved.defaults) {
+          suggested.columns.forEach(c => {
+            if (c.fixed || c.derivedFrom) return;
+            if (saved.defaults[c.code] == null || saved.defaults[c.code] === '') return;
+            c.defaultValue = String(saved.defaults[c.code]);
+            suggested.rememberedCount++;
+            if (c.options && c.options.length && !c.options.some(o => String(o.value) === c.defaultValue)) {
+              c.options.unshift({ value: c.defaultValue, label: '上次使用' });
+            }
+          });
+        }
         const manifest = {
           jobId, createdAt: Date.now(),
           templatePath: tFile.path, sourcePath: sFile.path,
           templateName: tFile.name, sourceName: sFile.name,
-          template, source, suggested
+          template, source, suggested, profileKey: key
         };
         fs.writeFileSync(path.join(jobDir, 'job.json'), JSON.stringify(manifest), 'utf8');
         return {
@@ -514,8 +567,8 @@ function inspectService(baseDir) {
       const mapping = Array.isArray(mappingIn) ? mappingIn : [];
       const byCode = new Map(mapping.map(m => [String(m.code), m]));
       const cols = job.template.columns;
+      const byNameCode = new Map(cols.map(c => [normText(c.name), c.code]));
       const srcCols = job.source.columns;
-      const preset = presetFor(job.template);
       const keyCols = keyCodes(job.template);
       const sourceRows = job.source.rows || [];
       const resultRows = [];
@@ -528,6 +581,22 @@ function inspectService(baseDir) {
         if (idx < 0) return '';
         return row[idx] == null ? '' : row[idx];
       };
+      const matchOption = (raw, options) => {
+        if (!options || !options.length) return null;
+        const s = cleanText(raw);
+        if (!s) return null;
+        const byCode = options.find(o => cleanText(o.value).toUpperCase() === s.toUpperCase());
+        if (byCode) return byCode.value;
+        const sn = normText(s);
+        const byLabel = options.find(o => o.label && normText(o.label) === sn);
+        if (byLabel) return byLabel.value;
+        // “委外件”与“委外生产件”这类业务简称，用前缀匹配兜底。
+        if (sn.length >= 2) {
+          const byPrefix = options.find(o => o.label && normText(o.label).startsWith(sn.slice(0, 2)));
+          if (byPrefix) return byPrefix.value;
+        }
+        return null;
+      };
       const colByCode = new Map(cols.map(c => [c.code, c]));
 
       sourceRows.forEach((src, ri) => {
@@ -539,18 +608,29 @@ function inspectService(baseDir) {
         cols.forEach(c => {
           const m = byCode.get(c.code) || {};
           let raw = '';
-          if (m.sourceIndex != null && m.sourceIndex !== '') raw = getSourceValue(src, m.sourceIndex);
+          if (!m.fixed && m.sourceIndex != null && m.sourceIndex !== '') raw = getSourceValue(src, m.sourceIndex);
           if ((raw == null || String(raw).trim() === '') && m.defaultValue != null) raw = m.defaultValue;
           if (raw == null || String(raw).trim() === '') {
             values[c.code] = '';
             return;
           }
-          const tr = transformValue(raw, m.transform || transformFor(c, preset));
+          const tr = transformValue(raw, m.transform || transformFor(c));
           if (tr.error) {
             errors.push({ row: rowNo, code: c.code, name: c.name, severity: 'error', message: tr.error });
             values[c.code] = '';
           } else if (tr.empty) {
             values[c.code] = '';
+          } else if (m.options && m.options.length) {
+            const option = matchOption(tr.value, m.options);
+            if (option == null) {
+              errors.push({
+                row: rowNo, code: c.code, name: c.name, severity: 'error',
+                message: '值「' + tr.value + '」不在允许选项：' + m.options.map(o => o.value).join(' / ')
+              });
+              values[c.code] = '';
+            } else {
+              values[c.code] = option;
+            }
           } else {
             values[c.code] = tr.value;
           }
@@ -565,7 +645,14 @@ function inspectService(baseDir) {
         // 必填校验（以映射后的 required 为准，模板伪必填可关闭）
         cols.forEach(c => {
           const m = byCode.get(c.code) || {};
-          if (!(m.required != null ? m.required : c.required)) return;
+          let required = m.required != null ? m.required : c.required;
+          const requiredIf = m.requiredIf || (c.rule && c.rule.requiredIf);
+          if (requiredIf) {
+            const depCode = byNameCode.get(normText(requiredIf.fieldName));
+            const depVal = depCode ? String(values[depCode] == null ? '' : values[depCode]).trim() : '';
+            required = depVal === String(requiredIf.value).trim();
+          }
+          if (!required) return;
           if (values[c.code] == null || String(values[c.code]).trim() === '') {
             errors.push({ row: rowNo, code: c.code, name: c.name, severity: 'error', message: '必填字段为空' });
           }
@@ -591,11 +678,22 @@ function inspectService(baseDir) {
       });
       if (unmapped) issues.push({ row: 0, code: '', name: '字段映射', severity: 'info', message: '有 ' + unmapped + ' 个非必填字段未映射，生成后保持模板原值/空白' });
 
-      const errors = issues.filter(x => x.severity === 'error');
-      const warnings = issues.filter(x => x.severity === 'warning');
+      // 必填缺失是“字段配置”问题，不是每一行独立错误；按字段去重，
+      // 避免 39 行 × 26 字段产生上千条重复提示，用户无法定位。
+      const missingSeen = new Set();
+      const visibleIssues = issues.filter(x => {
+        if (x.severity === 'error' && x.message === '必填字段为空') {
+          if (missingSeen.has(x.code)) return false;
+          missingSeen.add(x.code);
+          x.row = 0;
+        }
+        return true;
+      });
+      const errors = visibleIssues.filter(x => x.severity === 'error');
+      const warnings = visibleIssues.filter(x => x.severity === 'warning');
       return {
         rows: resultRows,
-        issues,
+        issues: visibleIssues,
         stats: {
           sourceRows: sourceRows.length,
           outputRows: resultRows.length,
@@ -609,20 +707,42 @@ function inspectService(baseDir) {
           return {
             code: c.code, name: c.name, required: !!c.required, green: !!c.green,
             sourceIndex: m.sourceIndex == null ? null : Number(m.sourceIndex),
-            transform: m.transform || transformFor(c, preset),
+            transform: m.transform || transformFor(c),
             defaultValue: m.defaultValue || '',
             derivedFrom: m.derivedFrom || '',
+            options: m.options || [],
+            fixed: !!m.fixed,
+            editable: m.editable !== false,
             note: m.note || ''
           };
         })
       };
     },
+    rememberDefaults(job, mapping) {
+      const key = job.profileKey || (job.suggested && job.suggested.profileKey) || templateKey(job.template);
+      const defaults = {};
+      (Array.isArray(mapping) ? mapping : []).forEach(m => {
+        if (!m || m.fixed || m.derivedFrom) return;
+        if (m.defaultValue == null || String(m.defaultValue) === '') return;
+        defaults[m.code] = String(m.defaultValue);
+      });
+      writeProfile(key, job.templateName || '', defaults);
+      job.profileKey = key;
+      return defaults;
+    },
+    async remember(body) {
+      const job = this.loadJob(body.jobId);
+      const defaults = this.rememberDefaults(job, body.mapping);
+      return { ok: true, profileKey: job.profileKey, defaults };
+    },
     async preview(body) {
       const job = this.loadJob(body.jobId);
+      this.rememberDefaults(job, body.mapping);
       return this.applyMapping(job, body.mapping, body.options || {});
     },
     async generate(body) {
       const job = this.loadJob(body.jobId);
+      this.rememberDefaults(job, body.mapping);
       const result = this.applyMapping(job, body.mapping, body.options || {});
       const opts = body.options || {};
       if (result.stats.errors > 0 && !opts.allowErrors) {
@@ -650,7 +770,7 @@ function inspectService(baseDir) {
         const m = byCode.get(c.code) || {};
         if (m.sourceIndex != null && m.sourceIndex !== '' || m.defaultValue || m.derivedFrom) {
           outputCols.push(c.index);
-          types.push(m.transform || transformFor(c, presetFor(job.template)));
+          types.push(m.transform || transformFor(c));
         }
       });
       const rows = result.rows.map(r => outputCols.map((idx, i) => {
@@ -673,4 +793,4 @@ function inspectService(baseDir) {
   };
 }
 
-module.exports = { createCleaningService: inspectService, _internals: { cleanText, parseNumber, parseDate, transformValue, keyCodes, profileOf } };
+module.exports = { createCleaningService: inspectService, _internals: { cleanText, parseNumber, parseDate, transformValue, keyCodes, profileOf, parseCommentRule } };
