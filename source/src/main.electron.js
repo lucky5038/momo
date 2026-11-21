@@ -36,6 +36,12 @@ function migrateLegacyUserData() {
   try {
     const appData = app.getPath('appData');
     const newDir = app.getPath('userData');
+    // 全新安装由安装器写入 fresh_install.flag；此时不能把旧品牌配置复制进来，
+    // 否则会绕过首次引导，让用户误以为“新装没有引导”。
+    if (fs.existsSync(path.join(newDir, 'fresh_install.flag'))) {
+      console.log('[migrate] 全新安装，跳过旧数据迁移: ' + newDir);
+      return;
+    }
     const legacyDirs = ['奶蕉助手', 'Momo传值助手'];
     const files = [
       'config.js', 'creds.json', 'chain_registry.json', 'invoice_source_map.json',

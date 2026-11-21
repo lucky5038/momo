@@ -1,6 +1,7 @@
 !macro customInit
-  ; 仅全新安装写一次性引导标记；覆盖升级时 $INSTDIR 里已有 exe，不写。
-  IfFileExists "$INSTDIR\${APP_EXECUTABLE_FILENAME}" freshInstallDone
+  ; 没有配置文件的安装视为全新安装：写一次性引导标记，阻止旧品牌配置迁移。
+  ; 已有 config.js 的覆盖升级不写，保留原配置直接进入工作台。
+  IfFileExists "$APPDATA\${PRODUCT_NAME}\config.js" freshInstallDone
     CreateDirectory "$APPDATA\${PRODUCT_NAME}"
     FileOpen $0 "$APPDATA\${PRODUCT_NAME}\fresh_install.flag" w
     FileWrite $0 "1"
