@@ -1,8 +1,8 @@
-// 传值工具 独立应用版
+// 奶蕉助手 独立应用版
 // 功能：启动 HTTP 服务 + 自动打开 Edge 应用窗口（无浏览器标签栏，像独立软件）
 // 窗口关闭后自动退出，不留后台进程
 //
-// 启动方式：双击"传值工具.vbs" 或 "传值工具.bat"
+// 启动方式：双击"奶蕉助手.exe"
 // 无需手动打开浏览器
 
 const http = require('http');
@@ -36,7 +36,7 @@ const BASE_DIR = resolveBaseDir();
   '  httpPort: 8787',
 '};',
   ].join('\n'), 'utf8');
-  console.log('[传值工具] 已生成配置文件: ' + cfgPath);
+  console.log('[奶蕉助手] 已生成配置文件: ' + cfgPath);
 })();
 const { spawn, exec } = require('child_process');
 
@@ -1742,16 +1742,27 @@ async function handleSaveConfig(req, res) {
 // 避免备份目录指向共享盘/公共目录时，把服务器账号密码一起暴露出去。
 function credsFileInUserDir() {
   const appData = process.env.APPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming') : '');
-  return appData ? path.join(appData, 'Momo传值助手', 'creds.json') : path.join(BASE_DIR, 'creds.json');
+  return appData ? path.join(appData, '奶蕉助手', 'creds.json') : path.join(BASE_DIR, 'creds.json');
 }
 function credsFileLegacy() {
   return path.join((CUR_CONFIG && CUR_CONFIG.backupDir) || CONFIG.backupDir || 'D:\\TPA\\SQL2008', 'creds.json');
+}
+function credsFileLegacyBrand() {
+  const appData = process.env.APPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming') : '');
+  return appData ? path.join(appData, 'Momo传值助手', 'creds.json') : '';
 }
 // 旧版本把 creds.json 写在备份目录。首次访问时迁到用户目录，并删除旧文件（含明文密码）。
 function migrateLegacyCreds() {
   const next = credsFileInUserDir();
   try {
     if (fs.existsSync(next)) return next;
+    const oldBrand = credsFileLegacyBrand();
+    if (oldBrand && fs.existsSync(oldBrand)) {
+      fs.mkdirSync(path.dirname(next), { recursive: true });
+      fs.copyFileSync(oldBrand, next);
+      dbg('[creds] migrated brand path from ' + oldBrand + ' to ' + next);
+      return next;
+    }
     const old = credsFileLegacy();
     if (!old || old === next || !fs.existsSync(old)) return next;
     fs.mkdirSync(path.dirname(next), { recursive: true });
@@ -1952,7 +1963,7 @@ function openEdgeApp() {
     }
     const proc = spawn(browserPath, args, { detached: true, stdio: 'ignore', windowsHide: false });
     proc.unref();
-    console.log('[传值工具] 已用 ' + label + ' 打开应用窗口');
+    console.log('[奶蕉助手] 已用 ' + label + ' 打开应用窗口');
     // Poll: exit when window closes (server no longer reachable from browser)
     const pollInterval = setInterval(async () => {
       try {
@@ -1963,7 +1974,7 @@ function openEdgeApp() {
         });
         if (!alive) {
           clearInterval(pollInterval);
-          console.log('[传值工具] 窗口已关闭，正在退出...');
+          console.log('[奶蕉助手] 窗口已关闭，正在退出...');
           setTimeout(() => process.exit(0), 1000);
         }
       } catch (e) {}
@@ -1978,13 +1989,13 @@ function openEdgeApp() {
       if (!tryBrowser(chrome32Path, 'Chrome(32位)')) {
         const { exec } = require('child_process');
         exec('start "" "' + APP_URL + '"');
-        console.log('[传值工具] 已用系统默认浏览器打开 ' + APP_URL);
+        console.log('[奶蕉助手] 已用系统默认浏览器打开 ' + APP_URL);
         launched = true;
       } else { launched = true; }
     } else { launched = true; }
   } else { launched = true; }
 
-  if (!launched) console.log('[传值工具] 未找到浏览器，请手动打开 ' + APP_URL);
+  if (!launched) console.log('[奶蕉助手] 未找到浏览器，请手动打开 ' + APP_URL);
 }
 
 process.on('unhandledRejection', (e) => {
@@ -2003,7 +2014,7 @@ function tryListen(port, tries) {
     s.listen(port, '127.0.0.1', () => {
       const actualPort = s.address().port;
       try { fs.writeFileSync(require('path').join(BASE_DIR, 'port.txt'), String(actualPort)); } catch (_) {}
-      console.log('[传值工具 应用版] http://localhost:' + actualPort);
+      console.log('[奶蕉助手] http://localhost:' + actualPort);
       resolve(actualPort);
     });
     s.once('error', async (e) => {
@@ -2027,7 +2038,7 @@ function tryListen(port, tries) {
     else {
       try {
         const electron = require('electron');
-        electron.dialog.showErrorBox('端口冲突', '端口 ' + PORT + ' 被占用，请关闭旧的传值工具进程后重试。\n\n错误: ' + e.message);
+        electron.dialog.showErrorBox('端口冲突', '端口 ' + PORT + ' 被占用，请关闭旧的奶蕉助手进程后重试。\n\n错误: ' + e.message);
       } catch (_) {}
       setTimeout(() => process.exit(1), 4000);
       return;
@@ -2044,7 +2055,7 @@ function tryListen(port, tries) {
   if (!process.env.CHZ_ELECTRON && !process.argv.includes('--no-browser')) {
     setTimeout(openEdgeApp, 500);
   } else {
-    console.log('[传值工具] 后端就绪，等待前端窗口连接 http://localhost:' + actualPort);
+    console.log('[奶蕉助手] 后端就绪，等待前端窗口连接 http://localhost:' + actualPort);
   }
 })();
 

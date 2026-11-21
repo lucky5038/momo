@@ -1,7 +1,7 @@
-# Momo传值助手
+# 奶蕉助手
 
 本目录为 C 盘迁移出的工作目录；C 盘原目录已于 2026-11-19 清理。
-当前版本为 **Momo传值助手 2.2.78（数据清洗模块）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.78/`。只保留当前版本，不再保留开发版/旧版本目录。
+当前版本为 **奶蕉助手 2.2.79（品牌更名 + 应用图标）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.79/`。只保留当前版本，不再保留开发版/旧版本目录。
 
 ## 目录说明
 
@@ -10,8 +10,8 @@
 | `source/` | 开发源码：`src/app.js` 后端、`src/main.electron.js` 主进程、`src/public/index.html` 界面 |
 | `source/node_modules/` | 运行依赖（mssql 等），随 asar 一起提取 |
 | `source/public_inline.js` | 由 `src/public/index.html` 生成，改界面后需重新生成 |
-| `dist-electron/` | 最后一次构建产物（便携版、Setup、blockmap、runtime） |
-| `releases/2.2.78/` | 当前正式发布包：便携版、安装包、blockmap |
+| `dist-electron/` | 最后一次构建产物（便携版、Setup、blockmap） |
+| `releases/2.2.79/` | 当前正式发布包：便携版、安装包、blockmap |
 | `docs/` | 开发历程、工具作用与研发说明 |
 | `baseline/` | 原始 release exe 备份，仅供对照，不参与开发 |
 | `tools/eb/` | 本地打包工具链（electron-builder 24 + @electron/rebuild 3.2.10） |
@@ -28,10 +28,10 @@
 ```
 
 3. 构建并验证：运行 `build-electron.ps1`，在 `dist-electron/` 生成：
-   - `Momo传值助手 2.2.78.exe`（便携版，双击即用）
-   - `Momo传值助手 Setup 2.2.78.exe`（安装包，带安装向导，可选安装路径）
+   - `奶蕉助手 2.2.79.exe`（便携版，双击即用）
+   - `奶蕉助手 Setup 2.2.79.exe`（安装包，带安装向导，可选安装路径）
    构建完成后直接运行便携版验证；不再保留开发版/win-unpacked。
-4. 更新 `releases/2.2.78/` 为当前构建产物，并删除旧版本目录；只保留最新版本。
+4. 更新 `releases/2.2.79/` 为当前构建产物，并删除旧版本目录；只保留最新版本。
 
 ## 回归测试
 
@@ -48,7 +48,8 @@ pwsh -File tools\audit-links.ps1   # 只读全链路审计（需要 sqlcmd）
 两种版本存放位置不同：
 
 - **便携版**：`config.js` 写在 exe 旁边（通过 `PORTABLE_EXECUTABLE_DIR` 定位），不会写临时解压目录。
-- **安装版**：`config.js` 写在 `%APPDATA%\Momo传值助手`，不会读取安装目录里的旧配置。
+- **安装版**：`config.js` 写在 `%APPDATA%\奶蕉助手`，不会读取安装目录里的旧配置。
+- 从旧版升级时，如果新目录还没有配置，启动会自动从 `%APPDATA%\Momo传值助手` 迁移 config、凭据、触发器注册表和引导标志，旧目录保留以便回退。
 - 点「保存配置」才会写入；重启后界面从 `config.js` 回填服务器/账号/密码/账套。
 - 全新安装（没有 config.js）时，服务器和密码为空。
 
@@ -61,13 +62,14 @@ pwsh -File tools\audit-links.ps1   # 只读全链路审计（需要 sqlcmd）
 ## 说明
 
 - 版本号在 `source/package.json` 的 `version`，会影响 exe 文件名。
+- 已部署的触发器名 `trg_*_momo`、变量 `@momo_msg` 和 `appId` 保留为内部兼容标识；用户可见名称统一为「奶蕉助手」。
 - `source/src/config.js` 是打包进 asar 的默认值；实际连接以 exe 同目录的 `config.js` 为准。
-- `dist-electron\config.js` 是当前这台机器已保存的连接配置，复制 exe 到别处时不要连带复制它。
+- `dist-electron/` 不再存放 `config.js`；连接配置由应用写到便携版 exe 同目录或安装版的 `%APPDATA%\奶蕉助手`。
 
 ## 安装包行为
 
-- per-user 安装（不需要管理员），默认装到 `%LOCALAPPDATA%\Programs\Momo传值助手`，向导里可改路径。
+- per-user 安装（不需要管理员），默认装到 `%LOCALAPPDATA%\Programs\奶蕉助手`，向导里可改路径。
 - 自动创建桌面快捷方式和开始菜单快捷方式。
 - 安装时会删除安装目录里旧版本残留的 `config.js` / `first_open.flag`。
-- 首次打开会弹一次「科技不是高高在上，而是服务于人民」，用 `%APPDATA%\Momo传值助手\first_open.flag` 标记，之后不再弹。
-- 卸载时会一并删除 `%APPDATA%\Momo传值助手`（包括保存的连接配置），保证下次安装是全新状态。
+- 首次打开会弹一次「科技不是高高在上，而是服务于人民」，用 `%APPDATA%\奶蕉助手\first_open.flag` 标记，之后不再弹。
+- 卸载时会一并删除 `%APPDATA%\奶蕉助手`（包括保存的连接配置），保证下次安装是全新状态。

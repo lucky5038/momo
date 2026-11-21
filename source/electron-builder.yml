@@ -1,5 +1,5 @@
 appId: com.momo.chuanzhi
-productName: Momo传值助手
+productName: 奶蕉助手
 asar: true
 compression: normal
 
@@ -10,9 +10,11 @@ directories:
 files:
   - package.json
   - public_inline.js
+  - build/icon.png
   - src/**/*
 
 win:
+  icon: build/icon.ico
   target:
     - target: portable
       arch:
@@ -27,12 +29,14 @@ portable:
 nsis:
   artifactName: "${productName} Setup ${version}.exe"
   include: "build/installer.nsh"
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
   oneClick: false
   perMachine: false
   allowElevation: true
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: "Momo传值助手"
+  shortcutName: "奶蕉助手"
   runAfterFinish: true
   deleteAppDataOnUninstall: true

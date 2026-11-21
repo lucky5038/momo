@@ -1,4 +1,4 @@
-# 用 electron-builder 生成 portable 单文件 exe（NSIS 自解压，行为与 release 基线一致）
+﻿# 用 electron-builder 生成 portable 单文件 exe（NSIS 自解压，行为与 release 基线一致）
 param(
   [string]$OutDir = ""
 )
@@ -40,14 +40,26 @@ try {
   Pop-Location
 }
 
-# 只保留可发布的便携版/安装包，避免 win-unpacked 和调试文件堆积
+# 只保留当前版本的便携版/安装包，避免 win-unpacked、旧版本和调试文件堆积
 $stale = @(
   (Join-Path $OutDir "win-unpacked"),
   (Join-Path $OutDir "builder-debug.yml")
 )
 foreach ($p in $stale) {
-  if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force }
+  if (Test-Path -LiteralPath $p) {
+    try { Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction Stop }
+    catch { Write-Warning "暂时无法清理 $p（请关闭正在运行的旧版后重试）: $($_.Exception.Message)" }
+  }
 }
+
+$pkg = Get-Content (Join-Path $Source "package.json") -Raw | ConvertFrom-Json
+$versionText = [string]$pkg.version
+Get-ChildItem $OutDir -File -ErrorAction SilentlyContinue |
+  Where-Object { ($_.Extension -eq '.exe' -or $_.Extension -eq '.blockmap') -and ($_.Name -notlike "*$versionText*") } |
+  ForEach-Object {
+    try { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction Stop }
+    catch { Write-Warning "暂时无法清理旧版本 $($_.Name): $($_.Exception.Message)" }
+  }
 
 Write-Host "==== 输出 ===="
 Get-ChildItem $OutDir | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize

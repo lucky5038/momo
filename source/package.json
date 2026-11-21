@@ -1,8 +1,8 @@
 {
-  "name": "chuanzhi-app",
-  "productName": "Momo传值助手",
-  "version": "2.2.78",
-  "description": "ERP 跨表带值 / 触发器管理 桌面应用版",
+  "name": "naijiao-assistant",
+  "productName": "奶蕉助手",
+  "version": "2.2.79",
+  "description": "ERP 跨表带值 / 数据清洗 / 触发器管理 桌面应用版",
   "main": "src/main.electron.js",
   "type": "commonjs",
   "author": "you",
