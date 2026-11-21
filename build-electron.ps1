@@ -52,7 +52,7 @@ foreach ($p in $stale) {
   }
 }
 
-$pkg = Get-Content (Join-Path $Source "package.json") -Raw | ConvertFrom-Json
+$pkg = Get-Content (Join-Path $Source "package.json") -Raw -Encoding UTF8 | ConvertFrom-Json
 $versionText = [string]$pkg.version
 Get-ChildItem $OutDir -File -ErrorAction SilentlyContinue |
   Where-Object { ($_.Extension -eq '.exe' -or $_.Extension -eq '.blockmap') -and ($_.Name -notlike "*$versionText*") } |

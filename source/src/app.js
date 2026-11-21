@@ -1631,10 +1631,12 @@ function onboardingState() {
     ok: true,
     configured,
     onboardingDone: done,
-    needsSetup: freshInstall || !configured,
-    // 老版本用户：已有配置且不是全新安装，直接进工作台
-    existingInstall: !freshInstall && configured,
-    newInstall: freshInstall || (!configured && !done)
+    // 只要已经有完整连接配置，就不再拦截进入工作台。
+    // fresh_install.flag 只用于标记来源，不能覆盖已有配置；否则改名/覆盖安装后会反复弹引导。
+    needsSetup: !configured,
+    existingInstall: configured,
+    newInstall: !configured && !done,
+    freshInstall
   };
 }
 

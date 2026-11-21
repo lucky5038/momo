@@ -1,7 +1,7 @@
 {
   "name": "naijiao-assistant",
   "productName": "奶蕉助手",
-  "version": "2.2.79",
+  "version": "2.2.80",
   "description": "ERP 跨表带值 / 数据清洗 / 触发器管理 桌面应用版",
   "main": "src/main.electron.js",
   "type": "commonjs",
