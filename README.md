@@ -1,7 +1,7 @@
 # N-B助手
 
 本目录为 C 盘迁移出的工作目录；C 盘原目录已于 2026-11-19 清理。
-当前版本为 **N-B助手 2.2.83（独立 appId + 触发器改名 + 修复全新安装跳过引导）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.83/`。只保留当前版本，不再保留开发版/旧版本目录。
+当前版本为 **N-B助手 2.2.84（独立 appId + 触发器改名 + 修复全新安装跳过引导）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.84/`。只保留当前版本，不再保留开发版/旧版本目录。
 
 ## 目录说明
 
@@ -11,7 +11,7 @@
 | `source/node_modules/` | 运行依赖（mssql 等），随 asar 一起提取 |
 | `source/public_inline.js` | 由 `src/public/index.html` 生成，改界面后需重新生成 |
 | `dist-electron/` | 最后一次构建产物（便携版、Setup、blockmap） |
-| `releases/2.2.83/` | 当前正式发布包：便携版、安装包、blockmap |
+| `releases/2.2.84/` | 当前正式发布包：便携版、安装包、blockmap |
 | `docs/` | 开发历程、工具作用与研发说明 |
 | `baseline/` | 原始 release exe 备份，仅供对照，不参与开发 |
 | `tools/eb/` | 本地打包工具链（electron-builder 24 + @electron/rebuild 3.2.10） |
@@ -28,10 +28,10 @@
 ```
 
 3. 构建并验证：运行 `build-electron.ps1`，在 `dist-electron/` 生成：
-   - `N-B助手 2.2.83.exe`（便携版，双击即用）
-   - `N-B助手 Setup 2.2.83.exe`（安装包，带安装向导，可选安装路径）
+   - `N-B助手 2.2.84.exe`（便携版，双击即用）
+   - `N-B助手 Setup 2.2.84.exe`（安装包，带安装向导，可选安装路径）
    构建完成后直接运行便携版验证；不再保留开发版/win-unpacked。
-4. 更新 `releases/2.2.83/` 为当前构建产物，并删除旧版本目录；只保留最新版本。
+4. 更新 `releases/2.2.84/` 为当前构建产物，并删除旧版本目录；只保留最新版本。
 
 ## 回归测试
 

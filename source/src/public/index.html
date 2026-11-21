@@ -826,11 +826,6 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
 .clean-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:18px 0 8px;}
 .clean-toolbar-title{font-size:13px;color:#E2E8F0;font-weight:600;}
 .clean-showall{font-size:11px;color:#94A3B8;white-space:nowrap;}
-.clean-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px;}
-.clean-search{flex:1 1 180px;min-width:150px;height:30px;border:1px solid #334155;border-radius:6px;background:#0F172A;color:#E2E8F0;padding:0 10px;font-size:11px;}
-.clean-search:focus{outline:none;border-color:#38BDF8;box-shadow:0 0 0 2px rgba(56,189,248,.12);}
-.clean-filter-select{height:30px;border:1px solid #334155;border-radius:6px;background:#0F172A;color:#CBD5E1;padding:0 8px;font-size:11px;}
-.clean-filter-note{font-size:10px;color:#64748B;white-space:nowrap;}
 .clean-map-wrap{max-height:330px;overflow:auto;border:1px solid #26364D;border-radius:8px;background:#0B1220;}
 .clean-map tbody tr:hover td{background:#101C30;}
 .clean-map tr.clean-row-bad td{background:#23121A;}
@@ -1069,39 +1064,13 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
         <small>支持列名不完全一致，系统会自动匹配同义词</small>
         <input type="file" id="cleanSrc" accept=".xls,.xlsx,.xlsm">
       </label>
-      <button class="btn primary clean-parse" id="btnCleanParse" type="button">读取并匹配</button>
+      <button class="btn primary clean-parse" id="btnCleanParse" type="button">一键生成导入包</button>
     </div>
 
+    <div id="cleanStatus" class="status clean-status"></div>
     <div id="cleanSummary" class="clean-summary" style="display:none"></div>
 
     <div id="cleanBody" style="display:none">
-      <div class="clean-toolbar">
-        <div class="clean-toolbar-title">字段映射 <span class="sub" id="cleanMapNote"></span></div>
-        <label class="chk clean-showall"><input type="checkbox" id="cleanShowAll"> 显示全部模板列</label>
-      </div>
-      <div class="clean-filters">
-        <input id="cleanSearch" class="clean-search" type="text" placeholder="搜索字段代码或名称，例如 国外客户、DFA009">
-        <select id="cleanFilter" class="clean-filter-select">
-          <option value="action">只看待处理</option>
-          <option value="required">只看必填</option>
-          <option value="mapped">只看已映射</option>
-          <option value="unmapped">只看未映射</option>
-          <option value="issues">只看预览问题字段</option>
-          <option value="all">全部字段</option>
-        </select>
-        <span id="cleanFilterNote" class="clean-filter-note"></span>
-      </div>
-      <div class="clean-map-wrap">
-        <table class="clean-map">
-          <thead><tr><th>目标字段</th><th title="从客户文件中选择一列；不映射表示使用默认值/派生">来源列</th><th>清洗方式</th><th title="仅当来源列为空时生效；派生字段优先取指定字段">默认值 / 派生</th></tr></thead>
-          <tbody id="cleanMapBody"></tbody>
-        </table>
-      </div>
-      <div class="clean-actions">
-        <button class="btn" id="btnCleanPreview" type="button">校验预览</button>
-        <button class="btn primary" id="btnCleanGenerate" type="button">生成导入包</button>
-        <span class="status" id="cleanStatus"></span>
-      </div>
       <div id="cleanStats" class="clean-stats" style="display:none"></div>
       <div id="cleanIssues" class="clean-issues" style="display:none"></div>
       <div id="cleanResult" class="clean-result" style="display:none"></div>
@@ -2419,8 +2388,6 @@ chainRow();
     if(f) $(labelId).textContent = f.name + '  ·  ' + (f.size/1024).toFixed(1) + ' KB';
     else $(labelId).textContent = inputId === 'cleanTpl' ? '选择易助导入模板 (.xls / .xlsx)' : '选择客户数据 (.xls / .xlsx)';
     state.jobId = null; state.info = null; state.mapping = []; state.result = null;
-    if($('cleanSearch')) $('cleanSearch').value = '';
-    if($('cleanFilter')) $('cleanFilter').value = 'action';
     if($('cleanShowAll')) $('cleanShowAll').checked = false;
     $('cleanSummary').style.display = 'none';
     $('cleanBody').style.display = 'none';
@@ -2437,14 +2404,16 @@ chainRow();
       '识别模板：<b>'+(info.suggested.profile || '通用')+'</b> · '+(info.template.columns || []).length+' 列；'+
       '来源：<b>'+srcCols+'</b> 列 / <b>'+srcRows+'</b> 行；'+
       '自动匹配 <b>'+mapped+'</b> 列；必填 <b>'+req+'</b> 列。'+
-      '<br><span style="color:#64748B">请检查下面的字段映射，确认后先校验，再生成导入包。生成过程不会写业务数据库。</span>';
+      '<br><span style="color:#64748B">系统按模板规则自动匹配、补默认值并校验；通过后直接生成导入包，不写业务数据库。</span>';
     $('cleanSummary').style.display = 'block';
   }
   function sourceOptions(selected){
-    const cols = state.info && state.info.source && state.info.source.columns || [];
+    const src = state.info && state.info.source || {};
+    const cols = src.columns || [];
+    const fileName = String(src.fileName || '客户数据').replace(/\.(xls|xlsx|xlsm)$/i, '');
     return '<option value="">— 不映射 —</option>' + cols.map(c =>
       '<option value="'+c.index+'"'+(Number(selected)===Number(c.index)?' selected':'')+'>'+
-      esc(c.name || ('第'+c.index+'列'))+'  ·  '+esc(c.index)+'</option>'
+      esc(fileName)+' 第 '+esc(c.index)+' 列</option>'
     ).join('');
   }
   function transformOptions(selected){
@@ -2459,21 +2428,11 @@ chainRow();
   function renderMapping(){
     const cols = state.mapping;
     const showAll = $('cleanShowAll').checked;
-    const q = String(($('cleanSearch') && $('cleanSearch').value) || '').trim().toLowerCase();
-    let mode = ($('cleanFilter') && $('cleanFilter').value) || 'action';
-    if (showAll && mode === 'action') mode = 'all';
     const badCodes = issueCodes();
-    const rows = cols.filter(c => {
+    // 默认只展示需要处理的行；勾选“显示全部”可查看并设置可选字段。
+    const rows = showAll ? cols : cols.filter(c => {
       const mapped = c.sourceIndex != null && c.sourceIndex !== '';
-      const action = c.required || mapped || c.defaultValue || c.derivedFrom;
-      const text = (c.code + ' ' + (c.name || '') + ' ' + (c.comment || '') + ' ' + (c.note || '')).toLowerCase();
-      if (q && text.indexOf(q) < 0) return false;
-      if (mode === 'all') return true;
-      if (mode === 'required') return !!c.required;
-      if (mode === 'mapped') return mapped;
-      if (mode === 'unmapped') return !mapped;
-      if (mode === 'issues') return badCodes.has(c.code);
-      return action;
+      return !!(c.required || mapped || c.defaultValue || c.derivedFrom || badCodes.has(c.code));
     });
     $('cleanMapBody').innerHTML = rows.length ? rows.map(c => {
       const idx = state.mapping.indexOf(c);
@@ -2486,7 +2445,7 @@ chainRow();
         '<td><select data-field="transform">'+transformOptions(c.transform)+'</select></td>'+
         '<td><input type="text" data-field="defaultValue" value="'+esc(c.defaultValue||'')+'" placeholder="'+(c.derivedFrom?'取 '+esc(c.derivedFrom):'默认值')+'"'+(c.derivedFrom?' title="按 '+esc(c.derivedFrom)+' 派生"':'')+'></td>'+
       '</tr>';
-    }).join('') : '<tr><td colspan="4" style="padding:16px;color:#64748b">没有符合条件的字段。可切换筛选或勾选“显示全部模板列”。</td></tr>';
+    }).join('') : '<tr><td colspan="4" style="padding:16px;color:#64748b">没有需要处理的字段，可直接校验预览或生成导入包。</td></tr>';
     $('cleanMapBody').querySelectorAll('tr[data-idx]').forEach(tr => {
       const c = state.mapping[Number(tr.dataset.idx)];
       tr.querySelectorAll('[data-field]').forEach(el => {
@@ -2500,9 +2459,7 @@ chainRow();
     });
     const mapped = cols.filter(c=>c.sourceIndex!=null && c.sourceIndex!=='').length;
     const req = cols.filter(c=>c.required).length;
-    const bad = cols.filter(c=>badCodes.has(c.code)).length;
-    $('cleanMapNote').textContent = '显示 ' + rows.length + ' / ' + cols.length + ' 列 · 必填 ' + req + ' · 已映射 ' + mapped;
-    if($('cleanFilterNote')) $('cleanFilterNote').textContent = bad ? '预览问题字段 ' + bad : (mode === 'issues' ? '先做一次校验预览' : '待处理含必填、已映射和有默认值的字段');
+    $('cleanMapNote').textContent = '显示 ' + rows.length + ' / 模板 ' + cols.length + ' 列 · 必填 ' + req + ' · 已映射 ' + mapped;
   }
   function collectMapping(){
     return state.mapping.map(c => ({
@@ -2526,13 +2483,17 @@ chainRow();
       '<span class="msg">'+esc(x.message)+'</span><span class="loc">'+esc(x.code||'')+(x.row?' · 行'+x.row:'')+'</span></div>'
     ).join('') : '<div class="clean-issue info"><span class="sev">通过</span><span class="msg">没有硬错误或警告。</span></div>';
     $('cleanIssues').style.display = 'block';
-    if(state.mapping.length) renderMapping();
   }
-  async function parseFiles(){
+  async function autoGenerate(){
     const t = $('cleanTpl').files[0], s = $('cleanSrc').files[0];
     if(!t || !s) return toast('请先选择模板和来源数据', 'error');
     const btn = $('btnCleanParse');
-    busy(btn, true, '读取中...'); status('正在用 Excel 解析模板与来源文件...');
+    busy(btn, true, '处理中...'); status('正在读取并自动匹配，请稍候...');
+    $('cleanSummary').style.display = 'none';
+    $('cleanBody').style.display = 'none';
+    $('cleanStats').style.display = 'none';
+    $('cleanIssues').style.display = 'none';
+    $('cleanResult').style.display = 'none';
     try {
       const [td, sd] = await Promise.all([readFile(t), readFile(s)]);
       const info = await call('/api/cleaning/inspect', { template:{name:t.name,data:td}, source:{name:s.name,data:sd} });
@@ -2541,62 +2502,36 @@ chainRow();
       state.mapping = (info.suggested.columns || []).map(c => ({...c}));
       state.result = null;
       renderSummary(info);
-      renderMapping();
+      $('cleanSummary').style.display = 'block';
       $('cleanBody').style.display = 'block';
-      $('cleanResult').style.display = 'none';
-      status('读取完成，请检查字段映射。');
-      toast('文件已读取，自动匹配 '+state.mapping.filter(c=>c.sourceIndex!=null).length+' 列', 'success');
-    } catch(e) {
-      status('读取失败：'+e.message, true); toast('读取失败：'+e.message, 'error');
-    } finally { busy(btn, false); }
-  }
-  async function validate(){
-    if(!state.jobId) return toast('请先读取模板和来源文件', 'error');
-    const btn = $('btnCleanPreview');
-    busy(btn, true, '校验中...'); status('正在校验映射和数据...');
-    try {
-      const r = await call('/api/cleaning/preview', {jobId:state.jobId, mapping:collectMapping()});
-      renderResult(r);
-      status(r.stats.errors ? '发现 '+r.stats.errors+' 个硬错误，请先处理。' : '校验通过，可以生成导入包。', !!r.stats.errors);
-      toast(r.stats.errors ? '校验发现 '+r.stats.errors+' 个硬错误' : '校验通过', r.stats.errors?'error':'success');
-    } catch(e) {
-      status('校验失败：'+e.message, true); toast('校验失败：'+e.message, 'error');
-    } finally { busy(btn, false); }
-  }
-  async function generate(){
-    if(!state.jobId) return toast('请先读取模板和来源文件', 'error');
-    const btn = $('btnCleanGenerate');
-    busy(btn, true, '生成中...'); status('正在生成 XLS 导入包，请稍候...');
-    try {
-      let pre = await call('/api/cleaning/preview', {jobId:state.jobId, mapping:collectMapping()});
+      status('已自动匹配，正在校验数据...');
+
+      const pre = await call('/api/cleaning/preview', {jobId:state.jobId, mapping:collectMapping()});
       renderResult(pre);
-      let allowErrors = false;
       if(pre.stats.errors > 0){
-        allowErrors = confirm('当前有 '+pre.stats.errors+' 个硬错误，仍要生成吗？\n建议先修正映射或数据；生成后请按问题清单逐条核对。');
-        if(!allowErrors) { status('已取消生成，请先处理硬错误。', true); return; }
+        status('发现 '+pre.stats.errors+' 个硬错误，未生成导入包。请按问题清单修正来源数据后重试。', true);
+        toast('校验未通过，未生成文件', 'error');
+        return;
       }
-      const out = await call('/api/cleaning/generate', {jobId:state.jobId, mapping:collectMapping(), options:{allowErrors}});
+
+      status('校验通过，正在生成 XLS...');
+      const out = await call('/api/cleaning/generate', {jobId:state.jobId, mapping:collectMapping(), options:{allowErrors:false}});
       renderResult(out);
       $('cleanResult').innerHTML = '<b>生成成功</b><br>导入包：<span class="clean-path">'+esc(out.xlsPath)+'</span>'+
         '<button class="btn sm" type="button" data-reveal="'+esc(out.xlsPath)+'">打开导入包所在文件夹</button>';
       $('cleanResult').style.display = 'block';
-      status('生成完成：'+out.stats.outputRows+' 行，硬错误 '+out.stats.errors+' 条。');
+      status('生成完成：'+out.stats.outputRows+' 行。');
       toast('导入包已生成', 'success');
     } catch(e) {
       if(e.data && e.data.validation) renderResult(e.data.validation);
-      status('生成失败：'+e.message, true); toast('生成失败：'+e.message, 'error');
+      status('处理失败：'+e.message, true); toast('处理失败：'+e.message, 'error');
     } finally { busy(btn, false); }
   }
   function bind(){
     initBtns();
     $('cleanTpl').onchange = () => { fileLabel('cleanTpl','cleanTplName'); };
     $('cleanSrc').onchange = () => { fileLabel('cleanSrc','cleanSrcName'); };
-    $('btnCleanParse').onclick = parseFiles;
-    $('btnCleanPreview').onclick = validate;
-    $('btnCleanGenerate').onclick = generate;
-    $('cleanShowAll').onchange = () => { if(state.mapping.length) renderMapping(); };
-    $('cleanSearch').oninput = () => { if(state.mapping.length) renderMapping(); };
-    $('cleanFilter').onchange = () => { if(state.mapping.length) renderMapping(); };
+    $('btnCleanParse').onclick = autoGenerate;
     $('cleanResult').onclick = async (e) => {
       const b = e.target.closest('[data-reveal]');
       if(!b) return;

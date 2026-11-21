@@ -38,14 +38,16 @@ function migrateLegacyUserData() {
     const newDir = app.getPath('userData');
     // 全新安装由安装器写入 fresh_install.flag；此时不能把旧品牌配置复制进来，
     // 否则会绕过首次引导，让用户误以为“新装没有引导”。
-    if (fs.existsSync(path.join(newDir, 'fresh_install.flag'))) {
-      console.log('[migrate] 全新安装，跳过旧数据迁移: ' + newDir);
+    if (fs.existsSync(path.join(newDir, 'fresh_install.flag')) ||
+        fs.existsSync(path.join(newDir, 'config.js')) ||
+        fs.existsSync(path.join(newDir, 'onboarding_done.flag'))) {
+      console.log('[migrate] 本品牌已有配置/已完成引导，跳过旧数据迁移: ' + newDir);
       return;
     }
     const legacyDirs = ['奶蕉助手', 'Momo传值助手'];
     const files = [
       'config.js', 'creds.json', 'chain_registry.json', 'invoice_source_map.json',
-      'first_open.flag', 'onboarding_done.flag', 'fresh_install.flag',
+      'first_open.flag', 'onboarding_done.flag',
       'nb_backup_picked.flag', 'momo_backup_picked.flag'
     ];
     for (const oldName of legacyDirs) {
