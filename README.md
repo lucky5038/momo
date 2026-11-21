@@ -1,7 +1,7 @@
 # N-B助手
 
 本目录为 C 盘迁移出的工作目录；C 盘原目录已于 2026-11-19 清理。
-当前版本为 **N-B助手 2.2.81（品牌更名 + 触发器改名 + 修复已有配置重复引导）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.81/`。只保留当前版本，不再保留开发版/旧版本目录。
+当前版本为 **N-B助手 2.2.82（独立 appId + 触发器改名 + 修复已有配置重复引导）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.82/`。只保留当前版本，不再保留开发版/旧版本目录。
 
 ## 目录说明
 
@@ -11,7 +11,7 @@
 | `source/node_modules/` | 运行依赖（mssql 等），随 asar 一起提取 |
 | `source/public_inline.js` | 由 `src/public/index.html` 生成，改界面后需重新生成 |
 | `dist-electron/` | 最后一次构建产物（便携版、Setup、blockmap） |
-| `releases/2.2.81/` | 当前正式发布包：便携版、安装包、blockmap |
+| `releases/2.2.82/` | 当前正式发布包：便携版、安装包、blockmap |
 | `docs/` | 开发历程、工具作用与研发说明 |
 | `baseline/` | 原始 release exe 备份，仅供对照，不参与开发 |
 | `tools/eb/` | 本地打包工具链（electron-builder 24 + @electron/rebuild 3.2.10） |
@@ -28,10 +28,10 @@
 ```
 
 3. 构建并验证：运行 `build-electron.ps1`，在 `dist-electron/` 生成：
-   - `N-B助手 2.2.81.exe`（便携版，双击即用）
-   - `N-B助手 Setup 2.2.81.exe`（安装包，带安装向导，可选安装路径）
+   - `N-B助手 2.2.82.exe`（便携版，双击即用）
+   - `N-B助手 Setup 2.2.82.exe`（安装包，带安装向导，可选安装路径）
    构建完成后直接运行便携版验证；不再保留开发版/win-unpacked。
-4. 更新 `releases/2.2.81/` 为当前构建产物，并删除旧版本目录；只保留最新版本。
+4. 更新 `releases/2.2.82/` 为当前构建产物，并删除旧版本目录；只保留最新版本。
 
 ## 回归测试
 
@@ -63,7 +63,7 @@ pwsh -File tools\audit-links.ps1   # 只读全链路审计（需要 sqlcmd）
 
 - 版本号在 `source/package.json` 的 `version`，会影响 exe 文件名。
 - 工具触发器名统一为 `trg_*_nb`，错误变量为 `@nb_msg`；连接数据库时会自动把旧 `trg_*_momo` 原地改名，不重建、不丢定义。
-- `appId` 保留 `com.momo.chuanzhi` 作为安装和数据的兼容标识，不影响用户可见名称。
+- `appId` 使用 `com.nb.assistant`，作为 N-B助手 的独立安装标识；不再沿用旧品牌的应用身份。
 - `source/src/config.js` 是打包进 asar 的默认值；实际连接以 exe 同目录的 `config.js` 为准。
 - `dist-electron/` 不再存放 `config.js`；连接配置由应用写到便携版 exe 同目录或安装版的 `%APPDATA%\N-B助手`。
 
