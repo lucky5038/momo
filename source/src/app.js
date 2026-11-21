@@ -56,6 +56,8 @@ const { docs: DOC_ITEMS, srcs: SRC_ITEMS } = require('./dicts');
 const sqlgen = require('./sqlgen')(sql);
 const chainBuilder = require('./chain');
 const fieldDict = require('./field-dict');
+const { createCleaningService } = require('./cleaning');
+const cleaningService = createCleaningService(BASE_DIR);
 
 // ====== 日志 ======
 
@@ -189,9 +191,39 @@ async function getChainRegistry() {
     delete CHAIN_BUILDS[regKey];
   }
 }
+function reverseChainPath(path, docs) {
+  return path.slice().reverse().map(e => {
+    if (e.internal) return { ...e, from: e.to, to: e.from, internal: true };
+    const fromMeta = docs[e.to] || {};
+    const toMeta = docs[e.from] || {};
+    const rev = {
+      ...e,
+      from: e.to,
+      to: e.from,
+      fromNo: e.toJoinCol || (e.link && e.link.toNo) || fromMeta.docNo || null,
+      toJoinCol: e.fromNo || toMeta.docNo || null,
+      fromSeq: e.toSeqCol || null,
+      toSeqCol: e.fromSeq || null,
+      fromCode: null,
+      toCode: e.fromCode || null,
+      reverse: true
+    };
+    if (e.joinSql) {
+      rev.joinSql = String(e.joinSql)
+        .replace(/\{a\}/g, '\u0000')
+        .replace(/\{b\}/g, '{a}')
+        .replace(/\u0000/g, '{b}');
+    }
+    return rev;
+  });
+}
 function resolvedChainPaths(registry, from, to) {
-  const paths = chainBuilder.findAllPaths(registry, from, to)
-    .filter(path => path.length && path.every(e => e.internal || (e.link && e.link.status !== 'ambiguous')));
+  let paths = chainBuilder.findAllPaths(registry, from, to);
+  if (!paths.length) {
+    paths = chainBuilder.findAllPaths(registry, to, from)
+      .map(path => reverseChainPath(path, registry.docs || {}));
+  }
+  paths = paths.filter(path => path.length && path.every(e => e.internal || (e.link && e.link.status !== 'ambiguous')));
   // 复合关联已经把多跳关系收进一条 SQL 条件，不能再和普通多跳路径一起聚合取值。
   const compound = paths.filter(path => path.some(e => e.joinSql));
   if (compound.length) {
@@ -949,6 +981,9 @@ async function handleRun(req, res) {
     const targetDoc = CUR_DOCS.find(d => d.id === docId);
     if (!targetDoc) throw new Error('目标单据 ' + docId + ' 不存在');
     await verifyColsForTrig(await getPool(), targetDoc, mTgtCol, mSrcId, mSrcValCol);
+    // 合并显示要读取并追加已有值，必须让底层查询包含“已有值”的行；
+    // 否则目标列已有值时预览为 0 行、执行也不会追加。
+    const effectiveForce = !!runForce || !!mergeDisplay;
     let out;
     if (isInvoiceDate) {
       const p0 = await getPool();
@@ -977,7 +1012,7 @@ async function handleRun(req, res) {
       }
     } else {
       const mappingChain = mapping.chain || (mSrcId === srcId ? chain : null);
-      out = sqlgen.buildSQL(docId, mTgtCol, mSrcId, mSrcValCol, partyKey, runMode, runForce, mappingChain, { docs: CUR_DOCS, srcs: CUR_SRCS });
+      out = sqlgen.buildSQL(docId, mTgtCol, mSrcId, mSrcValCol, partyKey, runMode, effectiveForce, mappingChain, { docs: CUR_DOCS, srcs: CUR_SRCS });
       const aggregatePurchase = (docId === 'YSFGQB' || docId === 'YSFGQA') && (mSrcId === 'DCSHDA' || mSrcId === 'DCSHDB');
       let autoPaths = [];
       let autoRegistry = null;
@@ -998,9 +1033,9 @@ async function handleRun(req, res) {
       if (out.channelName === '默认键' || internalPath || registryOneHop) {
         try {
           if (autoPaths.length === 1) {
-            out = sqlgen.buildChainSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], autoRegistry.docs);
+            out = sqlgen.buildChainSQL(docId, mTgtCol, mSrcValCol, runMode, effectiveForce, autoPaths[0], autoRegistry.docs);
           } else if (autoPaths.length > 1) {
-            out = sqlgen.buildChainMultiSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths, autoRegistry.docs, {
+            out = sqlgen.buildChainMultiSQL(docId, mTgtCol, mSrcValCol, runMode, effectiveForce, autoPaths, autoRegistry.docs, {
               aggregateDistinct: !!mergeDisplay || aggregatePurchase
             });
           }
@@ -1010,10 +1045,11 @@ async function handleRun(req, res) {
         }
       }
       // 单头 + 合并显示：一条单头会匹配多条单身，必须真正聚合，不能只靠 UPDATE JOIN。
-      if (mergeDisplay && !targetDoc.seqCol && autoPaths.length === 1 && autoRegistry && autoRegistry.docs) {
+      // 单身档（如 SGMRHB）也可能一张单头对应多条来源，不能因为没有 seqCol 就跳过聚合。
+      if (mergeDisplay && autoPaths.length === 1 && autoRegistry && autoRegistry.docs) {
         try {
           const pk = await pkColumns(await getPool(), targetDoc.sub);
-          if (pk.length) out = sqlgen.buildChainMergeSQL(docId, mTgtCol, mSrcValCol, runMode, runForce, autoPaths[0], autoRegistry.docs, pk, '   ');
+          if (pk.length) out = sqlgen.buildChainMergeSQL(docId, mTgtCol, mSrcValCol, runMode, effectiveForce, autoPaths[0], autoRegistry.docs, pk, '   ');
         } catch (mergeErr) {
           dbg('[headerMerge] fallback: ' + mergeErr.message);
           out.chainWarning = '表头合并聚合失败，已退回普通合并: ' + mergeErr.message;
@@ -1066,7 +1102,7 @@ async function handleRun(req, res) {
   if (mergeDisplay) built.channelNote = (built.channelNote ? built.channelNote + ' | ' : '') + '合并显示: 目标值 + 本次值（重复值自动跳过）';
   // 通道切换后保留类型提示
   built.typeWarning = builtResults.map(x => x.typeWarning).filter(Boolean).join('；') || undefined;
-  built.isHeaderMerge = builtResults.some(x => x.isHeaderMerge);
+  built.isHeaderMerge = builtResults.some(x => x.isHeaderMerge || x.isMergeAggregated);
   built.chainWarning = builtResults.map(x => x.chainWarning).filter(Boolean).join('；') || undefined;
 
   const p = await getPool();
@@ -1787,8 +1823,60 @@ async function handleDropCred(req, res) {
 }
 
 
+async function handleCleaningInspect(req, res) {
+  try {
+    const body = JSON.parse((await readBody(req)) || '{}');
+    const r = await cleaningService.inspect(body);
+    sendJSON(res, 200, r);
+  } catch (e) {
+    sendJSON(res, 400, { error: e.message });
+  }
+}
+
+async function handleCleaningPreview(req, res) {
+  try {
+    const body = JSON.parse((await readBody(req)) || '{}');
+    const r = await cleaningService.preview(body);
+    sendJSON(res, 200, r);
+  } catch (e) {
+    sendJSON(res, 400, { error: e.message });
+  }
+}
+
+async function handleCleaningGenerate(req, res) {
+  try {
+    const body = JSON.parse((await readBody(req)) || '{}');
+    const r = await cleaningService.generate(body);
+    sendJSON(res, 200, r);
+  } catch (e) {
+    const code = e.code === 'VALIDATION' ? 400 : 500;
+    sendJSON(res, code, { error: e.message, validation: e.validation || null });
+  }
+}
+
+async function handleCleaningReveal(req, res) {
+  try {
+    const body = JSON.parse((await readBody(req)) || '{}');
+    const p = path.resolve(String(body.path || ''));
+    const root = path.resolve(path.join(BASE_DIR, 'cleaning'));
+    const rel = path.relative(root, p);
+    if (!p || rel.startsWith('..') || path.isAbsolute(rel)) return sendJSON(res, 400, { error: '路径不在清洗目录内' });
+    const dir = fs.existsSync(p) && fs.statSync(p).isDirectory() ? p : path.dirname(p);
+    if (!fs.existsSync(dir)) return sendJSON(res, 404, { error: '目录不存在' });
+    const cp = spawn('explorer.exe', [dir], { detached: true, stdio: 'ignore' });
+    cp.unref();
+    sendJSON(res, 200, { ok: true, dir });
+  } catch (e) {
+    sendJSON(res, 500, { error: e.message });
+  }
+}
+
 const router = {
   '/api/meta': handleMeta,
+  '/api/cleaning/inspect': handleCleaningInspect,
+  '/api/cleaning/preview': handleCleaningPreview,
+  '/api/cleaning/generate': handleCleaningGenerate,
+  '/api/cleaning/reveal': handleCleaningReveal,
   '/api/run': handleRun,
   '/api/clear-column': handleClearColumn,
   '/api/databases': handleDatabases,

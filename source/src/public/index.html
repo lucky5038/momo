@@ -774,6 +774,104 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
   overflow-y:hidden;
   overscroll-behavior:auto;
 }
+/* 功能模块占位页 */
+.module-card{
+  padding:26px 28px;
+  background:
+    radial-gradient(520px 220px at 8% 0%, rgba(56,189,248,.10), transparent 70%),
+    radial-gradient(460px 220px at 92% 0%, rgba(34,197,94,.07), transparent 70%),
+    var(--card);
+}
+.module-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+.module-icon{
+  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:#172033;border:1px solid #334155;font-size:22px;flex:0 0 auto;
+}
+.module-heading{flex:1;min-width:220px;}
+.module-kicker{font-size:10px;letter-spacing:2.2px;color:#38BDF8;font-weight:700;margin-bottom:7px;}
+.module-heading h2{font-size:24px;line-height:1.3;margin:0 0 8px;color:#F1F5F9;letter-spacing:.3px;}
+.module-desc{font-size:13px;line-height:1.8;color:#94A3B8;margin:0;max-width:760px;}
+.module-badge{
+  flex:0 0 auto;padding:5px 10px;border-radius:999px;border:1px solid #334155;
+  background:#172033;color:#7DD3FC;font-size:11px;font-weight:600;letter-spacing:.4px;
+}
+.module-sample{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px;padding:13px 15px;
+  border:1px solid #2d3a4f;border-radius:8px;background:#0b1220;
+}
+.module-sample-label{font-size:10px;letter-spacing:1.4px;color:#64748b;font-weight:700;}
+.module-sample code{font-size:12px;color:#7DD3FC;}
+.module-sample-arrow{color:#38BDF8;font-weight:700;}
+.module-sample > span:last-child{font-size:12px;color:#94A3B8;}
+.module-points{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px;}
+.module-point{padding:14px 15px;border:1px solid #2d3a4f;border-radius:8px;background:#172033;}
+.module-point b{display:block;font-size:12px;color:#E2E8F0;margin-bottom:6px;}
+.module-point span{display:block;font-size:11px;line-height:1.75;color:#94A3B8;}
+.module-note{margin-top:18px;padding-top:13px;border-top:1px solid #2d3a4f;font-size:11px;color:#64748b;line-height:1.7;}
+.clean-card{padding:22px 24px;}
+.clean-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px;}
+.clean-head h2{margin:4px 0 7px;font-size:21px;color:#F8FAFC;}
+.clean-head p{margin:0;font-size:12px;line-height:1.7;color:#94A3B8;max-width:720px;}
+.clean-pill{flex:0 0 auto;padding:5px 10px;border:1px solid #164E63;border-radius:99px;background:#083344;color:#67E8F9;font-size:11px;white-space:nowrap;}
+.clean-file-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:stretch;}
+.clean-file{display:flex;flex-direction:column;gap:5px;padding:13px 14px;border:1px dashed #475569;border-radius:9px;background:#0B1220;cursor:pointer;min-height:84px;}
+.clean-file:hover{border-color:#38BDF8;background:#0E1728;}
+.clean-file input{display:none;}
+.clean-file-label{font-size:10px;letter-spacing:1.2px;color:#38BDF8;font-weight:700;}
+.clean-file b{font-size:12px;color:#E2E8F0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.clean-file small{font-size:10px;color:#64748B;line-height:1.5;}
+.clean-parse{align-self:center;min-height:42px;white-space:nowrap;}
+.clean-summary{margin-top:14px;padding:10px 12px;border:1px solid #1E3A5F;border-radius:8px;background:#0B1728;font-size:11px;color:#94A3B8;line-height:1.8;}
+.clean-summary b{color:#BAE6FD;font-weight:600;}
+.clean-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:18px 0 8px;}
+.clean-toolbar-title{font-size:13px;color:#E2E8F0;font-weight:600;}
+.clean-showall{font-size:11px;color:#94A3B8;white-space:nowrap;}
+.clean-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px;}
+.clean-search{flex:1 1 180px;min-width:150px;height:30px;border:1px solid #334155;border-radius:6px;background:#0F172A;color:#E2E8F0;padding:0 10px;font-size:11px;}
+.clean-search:focus{outline:none;border-color:#38BDF8;box-shadow:0 0 0 2px rgba(56,189,248,.12);}
+.clean-filter-select{height:30px;border:1px solid #334155;border-radius:6px;background:#0F172A;color:#CBD5E1;padding:0 8px;font-size:11px;}
+.clean-filter-note{font-size:10px;color:#64748B;white-space:nowrap;}
+.clean-map-wrap{max-height:330px;overflow:auto;border:1px solid #26364D;border-radius:8px;background:#0B1220;}
+.clean-map tbody tr:hover td{background:#101C30;}
+.clean-map tr.clean-row-bad td{background:#23121A;}
+.clean-map tr.clean-row-bad .clean-code{color:#FCA5A5;}
+.clean-map tr.clean-fixed .clean-code{color:#6EE7B7;}
+.clean-map .clean-fixed-tag{color:#6EE7B7;font-size:9px;margin-left:4px;border:1px solid #14532D;border-radius:3px;padding:1px 3px;}
+.clean-map{width:100%;border-collapse:collapse;font-size:11px;}
+.clean-map th{position:sticky;top:0;z-index:1;background:#172033;color:#94A3B8;text-align:left;font-weight:500;padding:8px 9px;border-bottom:1px solid #2d3a4f;white-space:nowrap;}
+.clean-map td{padding:6px 8px;border-bottom:1px solid #1B2940;vertical-align:middle;}
+.clean-map tr:last-child td{border-bottom:0;}
+.clean-map .clean-code{font-family:Consolas,monospace;color:#7DD3FC;font-size:10px;}
+.clean-map .clean-name{color:#E2E8F0;display:block;margin-top:2px;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.clean-map .clean-req{color:#FCA5A5;font-size:10px;margin-left:4px;}
+.clean-map select,.clean-map input[type=text]{height:28px;border:1px solid #334155;border-radius:5px;background:#0F172A;color:#E2E8F0;padding:0 7px;font-size:11px;max-width:220px;width:100%;}
+.clean-map select:focus,.clean-map input[type=text]:focus{outline:none;border-color:#38BDF8;}
+.clean-actions{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.clean-actions .btn{min-height:36px;}
+.clean-stats{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid #26364D;border-radius:7px;background:#0B1728;font-size:11px;color:#94A3B8;}
+.clean-stats b{font-family:Consolas,monospace;font-size:13px;margin-left:4px;color:#E2E8F0;}
+.clean-stats .err b{color:#FCA5A5;}.clean-stats .warn b{color:#FCD34D;}.clean-stats .ok b{color:#6EE7B7;}
+.clean-issues{margin-top:10px;max-height:220px;overflow:auto;border:1px solid #26364D;border-radius:7px;}
+.clean-issue{display:flex;gap:10px;padding:7px 10px;border-bottom:1px solid #1B2940;font-size:11px;line-height:1.6;}
+.clean-issue:last-child{border-bottom:0;}
+.clean-issue .sev{flex:0 0 44px;font-weight:700;font-size:10px;}
+.clean-issue.error .sev{color:#F87171;}.clean-issue.warning .sev{color:#FBBF24;}.clean-issue.info .sev{color:#7DD3FC;}
+.clean-issue .msg{color:#CBD5E1;}.clean-issue .loc{color:#64748B;margin-left:auto;white-space:nowrap;}
+.clean-result{margin-top:12px;padding:13px 14px;border:1px solid #14532D;border-radius:8px;background:#052E16;font-size:11px;color:#BBF7D0;line-height:1.8;}
+.clean-result b{color:#86EFAC;}
+.clean-path{font-family:Consolas,monospace;font-size:10px;color:#D1FAE5;word-break:break-all;display:block;margin:3px 0 7px;}
+.clean-result .btn{background:#166534;border-color:#22C55E;color:#F0FDF4;}
+@media(max-width:900px){
+  .module-card{padding:20px 18px;}
+  .module-heading h2{font-size:20px;}
+  .module-points{grid-template-columns:1fr;}
+  .clean-card{padding:18px 16px;}
+  .clean-head{display:block;}
+  .clean-pill{display:inline-block;margin-top:10px;}
+  .clean-file-grid{grid-template-columns:1fr;}
+  .clean-parse{width:100%;}
+  .clean-map select,.clean-map input[type=text]{max-width:none;}
+}
 </style>
 </head>
 <body>
@@ -788,6 +886,11 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
   <button class="navbtn active" data-nav="sync" type="button"><span class="nav-ico">📌</span>跨表带值</button>
   <button class="navbtn" data-nav="triggers" type="button"><span class="nav-ico">🔧</span>触发器管理</button>
   <button class="navbtn" data-nav="settings" type="button"><span class="nav-ico">⚙️</span>系统设置</button>
+  <div class="nav-divider"></div>
+  <div class="nav-label">功能模块 · 规划中</div>
+  <button class="navbtn" data-nav="sentence" type="button"><span class="nav-ico">💬</span>一句话带值</button>
+  <button class="navbtn" data-nav="cleaning" type="button"><span class="nav-ico">🧹</span>数据清洗</button>
+  <button class="navbtn" data-nav="health" type="button"><span class="nav-ico">🩺</span>数据体检</button>
   <div class="nav-divider"></div>
   <div class="nav-tip">目标先选，来源后选；执行前自动备份。</div>
 </aside>
@@ -915,6 +1018,121 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
 </div>
 </div>
 
+<!-- ============ 功能模块（仅占位，待确认后开发） ============ -->
+<div id="tab-sentence" data-page="sentence">
+  <div class="card module-card">
+    <div class="module-head">
+      <div class="module-icon">💬</div>
+      <div class="module-heading">
+        <div class="module-kicker">MODULE 01 · 规划中</div>
+        <h2>一句话带值</h2>
+        <p class="module-desc">用一句话描述目标字段和来源字段，解析成功后回填现有跨表带值表单。</p>
+      </div>
+      <span class="module-badge">待开发</span>
+    </div>
+    <div class="module-sample">
+      <span class="module-sample-label">示例</span>
+      <code>订单单身960 带 采购单单身单号</code>
+      <span class="module-sample-arrow">→</span>
+      <span>解析后回填目标、来源和字段</span>
+    </div>
+    <div class="module-points">
+      <div class="module-point"><b>识别单据</b><span>按单据名称、单身/单头、别名匹配。</span></div>
+      <div class="module-point"><b>识别字段</b><span>支持 960 这类数字后缀和单号、序号等常用字段。</span></div>
+      <div class="module-point"><b>拿不准先确认</b><span>出现多个候选时不自动选，先让用户确认。</span></div>
+    </div>
+    <div class="module-note">当前只增加板块，不接解析与执行逻辑；功能范围确认后再开发。</div>
+  </div>
+</div>
+
+<div id="tab-cleaning" data-page="cleaning">
+  <div class="card clean-card">
+    <div class="clean-head">
+      <div>
+        <div class="module-kicker">MODULE 02 · 期初导入</div>
+        <h2>数据清洗与导入</h2>
+        <p>选择易助导入模板和客户来源文件，自动识别必填、映射字段、清洗校验，生成可直接导入的 XLS。</p>
+      </div>
+      <span class="clean-pill">只读校验 · 不写数据库</span>
+    </div>
+
+    <div class="clean-file-grid">
+      <label class="clean-file">
+        <span class="clean-file-label">01 目标模板</span>
+        <b id="cleanTplName">选择易助导入模板 (.xls / .xlsx)</b>
+        <small>模板中的绿色字段、批注和默认值会作为规则</small>
+        <input type="file" id="cleanTpl" accept=".xls,.xlsx,.xlsm">
+      </label>
+      <label class="clean-file">
+        <span class="clean-file-label">02 来源数据</span>
+        <b id="cleanSrcName">选择客户数据 (.xls / .xlsx)</b>
+        <small>支持列名不完全一致，系统会自动匹配同义词</small>
+        <input type="file" id="cleanSrc" accept=".xls,.xlsx,.xlsm">
+      </label>
+      <button class="btn primary clean-parse" id="btnCleanParse" type="button">读取并匹配</button>
+    </div>
+
+    <div id="cleanSummary" class="clean-summary" style="display:none"></div>
+
+    <div id="cleanBody" style="display:none">
+      <div class="clean-toolbar">
+        <div class="clean-toolbar-title">字段映射 <span class="sub" id="cleanMapNote"></span></div>
+        <label class="chk clean-showall"><input type="checkbox" id="cleanShowAll"> 显示全部模板列</label>
+      </div>
+      <div class="clean-filters">
+        <input id="cleanSearch" class="clean-search" type="text" placeholder="搜索字段代码或名称，例如 国外客户、DFA009">
+        <select id="cleanFilter" class="clean-filter-select">
+          <option value="action">只看待处理</option>
+          <option value="required">只看必填</option>
+          <option value="mapped">只看已映射</option>
+          <option value="unmapped">只看未映射</option>
+          <option value="issues">只看预览问题字段</option>
+          <option value="all">全部字段</option>
+        </select>
+        <span id="cleanFilterNote" class="clean-filter-note"></span>
+      </div>
+      <div class="clean-map-wrap">
+        <table class="clean-map">
+          <thead><tr><th>目标字段</th><th title="从客户文件中选择一列；不映射表示使用默认值/派生">来源列</th><th>清洗方式</th><th title="仅当来源列为空时生效；派生字段优先取指定字段">默认值 / 派生</th></tr></thead>
+          <tbody id="cleanMapBody"></tbody>
+        </table>
+      </div>
+      <div class="clean-actions">
+        <button class="btn" id="btnCleanPreview" type="button">校验预览</button>
+        <button class="btn primary" id="btnCleanGenerate" type="button">生成导入包</button>
+        <span class="status" id="cleanStatus"></span>
+      </div>
+      <div id="cleanStats" class="clean-stats" style="display:none"></div>
+      <div id="cleanIssues" class="clean-issues" style="display:none"></div>
+      <div id="cleanResult" class="clean-result" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-health" data-page="health">
+  <div class="card module-card">
+    <div class="module-head">
+      <div class="module-icon">🩺</div>
+      <div class="module-heading">
+        <div class="module-kicker">MODULE 03 · 规划中</div>
+        <h2>系统数据体检</h2>
+        <p class="module-desc">按业务规则检查系统数据，例如凭证完整性、生产/委外耗料异常、借出单未还等。</p>
+      </div>
+      <span class="module-badge">待开发</span>
+    </div>
+    <div class="module-sample">
+      <span class="module-sample-label">流程</span>
+      <code>选择检查 → 只读执行 → 问题清单 → 跟进处理</code>
+    </div>
+    <div class="module-points">
+      <div class="module-point"><b>只读检查</b><span>默认不修改业务数据，先给出问题证据。</span></div>
+      <div class="module-point"><b>问题清单</b><span>按严重级别列出单号、差异、原因和建议。</span></div>
+      <div class="module-point"><b>可扩展检查包</b><span>不同账套按需启用，不把规则写死在页面里。</span></div>
+    </div>
+    <div class="module-note">当前只增加板块，不接检查 SQL 和执行逻辑；功能范围确认后再开发。</div>
+  </div>
+</div>
+
 <!-- ============ 已建立触发器 ============ -->
 <div class="card" style="margin-top:16px" data-page="triggers">
   <div class="card-title" style="cursor:pointer" id="trigPanelTitle">▼ 已建立触发器（点击展开）</div>
@@ -1031,6 +1249,7 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
 window.__backupDir = 'D:\\TPA\\SQL2008';
 let META=null;
 let lastPreviewKey=null;
+let runSeq=0;
 function reqKey(b){ const c={...b}; delete c.confirm; return JSON.stringify(c); }
 
 // ---- 服务器历史（localStorage，可跨重启记忆，最多10条）----
@@ -1329,7 +1548,9 @@ function renderPreview(b, d){
       + '<th>单号</th><th style="width:90px">序号</th><th>现值</th><th>应带</th>'
       + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
       + (total > 50 ? '<div class="pv-foot">仅显示前 50 行，实际共 ' + total + ' 行</div>' : '')
-    : '<div class="pv-empty">没有需要填入的行：目标列可能已有值（数值 0 也算已有值，需要覆盖请勾选“强制覆盖”），或来源单据没有匹配数据。</div>';
+    : '<div class="pv-empty">' + (b.mergeDisplay
+        ? '没有需要追加的值：目标列已包含来源值，或来源单据没有匹配数据。'
+        : '没有需要填入的行：目标列可能已有值（数值 0 也算已有值，需要覆盖请勾选“强制覆盖”），或来源单据没有匹配数据。') + '</div>';
 
   return '<div class="pv-wrap">'
     + '<div class="pv-head">'
@@ -1352,14 +1573,17 @@ async function doRun(confirm){
     return;
   }
   b.confirm=confirm;
+  const seq=++runSeq;
   const status=document.getElementById('status');
   status.className='status'; status.textContent=confirm?'执行中（备份+写库）...':'预览中...';
   let d;
   try {
     d = await window.chuanzhi.run(b);
+    if (seq!==runSeq) return;
     if (d && d.data) d = d.data;
     if (confirm) console.log('[run result]', d);
   } catch(e) {
+    if (seq!==runSeq) return;
     status.className='status err'; status.textContent='请求失败：'+e.message;
     return;
   }
@@ -2149,6 +2373,239 @@ chainRow();
   };
 
   showPage('sync');
+})();
+</script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const MAX_FILE = 30 * 1024 * 1024;
+  const state = { jobId:null, info:null, mapping:[], result:null };
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const toast = (msg, type) => { if (window.showMomoToast) window.showMomoToast(msg, type); };
+  const status = (msg, isErr) => { const el=$('cleanStatus'); if(el){ el.textContent=msg||''; el.style.color=isErr?'#FCA5A5':'#94A3B8'; } };
+  function busy(btn, on, label){
+    if(!btn) return;
+    btn.disabled = !!on;
+    btn.classList.toggle('loading', !!on);
+    if(on) { if(label) btn.textContent = label; }
+    else { btn.textContent = btn.dataset.label || '读取并匹配'; }
+  }
+  function initBtns(){
+    ['btnCleanParse','btnCleanPreview','btnCleanGenerate'].forEach(id=>{ const b=$(id); if(b) b.dataset.label=b.textContent; });
+  }
+  function readFile(file){
+    return new Promise((resolve,reject)=>{
+      if(!file) return reject(new Error('请选择文件'));
+      if(file.size > MAX_FILE) return reject(new Error(file.name+' 超过 30MB'));
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+      fr.onerror = () => reject(new Error('读取文件失败'));
+      fr.readAsDataURL(file);
+    });
+  }
+  async function call(url, body){
+    const r = await fetch(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+    let d = {};
+    try { d = await r.json(); } catch(_) {}
+    if(!r.ok) {
+      const e = new Error(d.error || ('请求失败 HTTP '+r.status));
+      e.data = d;
+      throw e;
+    }
+    return d;
+  }
+  function fileLabel(inputId, labelId){
+    const f = $(inputId).files[0];
+    if(f) $(labelId).textContent = f.name + '  ·  ' + (f.size/1024).toFixed(1) + ' KB';
+    else $(labelId).textContent = inputId === 'cleanTpl' ? '选择易助导入模板 (.xls / .xlsx)' : '选择客户数据 (.xls / .xlsx)';
+    state.jobId = null; state.info = null; state.mapping = []; state.result = null;
+    if($('cleanSearch')) $('cleanSearch').value = '';
+    if($('cleanFilter')) $('cleanFilter').value = 'action';
+    if($('cleanShowAll')) $('cleanShowAll').checked = false;
+    $('cleanSummary').style.display = 'none';
+    $('cleanBody').style.display = 'none';
+    $('cleanResult').style.display = 'none';
+    $('cleanStatus').textContent = '';
+  }
+  function renderSummary(info){
+    const cols = info.suggested.columns || [];
+    const mapped = cols.filter(c => c.sourceIndex != null).length;
+    const req = cols.filter(c => c.required).length;
+    const srcCols = (info.source && info.source.columns || []).length;
+    const srcRows = info.source ? info.source.rowCount : 0;
+    $('cleanSummary').innerHTML =
+      '识别模板：<b>'+(info.suggested.profile || '通用')+'</b> · '+(info.template.columns || []).length+' 列；'+
+      '来源：<b>'+srcCols+'</b> 列 / <b>'+srcRows+'</b> 行；'+
+      '自动匹配 <b>'+mapped+'</b> 列；必填 <b>'+req+'</b> 列。'+
+      '<br><span style="color:#64748B">请检查下面的字段映射，确认后先校验，再生成导入包。生成过程不会写业务数据库。</span>';
+    $('cleanSummary').style.display = 'block';
+  }
+  function sourceOptions(selected){
+    const cols = state.info && state.info.source && state.info.source.columns || [];
+    return '<option value="">— 不映射 —</option>' + cols.map(c =>
+      '<option value="'+c.index+'"'+(Number(selected)===Number(c.index)?' selected':'')+'>'+
+      esc(c.name || ('第'+c.index+'列'))+'  ·  '+esc(c.index)+'</option>'
+    ).join('');
+  }
+  function transformOptions(selected){
+    const opts = [['text','文本'],['number','数字'],['date','日期'],['phone','电话（去空格/横线）'],['ratio','比例（1:1 → 1）']];
+    return opts.map(o=>'<option value="'+o[0]+'"'+(selected===o[0]?' selected':'')+'>'+o[1]+'</option>').join('');
+  }
+  function issueCodes(){
+    return new Set((state.result && state.result.issues || [])
+      .filter(x => x.severity === 'error')
+      .flatMap(x => String(x.code || '').split('+').filter(Boolean)));
+  }
+  function renderMapping(){
+    const cols = state.mapping;
+    const showAll = $('cleanShowAll').checked;
+    const q = String(($('cleanSearch') && $('cleanSearch').value) || '').trim().toLowerCase();
+    let mode = ($('cleanFilter') && $('cleanFilter').value) || 'action';
+    if (showAll && mode === 'action') mode = 'all';
+    const badCodes = issueCodes();
+    const rows = cols.filter(c => {
+      const mapped = c.sourceIndex != null && c.sourceIndex !== '';
+      const action = c.required || mapped || c.defaultValue || c.derivedFrom;
+      const text = (c.code + ' ' + (c.name || '') + ' ' + (c.comment || '') + ' ' + (c.note || '')).toLowerCase();
+      if (q && text.indexOf(q) < 0) return false;
+      if (mode === 'all') return true;
+      if (mode === 'required') return !!c.required;
+      if (mode === 'mapped') return mapped;
+      if (mode === 'unmapped') return !mapped;
+      if (mode === 'issues') return badCodes.has(c.code);
+      return action;
+    });
+    $('cleanMapBody').innerHTML = rows.length ? rows.map(c => {
+      const idx = state.mapping.indexOf(c);
+      const mapped = c.sourceIndex != null && c.sourceIndex !== '';
+      const fixed = !c.derivedFrom && c.defaultValue;
+      return '<tr data-idx="'+idx+'"'+(badCodes.has(c.code)?' class="clean-row-bad"':'')+'>'+
+        '<td><span class="clean-code">'+esc(c.code)+'</span>'+(fixed?'<span class="clean-fixed-tag" title="来源列为空时才使用该默认值">默认</span>':'')+(badCodes.has(c.code)?'<span class="clean-req">问题</span>':'')+
+        '<span class="clean-name" title="'+esc(c.comment||c.name||'')+'">'+esc(c.name||'')+(c.required?'<span class="clean-req">必填</span>':'')+'</span></td>'+
+        '<td><select data-field="sourceIndex">'+sourceOptions(c.sourceIndex)+'</select></td>'+
+        '<td><select data-field="transform">'+transformOptions(c.transform)+'</select></td>'+
+        '<td><input type="text" data-field="defaultValue" value="'+esc(c.defaultValue||'')+'" placeholder="'+(c.derivedFrom?'取 '+esc(c.derivedFrom):'默认值')+'"'+(c.derivedFrom?' title="按 '+esc(c.derivedFrom)+' 派生"':'')+'></td>'+
+      '</tr>';
+    }).join('') : '<tr><td colspan="4" style="padding:16px;color:#64748b">没有符合条件的字段。可切换筛选或勾选“显示全部模板列”。</td></tr>';
+    $('cleanMapBody').querySelectorAll('tr[data-idx]').forEach(tr => {
+      const c = state.mapping[Number(tr.dataset.idx)];
+      tr.querySelectorAll('[data-field]').forEach(el => {
+        el.onchange = () => {
+          const f = el.dataset.field;
+          if (f === 'sourceIndex') c.sourceIndex = el.value === '' ? null : Number(el.value);
+          else c[f] = el.value;
+          renderMapping();
+        };
+      });
+    });
+    const mapped = cols.filter(c=>c.sourceIndex!=null && c.sourceIndex!=='').length;
+    const req = cols.filter(c=>c.required).length;
+    const bad = cols.filter(c=>badCodes.has(c.code)).length;
+    $('cleanMapNote').textContent = '显示 ' + rows.length + ' / ' + cols.length + ' 列 · 必填 ' + req + ' · 已映射 ' + mapped;
+    if($('cleanFilterNote')) $('cleanFilterNote').textContent = bad ? '预览问题字段 ' + bad : (mode === 'issues' ? '先做一次校验预览' : '待处理含必填、已映射和有默认值的字段');
+  }
+  function collectMapping(){
+    return state.mapping.map(c => ({
+      code:c.code, sourceIndex:c.sourceIndex, transform:c.transform,
+      defaultValue:c.defaultValue, derivedFrom:c.derivedFrom, required:!!c.required
+    }));
+  }
+  function renderResult(r){
+    state.result = r;
+    const st = r.stats || {};
+    $('cleanStats').innerHTML =
+      '<span>来源行 <b>'+Number(st.sourceRows||0)+'</b></span>'+
+      '<span>输出行 <b>'+Number(st.outputRows||0)+'</b></span>'+
+      '<span class="err">硬错误 <b>'+Number(st.errors||0)+'</b></span>'+
+      '<span class="warn">提示/警告 <b>'+Number(st.warnings||0)+'</b></span>'+
+      '<span class="ok">未映射 <b>'+Number(st.unmapped||0)+'</b></span>';
+    $('cleanStats').style.display = 'flex';
+    const issues = (r.issues || []).filter(x => x.severity === 'error' || x.severity === 'warning').slice(0, 40);
+    $('cleanIssues').innerHTML = issues.length ? issues.map(x =>
+      '<div class="clean-issue '+esc(x.severity)+'"><span class="sev">'+(x.severity==='error'?'错误':'提示')+'</span>'+
+      '<span class="msg">'+esc(x.message)+'</span><span class="loc">'+esc(x.code||'')+(x.row?' · 行'+x.row:'')+'</span></div>'
+    ).join('') : '<div class="clean-issue info"><span class="sev">通过</span><span class="msg">没有硬错误或警告。</span></div>';
+    $('cleanIssues').style.display = 'block';
+    if(state.mapping.length) renderMapping();
+  }
+  async function parseFiles(){
+    const t = $('cleanTpl').files[0], s = $('cleanSrc').files[0];
+    if(!t || !s) return toast('请先选择模板和来源数据', 'error');
+    const btn = $('btnCleanParse');
+    busy(btn, true, '读取中...'); status('正在用 Excel 解析模板与来源文件...');
+    try {
+      const [td, sd] = await Promise.all([readFile(t), readFile(s)]);
+      const info = await call('/api/cleaning/inspect', { template:{name:t.name,data:td}, source:{name:s.name,data:sd} });
+      state.jobId = info.jobId;
+      state.info = info;
+      state.mapping = (info.suggested.columns || []).map(c => ({...c}));
+      state.result = null;
+      renderSummary(info);
+      renderMapping();
+      $('cleanBody').style.display = 'block';
+      $('cleanResult').style.display = 'none';
+      status('读取完成，请检查字段映射。');
+      toast('文件已读取，自动匹配 '+state.mapping.filter(c=>c.sourceIndex!=null).length+' 列', 'success');
+    } catch(e) {
+      status('读取失败：'+e.message, true); toast('读取失败：'+e.message, 'error');
+    } finally { busy(btn, false); }
+  }
+  async function validate(){
+    if(!state.jobId) return toast('请先读取模板和来源文件', 'error');
+    const btn = $('btnCleanPreview');
+    busy(btn, true, '校验中...'); status('正在校验映射和数据...');
+    try {
+      const r = await call('/api/cleaning/preview', {jobId:state.jobId, mapping:collectMapping()});
+      renderResult(r);
+      status(r.stats.errors ? '发现 '+r.stats.errors+' 个硬错误，请先处理。' : '校验通过，可以生成导入包。', !!r.stats.errors);
+      toast(r.stats.errors ? '校验发现 '+r.stats.errors+' 个硬错误' : '校验通过', r.stats.errors?'error':'success');
+    } catch(e) {
+      status('校验失败：'+e.message, true); toast('校验失败：'+e.message, 'error');
+    } finally { busy(btn, false); }
+  }
+  async function generate(){
+    if(!state.jobId) return toast('请先读取模板和来源文件', 'error');
+    const btn = $('btnCleanGenerate');
+    busy(btn, true, '生成中...'); status('正在生成 XLS 导入包，请稍候...');
+    try {
+      let pre = await call('/api/cleaning/preview', {jobId:state.jobId, mapping:collectMapping()});
+      renderResult(pre);
+      let allowErrors = false;
+      if(pre.stats.errors > 0){
+        allowErrors = confirm('当前有 '+pre.stats.errors+' 个硬错误，仍要生成吗？\n建议先修正映射或数据；生成后请按问题清单逐条核对。');
+        if(!allowErrors) { status('已取消生成，请先处理硬错误。', true); return; }
+      }
+      const out = await call('/api/cleaning/generate', {jobId:state.jobId, mapping:collectMapping(), options:{allowErrors}});
+      renderResult(out);
+      $('cleanResult').innerHTML = '<b>生成成功</b><br>导入包：<span class="clean-path">'+esc(out.xlsPath)+'</span>'+
+        '<button class="btn sm" type="button" data-reveal="'+esc(out.xlsPath)+'">打开导入包所在文件夹</button>';
+      $('cleanResult').style.display = 'block';
+      status('生成完成：'+out.stats.outputRows+' 行，硬错误 '+out.stats.errors+' 条。');
+      toast('导入包已生成', 'success');
+    } catch(e) {
+      if(e.data && e.data.validation) renderResult(e.data.validation);
+      status('生成失败：'+e.message, true); toast('生成失败：'+e.message, 'error');
+    } finally { busy(btn, false); }
+  }
+  function bind(){
+    initBtns();
+    $('cleanTpl').onchange = () => { fileLabel('cleanTpl','cleanTplName'); };
+    $('cleanSrc').onchange = () => { fileLabel('cleanSrc','cleanSrcName'); };
+    $('btnCleanParse').onclick = parseFiles;
+    $('btnCleanPreview').onclick = validate;
+    $('btnCleanGenerate').onclick = generate;
+    $('cleanShowAll').onchange = () => { if(state.mapping.length) renderMapping(); };
+    $('cleanSearch').oninput = () => { if(state.mapping.length) renderMapping(); };
+    $('cleanFilter').onchange = () => { if(state.mapping.length) renderMapping(); };
+    $('cleanResult').onclick = async (e) => {
+      const b = e.target.closest('[data-reveal]');
+      if(!b) return;
+      try { await call('/api/cleaning/reveal', {path:b.dataset.reveal}); }
+      catch(err) { toast(err.message, 'error'); }
+    };
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
 })();
 </script>
 </body>

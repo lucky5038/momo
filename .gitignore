@@ -5,6 +5,7 @@ tools/eb/node_modules/
 
 # 构建产物
 dist-electron/
+releases/
 
 # 基线 exe / 旧版本归档
 baseline/
@@ -20,3 +21,9 @@ invoice_source_map.json
 
 # 本地快照
 snapshots/
+
+# 本机测试/工具产物
+tools/node/
+pilot/
+logs/
+source/cleaning/

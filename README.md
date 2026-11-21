@@ -1,8 +1,7 @@
-# Momo传值助手 · 开发版
+# Momo传值助手
 
-本目录由 **release/Momo传值助手 1.0.0.exe**（确认可正常运行的基线版本）提取，
-当前正式版本为 **Momo传值助手 2.2.71（工单取重工单/委外变更同工单 960）**。
-是当前唯一的开发源码。旧的 `chuanzhi-app` 目录已删除。
+本目录为 C 盘迁移出的工作目录；C 盘原目录已于 2026-11-19 清理。
+当前版本为 **Momo传值助手 2.2.78（数据清洗模块）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.78/`。只保留当前版本，不再保留开发版/旧版本目录。
 
 ## 目录说明
 
@@ -11,11 +10,13 @@
 | `source/` | 开发源码：`src/app.js` 后端、`src/main.electron.js` 主进程、`src/public/index.html` 界面 |
 | `source/node_modules/` | 运行依赖（mssql 等），随 asar 一起提取 |
 | `source/public_inline.js` | 由 `src/public/index.html` 生成，改界面后需重新生成 |
-| `dist-electron/` | 构建产物：便携单文件 exe + `win-unpacked/` |
+| `dist-electron/` | 最后一次构建产物（便携版、Setup、blockmap、runtime） |
+| `releases/2.2.78/` | 当前正式发布包：便携版、安装包、blockmap |
+| `docs/` | 开发历程、工具作用与研发说明 |
 | `baseline/` | 原始 release exe 备份，仅供对照，不参与开发 |
 | `tools/eb/` | 本地打包工具链（electron-builder 24 + @electron/rebuild 3.2.10） |
-| `build-electron.ps1` | 一键构建单文件 exe |
-| `run-dev.ps1` | 一键启动开发版（跑 win-unpacked，速度快） |
+| `tools/node/` | 本地 Node 运行时，构建脚本使用；不提交 git |
+| `build-electron.ps1` | 一键构建，构建前自动重新生成 `public_inline.js` |
 
 ## 日常流程
 
@@ -23,21 +24,23 @@
 2. 改了界面就重新生成内联文件：
 
 ```powershell
-node tools\regen-inline.js
+.\tools\node\bin\node.exe tools\regen-inline.js
 ```
 
-3. 快速看效果：运行 `run-dev.ps1`。
-4. 出正式包：运行 `build-electron.ps1`，会同时生成两个产物：
-   - `dist-electron\Momo传值助手 2.2.43.exe`（便携版，双击即用）
-   - `dist-electron\Momo传值助手 Setup 2.2.43.exe`（安装包，带安装向导，可选安装路径）
+3. 构建并验证：运行 `build-electron.ps1`，在 `dist-electron/` 生成：
+   - `Momo传值助手 2.2.78.exe`（便携版，双击即用）
+   - `Momo传值助手 Setup 2.2.78.exe`（安装包，带安装向导，可选安装路径）
+   构建完成后直接运行便携版验证；不再保留开发版/win-unpacked。
+4. 更新 `releases/2.2.78/` 为当前构建产物，并删除旧版本目录；只保留最新版本。
 
 ## 回归测试
 
 ```powershell
-pwsh -File tools\test-persist.ps1   # 保存配置 -> 重启 -> 校验回填 + 数据库连通
-node tools\test-ui-fill.js          # 读界面输入框真实值
-node tools\test-trigger-sql.js      # 兜底通道触发器 SQL 纯函数回归（不连库）
-node tools\audit-all.js <server> <user> <password> <db>   # 只读全链路审计（品号关联 + 链路 SQL）
+.\tools\node\bin\node.exe tools\test-trigger-sql.js      # 触发器 SQL 纯函数回归（不连库）
+.\tools\node\bin\node.exe tools\test-trigger-merge.js    # 触发器合并回归
+.\tools\node\bin\node.exe tools\test-chain-category.js   # 类别关联回归
+.\tools\node\bin\node.exe tools\test-chain-merge.js      # 合并显示回归
+pwsh -File tools\audit-links.ps1   # 只读全链路审计（需要 sqlcmd）
 ```
 
 ## 配置存哪里

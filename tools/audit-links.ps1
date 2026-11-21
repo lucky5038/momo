@@ -60,7 +60,7 @@ foreach ($l in @($chains.links)) {
     }
     $on = "t.[$toKey] = s.[$fromNo]$seqCond"
   }
-  $q = "SELECT $n AS i, COUNT(*) AS srcRows, COALESCE(SUM(CASE WHEN t.[$toKey] IS NULL THEN 0 ELSE 1 END),0) AS matchedRows, COUNT(DISTINCT t.[$toKey]) AS distinctTargets FROM (SELECT TOP 500 * FROM [dbo].[$($l.from)] s WHERE $where ORDER BY (SELECT NULL)) s LEFT JOIN [dbo].[$($l.to)] t ON $on"
+  $q = "SELECT $n AS i, COUNT_BIG(*) AS srcRows, COALESCE(SUM(CASE WHEN t.[$toKey] IS NULL THEN 0 ELSE 1 END),0) AS matchedRows, COUNT(DISTINCT t.[$toKey]) AS distinctTargets FROM [dbo].[$($l.from)] s LEFT JOIN [dbo].[$($l.to)] t ON $on WHERE $where"
   [void]$sb.AppendLine($q + ';')
   $rows.Add([pscustomobject]$row)
 }

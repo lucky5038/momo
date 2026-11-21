@@ -526,6 +526,7 @@ module.exports = function makeSqlgen(sql) {
         const toSeq = e.toSeqCol || toMeta.docSeq;
         if (toSeq && e.fromSeq) cond += ' AND ' + bt(alias) + '.' + bt(toSeq) + ' = ' + bt(prevAlias) + '.' + bt(e.fromSeq);
         if (e.fromCode) cond += " AND " + bt(prevAlias) + '.' + bt(e.fromCode) + " = N'" + esc(e.code) + "'";
+        if (e.toCode) cond += " AND " + bt(alias) + '.' + bt(e.toCode) + " = N'" + esc(e.code) + "'";
       }
       joins.push(' JOIN [dbo].[' + e.to + '] ' + alias + ' ON ' + cond);
       prevAlias = alias;
@@ -556,8 +557,10 @@ module.exports = function makeSqlgen(sql) {
   // 单工单只会得到一个值；多工单会得到 "品名1   品名2   品名3"。
   function buildChainMergeSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs, pkNames, separator = '   ') {
     if (!Array.isArray(pkNames) || !pkNames.length) throw new Error('表头合并缺少目标主键');
-    const base = buildChainSQL(tgtDocId, tgtCol, srcValCol, mode, force, path, docs);
-    const { showNo, fromClause, whereClause, valExpr } = base.previewParts;
+    // 合并显示必须把已有值一起纳入，不能走“只填空”的 WHERE；
+    // 否则目标字段已有值时预览 0 行，用户会误以为来源没数据。
+    const base = buildChainSQL(tgtDocId, tgtCol, srcValCol, mode, true, path, docs);
+    const { showNo, showSeq, fromClause, whereClause, valExpr } = base.previewParts;
     const bt = s => '[' + s + ']';
     const keys = pkNames.map(c => 'b.' + bt(c));
     const sel = keys.map((k, i) => k + ' AS _k' + i).join(', ');
@@ -568,23 +571,30 @@ module.exports = function makeSqlgen(sql) {
     const sepN = sep.length;
     const cte = 'WITH _momo_src AS (SELECT ' + sel + ', ' + valExpr + ' AS _val' + fromClause + ' ' + whereClause + '), ' +
       '_momo_agg AS (SELECT ' + group + ', STUFF((SELECT DISTINCT N\'' + sep + '\'+CAST(x._val AS nvarchar(max)) ' +
-      'FROM _momo_src x WHERE ' + corr + ' FOR XML PATH(\'\'), TYPE).value(\'.\',\'nvarchar(max)\'),1,' + sepN + ',\'\') AS _val ' +
-      'FROM _momo_src a GROUP BY ' + group + ') ';
+      'FROM _momo_src x WHERE ' + corr +
+      ' AND (b0.' + bt(tgtCol) + ' IS NULL OR CAST(b0.' + bt(tgtCol) + ' AS nvarchar(max))=N\'\' ' +
+      'OR CHARINDEX(N\' \'+CAST(x._val AS nvarchar(max)),N\' \'+CAST(b0.' + bt(tgtCol) + ' AS nvarchar(max)))=0) ' +
+      'FOR XML PATH(\'\'), TYPE).value(\'.\',\'nvarchar(max)\'),1,' + sepN + ',\'\') AS _add ' +
+      'FROM _momo_src a JOIN [dbo].[' + tgtDocId + '] b0 ON ' +
+      pkNames.map((c, i) => 'b0.' + bt(c) + '=a._k' + i).join(' AND ') +
+      ' GROUP BY ' + group + ', b0.' + bt(tgtCol) + ') ';
     const target = '[dbo].[' + tgtDocId + '] b';
     const joinTarget = ' FROM ' + target + ' JOIN _momo_agg m ON ' + join;
-    const previewSql = cte + 'SELECT TOP 200 b.' + bt(showNo) + ' AS [单号], N\'\' AS [序号], b.' + bt(tgtCol) + ' AS [现值], m._val AS [应带]' + joinTarget + ' ORDER BY b.' + bt(showNo);
+    const seqSel = showSeq ? ('b.' + bt(showSeq)) : "N''";
+    const need = " WHERE m._add IS NOT NULL AND m._add <> N''";
+    const previewSql = cte + 'SELECT TOP 200 b.' + bt(showNo) + ' AS [单号], ' + seqSel + ' AS [序号], b.' + bt(tgtCol) + ' AS [现值], m._add AS [应带]' + joinTarget + need + ' ORDER BY b.' + bt(showNo);
     const current = 'CAST(b.' + bt(tgtCol) + ' AS nvarchar(max))';
-    const dup = "CHARINDEX(N' '+" + 'm._val' + ",N' '+CAST(b." + bt(tgtCol) + " AS nvarchar(max)))=0";
-    const merged = 'CASE WHEN b.' + bt(tgtCol) + ' IS NULL OR ' + current + '=N\'\' THEN m._val ' +
-      'WHEN ' + dup + ' THEN ' + current + '+N\'' + sep + '\'+m._val ELSE b.' + bt(tgtCol) + ' END';
-    const updateSql = cte + 'UPDATE b SET b.' + bt(tgtCol) + ' = ' + merged + joinTarget;
-    const cntSql = cte + 'SELECT COUNT(*) AS n' + joinTarget;
+    const merged = 'CASE WHEN b.' + bt(tgtCol) + ' IS NULL OR ' + current + '=N\'\' THEN m._add ' +
+      'ELSE ' + current + '+N\'' + sep + '\'+m._add END';
+    const updateSql = cte + 'UPDATE b SET b.' + bt(tgtCol) + ' = ' + merged + joinTarget + need;
+    const cntSql = cte + 'SELECT COUNT(*) AS n' + joinTarget + need;
     return {
       previewSql, updateSql, cntSql,
       channelName: '表头合并显示（聚合）',
       channelNote: '表头合并: 按' + pkNames.join('+') + '聚合去重，多工单以分隔符连接',
       joins: [], partyNote: '表头合并', chainNote: '',
       isHeaderMerge: true,
+      isMergeAggregated: true,
       previewParts: base.previewParts
     };
   }

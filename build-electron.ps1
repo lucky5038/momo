@@ -1,4 +1,4 @@
-# 用 electron-builder 生成 portable 单文件 exe（NSIS 自解压，行为与 release 基线一致）
+﻿# 用 electron-builder 生成 portable 单文件 exe（NSIS 自解压，行为与 release 基线一致）
 param(
   [string]$OutDir = ""
 )
@@ -7,7 +7,19 @@ $ErrorActionPreference = "Stop"
 
 $Dev     = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Source  = Join-Path $Dev "source"
-$Node    = "C:\Users\DX03\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
+$Node    = Join-Path $Dev "tools\node\bin\node.exe"
+if (-not (Test-Path $Node)) {
+  $cmd = Get-Command node.exe -ErrorAction SilentlyContinue
+  if ($cmd) { $Node = $cmd.Source }
+  else { throw "找不到本地 Node，请确认 tools\node\node.exe 存在。" }
+}
+
+# 构建前先同步内联界面，避免打包时使用旧的 public_inline.js
+$Regen = Join-Path $Dev "tools\regen-inline.js"
+if (Test-Path $Regen) {
+  & $Node $Regen
+  if ($LASTEXITCODE -ne 0) { throw "生成 public_inline.js 失败，exit=$LASTEXITCODE" }
+}
 
 # electron-builder 工具链（随开发目录自带，位于 tools\eb）
 $EbCli = Join-Path $Dev "tools\eb\node_modules\electron-builder\cli.js"
