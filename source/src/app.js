@@ -1,8 +1,8 @@
-// 奶蕉助手 独立应用版
+// N-B助手 独立应用版
 // 功能：启动 HTTP 服务 + 自动打开 Edge 应用窗口（无浏览器标签栏，像独立软件）
 // 窗口关闭后自动退出，不留后台进程
 //
-// 启动方式：双击"奶蕉助手.exe"
+// 启动方式：双击"N-B助手.exe"
 // 无需手动打开浏览器
 
 const http = require('http');
@@ -36,7 +36,7 @@ const BASE_DIR = resolveBaseDir();
   '  httpPort: 8787',
 '};',
   ].join('\n'), 'utf8');
-  console.log('[奶蕉助手] 已生成配置文件: ' + cfgPath);
+  console.log('[N-B助手] 已生成配置文件: ' + cfgPath);
 })();
 const { spawn, exec } = require('child_process');
 
@@ -113,6 +113,10 @@ async function _getPoolUnlocked(cfgOverride) {
   try { await pool.request().query('SELECT 1 AS ok'); }
   catch (e) { try { await pool.close(); } catch (_) {} pool = null; CUR_CONFIG = null; throw new Error('数据库连接验证失败: ' + e.message); }
   CUR_CONFIG = cfg;
+  // 旧品牌触发器名兼容：把 trg_*_momo 原地重命名为 trg_*_nb。
+  // sp_rename 只改对象名，不重建触发器，因此保留原定义、启用状态和执行顺序。
+  try { await migrateLegacyTriggerNames(pool); }
+  catch (e) { dbg('[trig] 旧触发器改名失败: ' + e.message); }
   return pool;
 }
 
@@ -338,7 +342,7 @@ function backupPathNow(cfg) {
   // 备份目录：优先 config.backupDir（确保存在），否则用用户临时目录
   let dir = (c && c.backupDir) || CONFIG.backupDir;
   if (dir) { try { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); } catch (_) { dir = null; } }
-  if (!dir) { dir = path.join(os.tmpdir(), 'momo_backup'); try { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); } catch (_) {} }
+  if (!dir) { dir = path.join(os.tmpdir(), 'nb_backup'); try { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); } catch (_) {} }
   return path.join(dir, (c.database || 'DSB') + '_backup_' + ts + '.bak');
 }
 
@@ -1226,7 +1230,7 @@ async function handleRun(req, res) {
         await verifyColsForTrig(p, doc, 'GSB961', null, null);
       }
 
-      const trgName = 'trg_' + doc.sub + '_momo';
+      const trgName = 'trg_' + doc.sub + '_nb';
 
       // B 方案：检测同表已启用的系统触发器是否已在写目标列
       let conflicts = [];
@@ -1359,14 +1363,14 @@ async function handleRun(req, res) {
       const existingTools = allTriggers.filter(t => /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')));
       // 跨表重复：旧版把“写单头字段”的触发器挂在单身表上，会与当前单头触发器重复。
       // 只清理“目标表=当前目标表、写入列都在本次目标列内”的工具触发器；写 RBB* 单身字段的不动。
-      const allMomo = (await p.request().query(
-        "SELECT o.name, OBJECT_NAME(o.parent_id) tbl, CONVERT(nvarchar(max),m.definition) sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.name LIKE 'trg_%momo%'"
-      )).recordset;
+      const allToolTriggers = (await p.request().query(
+        "SELECT o.name, OBJECT_NAME(o.parent_id) tbl, CONVERT(nvarchar(max),m.definition) sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_class=1"
+      )).recordset.filter(t => /^trg_.+_(momo|nb)$/i.test(t.name));
       const targetTableOf = (sqlText) => {
         const m = String(sqlText || '').match(/\bFROM\s+\[dbo\]\.\[([A-Za-z0-9_]+)\]\s+b\b/i);
         return m ? m[1] : null;
       };
-      const dupTools = allMomo.filter(t => {
+      const dupTools = allToolTriggers.filter(t => {
         if (t.tbl === doc.sub) return false;
         if (!/UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || ''))) return false;
         if (targetTableOf(t.sql) !== doc.sub) return false;
@@ -1413,6 +1417,31 @@ async function handleRun(req, res) {
 }
 
 // 触发器管理
+// 品牌从奶蕉助手/Momo 演进到 N-B助手时，把旧工具触发器名后缀 _momo 原地改成 _nb。
+// 只处理工具形态（UPDATE b SET b.）的触发器，不碰 ERP 自带触发器。
+async function migrateLegacyTriggerNames(p) {
+  const rows = (await p.request().query(
+    "SELECT o.name, CONVERT(nvarchar(max),m.definition) sql FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_class=1"
+  )).recordset.filter(t => /^trg_.+_momo$/i.test(t.name) && /UPDATE\s+b\s+SET\s+b\./i.test(String(t.sql || '')));
+  for (const row of rows) {
+    const oldName = row.name;
+    const newName = oldName.replace(/_momo$/i, '_nb');
+    try {
+      const exists = await p.request().input('n', sql.NVarChar, newName).query('SELECT OBJECT_ID(@n, \'TR\') AS id');
+      if (exists.recordset[0] && exists.recordset[0].id) {
+        dbg('[trig] 已存在新名，跳过改名: ' + oldName + ' -> ' + newName);
+        continue;
+      }
+      const esc = (s) => String(s).replace(/]/g, ']]');
+      await p.request().query("EXEC sp_rename N'[dbo].[" + esc(oldName) + "]', N'" + esc(newName) + "', N'OBJECT';");
+      dbg('[trig] 已改名: ' + oldName + ' -> ' + newName);
+    } catch (e) {
+      dbg('[trig] 改名失败 ' + oldName + ': ' + e.message);
+    }
+  }
+  return rows.length;
+}
+
 async function trigList(req, res) { const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database); const r = await p.request().query("SELECT o.name, OBJECT_NAME(o.parent_id) tbl, o.is_disabled [disabled], m.definition [sql] FROM sys.triggers o JOIN sys.sql_modules m ON m.object_id=o.object_id WHERE o.parent_class=1 ORDER BY o.name");
   // 为每个触发器自动生成中文说明
   const docNames = {};
@@ -1744,22 +1773,25 @@ async function handleSaveConfig(req, res) {
 // 避免备份目录指向共享盘/公共目录时，把服务器账号密码一起暴露出去。
 function credsFileInUserDir() {
   const appData = process.env.APPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming') : '');
-  return appData ? path.join(appData, '奶蕉助手', 'creds.json') : path.join(BASE_DIR, 'creds.json');
+  return appData ? path.join(appData, 'N-B助手', 'creds.json') : path.join(BASE_DIR, 'creds.json');
 }
 function credsFileLegacy() {
   return path.join((CUR_CONFIG && CUR_CONFIG.backupDir) || CONFIG.backupDir || 'D:\\TPA\\SQL2008', 'creds.json');
 }
-function credsFileLegacyBrand() {
+function credsFileLegacyBrands() {
   const appData = process.env.APPDATA || (process.env.USERPROFILE ? path.join(process.env.USERPROFILE, 'AppData', 'Roaming') : '');
-  return appData ? path.join(appData, 'Momo传值助手', 'creds.json') : '';
+  if (!appData) return [];
+  return ['奶蕉助手', 'Momo传值助手']
+    .map(name => path.join(appData, name, 'creds.json'))
+    .filter(f => fs.existsSync(f));
 }
 // 旧版本把 creds.json 写在备份目录。首次访问时迁到用户目录，并删除旧文件（含明文密码）。
 function migrateLegacyCreds() {
   const next = credsFileInUserDir();
   try {
     if (fs.existsSync(next)) return next;
-    const oldBrand = credsFileLegacyBrand();
-    if (oldBrand && fs.existsSync(oldBrand)) {
+    const oldBrand = credsFileLegacyBrands()[0];
+    if (oldBrand) {
       fs.mkdirSync(path.dirname(next), { recursive: true });
       fs.copyFileSync(oldBrand, next);
       dbg('[creds] migrated brand path from ' + oldBrand + ' to ' + next);
@@ -1965,7 +1997,7 @@ function openEdgeApp() {
     }
     const proc = spawn(browserPath, args, { detached: true, stdio: 'ignore', windowsHide: false });
     proc.unref();
-    console.log('[奶蕉助手] 已用 ' + label + ' 打开应用窗口');
+    console.log('[N-B助手] 已用 ' + label + ' 打开应用窗口');
     // Poll: exit when window closes (server no longer reachable from browser)
     const pollInterval = setInterval(async () => {
       try {
@@ -1976,7 +2008,7 @@ function openEdgeApp() {
         });
         if (!alive) {
           clearInterval(pollInterval);
-          console.log('[奶蕉助手] 窗口已关闭，正在退出...');
+          console.log('[N-B助手] 窗口已关闭，正在退出...');
           setTimeout(() => process.exit(0), 1000);
         }
       } catch (e) {}
@@ -1991,13 +2023,13 @@ function openEdgeApp() {
       if (!tryBrowser(chrome32Path, 'Chrome(32位)')) {
         const { exec } = require('child_process');
         exec('start "" "' + APP_URL + '"');
-        console.log('[奶蕉助手] 已用系统默认浏览器打开 ' + APP_URL);
+        console.log('[N-B助手] 已用系统默认浏览器打开 ' + APP_URL);
         launched = true;
       } else { launched = true; }
     } else { launched = true; }
   } else { launched = true; }
 
-  if (!launched) console.log('[奶蕉助手] 未找到浏览器，请手动打开 ' + APP_URL);
+  if (!launched) console.log('[N-B助手] 未找到浏览器，请手动打开 ' + APP_URL);
 }
 
 process.on('unhandledRejection', (e) => {
@@ -2016,7 +2048,7 @@ function tryListen(port, tries) {
     s.listen(port, '127.0.0.1', () => {
       const actualPort = s.address().port;
       try { fs.writeFileSync(require('path').join(BASE_DIR, 'port.txt'), String(actualPort)); } catch (_) {}
-      console.log('[奶蕉助手] http://localhost:' + actualPort);
+      console.log('[N-B助手] http://localhost:' + actualPort);
       resolve(actualPort);
     });
     s.once('error', async (e) => {
@@ -2040,7 +2072,7 @@ function tryListen(port, tries) {
     else {
       try {
         const electron = require('electron');
-        electron.dialog.showErrorBox('端口冲突', '端口 ' + PORT + ' 被占用，请关闭旧的奶蕉助手进程后重试。\n\n错误: ' + e.message);
+        electron.dialog.showErrorBox('端口冲突', '端口 ' + PORT + ' 被占用，请关闭旧的N-B助手进程后重试。\n\n错误: ' + e.message);
       } catch (_) {}
       setTimeout(() => process.exit(1), 4000);
       return;
@@ -2057,7 +2089,7 @@ function tryListen(port, tries) {
   if (!process.env.CHZ_ELECTRON && !process.argv.includes('--no-browser')) {
     setTimeout(openEdgeApp, 500);
   } else {
-    console.log('[奶蕉助手] 后端就绪，等待前端窗口连接 http://localhost:' + actualPort);
+    console.log('[N-B助手] 后端就绪，等待前端窗口连接 http://localhost:' + actualPort);
   }
 })();
 

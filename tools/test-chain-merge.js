@@ -15,13 +15,13 @@ const path = [
 ];
 const built = sqlgen.buildChainMergeSQL('SGMRBA', 'RBA961', 'DEA002', 'fill', true, path, docs, ['RBA001', 'RBA002'], '   ');
 assert.ok(built.isHeaderMerge, '应标记为表头合并');
-assert.ok(built.updateSql.includes('_momo_src'), '应先生成来源集合');
-assert.ok(built.updateSql.includes('_momo_agg'), '应按目标主键聚合');
+assert.ok(built.updateSql.includes('_nb_src'), '应先生成来源集合');
+assert.ok(built.updateSql.includes('_nb_agg'), '应按目标主键聚合');
 assert.ok(built.updateSql.includes('FOR XML PATH'), '应兼容 SQL Server 的字符串聚合');
 assert.ok(built.updateSql.includes('GROUP BY _k0, _k1'), '应按目标主键分组');
 assert.ok(built.updateSql.includes('RBB001] = [b].[RBA001]'), '头身关联应带类别');
 assert.ok(built.updateSql.includes('CHARINDEX'), '应排除目标已有值，避免重复追加');
-const trig = sqlgen.buildTriggerFromStatements('SGMRBA', 'trg_SGMRBA_momo', [built.updateSql]);
+const trig = sqlgen.buildTriggerFromStatements('SGMRBA', 'trg_SGMRBA_nb', [built.updateSql]);
 assert.ok(trig.includes('ON [dbo].[SGMRBA] AFTER INSERT'), '触发器应挂在目标表');
-assert.strictEqual((trig.match(/DECLARE\s+@momo_msg/gi) || []).length, 1, '只允许一个 @momo_msg');
+assert.strictEqual((trig.match(/DECLARE\s+@nb_msg/gi) || []).length, 1, '只允许一个 @nb_msg');
 console.log('PASS 表头合并聚合去重、保留旧值，触发器复用聚合 SQL');

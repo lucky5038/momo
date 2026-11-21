@@ -1,5 +1,5 @@
 appId: com.momo.chuanzhi
-productName: 奶蕉助手
+productName: N-B助手
 asar: true
 compression: normal
 
@@ -37,6 +37,6 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: "奶蕉助手"
+  shortcutName: "N-B助手"
   runAfterFinish: true
   deleteAppDataOnUninstall: true

@@ -22,11 +22,11 @@ assert.ok(built.isFallback, '应标记为兜底通道');
 assert.ok(built.updateSql.includes('FROM [dbo].[SGMRAA] b'), 'UPDATE 应基于工单表');
 assert.ok(built.updateSql.includes('LEFT JOIN [dbo].[SGMRIB] s2 ON s2.RIB001 = b.RAA026'), 'UPDATE 应包含计划档兜底 JOIN');
 
-const trigSql = sqlgen.buildTriggerFromStatements('SGMRAA', 'trg_SGMRAA_momo', [
+const trigSql = sqlgen.buildTriggerFromStatements('SGMRAA', 'trg_SGMRAA_nb', [
   sqlgen.applyInsertedFilter(built.updateSql, 'i.[RAA001]=b.[RAA001]')
 ]);
 
-assert.ok(trigSql.startsWith('CREATE TRIGGER [dbo].[trg_SGMRAA_momo] ON [dbo].[SGMRAA] AFTER INSERT'), '触发器头不正确');
+assert.ok(trigSql.startsWith('CREATE TRIGGER [dbo].[trg_SGMRAA_nb] ON [dbo].[SGMRAA] AFTER INSERT'), '触发器头不正确');
 assert.ok(trigSql.includes('SET XACT_ABORT ON'), '缺少 XACT_ABORT');
 assert.ok(trigSql.includes('WHERE EXISTS (SELECT 1 FROM inserted i WHERE i.[RAA001]=b.[RAA001])'), '缺少 inserted 过滤');
 assert.ok(trigSql.includes('LEFT JOIN [dbo].[SGMRIB] s2 ON s2.RIB001 = b.RAA026'), '触发器应复用 UPDATE 的计划档 JOIN');

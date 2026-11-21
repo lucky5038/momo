@@ -392,7 +392,7 @@ function inspectService(baseDir) {
   return {
     root,
     async runExcel(action, input) {
-      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'momo-clean-'));
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nb-clean-'));
       const script = path.join(tmp, 'excel.ps1');
       const inFile = path.join(tmp, 'in.json');
       const outFile = path.join(tmp, 'out.json');

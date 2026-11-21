@@ -569,17 +569,17 @@ module.exports = function makeSqlgen(sql) {
     const corr = pkNames.map((_, i) => 'x._k' + i + '=a._k' + i).join(' AND ');
     const sep = String(separator).replace(/'/g, "''");
     const sepN = sep.length;
-    const cte = 'WITH _momo_src AS (SELECT ' + sel + ', ' + valExpr + ' AS _val' + fromClause + ' ' + whereClause + '), ' +
-      '_momo_agg AS (SELECT ' + group + ', STUFF((SELECT DISTINCT N\'' + sep + '\'+CAST(x._val AS nvarchar(max)) ' +
-      'FROM _momo_src x WHERE ' + corr +
+    const cte = 'WITH _nb_src AS (SELECT ' + sel + ', ' + valExpr + ' AS _val' + fromClause + ' ' + whereClause + '), ' +
+      '_nb_agg AS (SELECT ' + group + ', STUFF((SELECT DISTINCT N\'' + sep + '\'+CAST(x._val AS nvarchar(max)) ' +
+      'FROM _nb_src x WHERE ' + corr +
       ' AND (b0.' + bt(tgtCol) + ' IS NULL OR CAST(b0.' + bt(tgtCol) + ' AS nvarchar(max))=N\'\' ' +
       'OR CHARINDEX(N\' \'+CAST(x._val AS nvarchar(max)),N\' \'+CAST(b0.' + bt(tgtCol) + ' AS nvarchar(max)))=0) ' +
       'FOR XML PATH(\'\'), TYPE).value(\'.\',\'nvarchar(max)\'),1,' + sepN + ',\'\') AS _add ' +
-      'FROM _momo_src a JOIN [dbo].[' + tgtDocId + '] b0 ON ' +
+      'FROM _nb_src a JOIN [dbo].[' + tgtDocId + '] b0 ON ' +
       pkNames.map((c, i) => 'b0.' + bt(c) + '=a._k' + i).join(' AND ') +
       ' GROUP BY ' + group + ', b0.' + bt(tgtCol) + ') ';
     const target = '[dbo].[' + tgtDocId + '] b';
-    const joinTarget = ' FROM ' + target + ' JOIN _momo_agg m ON ' + join;
+    const joinTarget = ' FROM ' + target + ' JOIN _nb_agg m ON ' + join;
     const seqSel = showSeq ? ('b.' + bt(showSeq)) : "N''";
     const need = " WHERE m._add IS NOT NULL AND m._add <> N''";
     const previewSql = cte + 'SELECT TOP 200 b.' + bt(showNo) + ' AS [单号], ' + seqSel + ' AS [序号], b.' + bt(tgtCol) + ' AS [现值], m._add AS [应带]' + joinTarget + need + ' ORDER BY b.' + bt(showNo);
@@ -689,8 +689,8 @@ module.exports = function makeSqlgen(sql) {
     const ctx = String(label || (onTable + ' ' + trgName)).replace(/'/g, "''");
     const body = '; ' + list.join('; ') + ';';
     return 'CREATE TRIGGER [dbo].[' + trgName + '] ON [dbo].[' + onTable + '] AFTER INSERT AS BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; ' +
-      'BEGIN TRY' + body + ' END TRY BEGIN CATCH DECLARE @momo_msg nvarchar(2048)=N\'奶蕉助手触发器 ' + ctx +
-      ' 执行失败: \'+ERROR_MESSAGE(); THROW 50001,@momo_msg,1; END CATCH END;';
+      'BEGIN TRY' + body + ' END TRY BEGIN CATCH DECLARE @nb_msg nvarchar(2048)=N\'N-B助手触发器 ' + ctx +
+      ' 执行失败: \'+ERROR_MESSAGE(); THROW 50001,@nb_msg,1; END CATCH END;';
   }
 
   // 找最外层 WHERE（忽略字符串、方括号和括号内的子查询 WHERE）
@@ -764,7 +764,7 @@ module.exports = function makeSqlgen(sql) {
     const val = 'CAST(' + p.valExpr + ' AS nvarchar(max))';
     return 'IF EXISTS (SELECT 1 FROM ' + p.fromBody +
       ' WHERE EXISTS (SELECT 1 FROM inserted i WHERE ' + pkJoin + ') AND (' + p.whereBody + ') GROUP BY ' + cols +
-      ' HAVING COUNT(*) > 1 AND COUNT(DISTINCT ' + val + ') > 1) THROW 50002, N\'奶蕉助手触发器 ' + ctx + '：目标行匹配多条来源行且值不一致，已拒绝写入\', 1';
+      ' HAVING COUNT(*) > 1 AND COUNT(DISTINCT ' + val + ') > 1) THROW 50002, N\'N-B助手触发器 ' + ctx + '：目标行匹配多条来源行且值不一致，已拒绝写入\', 1';
   }
 
   // 同一目标行匹配多条来源行时，先按目标主键做 ROW_NUMBER，只取第一条，
@@ -782,10 +782,10 @@ module.exports = function makeSqlgen(sql) {
     const pkSelect = pkNames.map(c => 'b.[' + c + '] AS _' + c).join(', ');
     const pkPart = pkNames.map(c => 'b.[' + c + ']').join(', ');
     const pkJoinNew = pkNames.map(c => 'm._' + c + '=b.[' + c + ']').join(' AND ');
-    return 'WITH _momo_src AS (SELECT ' + pkSelect + ', ' + valExpr + ' AS _val, ' +
+    return 'WITH _nb_src AS (SELECT ' + pkSelect + ', ' + valExpr + ' AS _val, ' +
       'ROW_NUMBER() OVER(PARTITION BY ' + pkPart + ' ORDER BY (SELECT NULL)) AS _rn FROM ' + fromBody +
       ' WHERE ' + whereBody + ') UPDATE b SET b.[' + col + ']=m._val FROM [dbo].[' + table +
-      '] b JOIN _momo_src m ON ' + pkJoinNew + ' AND m._rn=1';
+      '] b JOIN _nb_src m ON ' + pkJoinNew + ' AND m._rn=1';
   }
 
   function extractTriggerBody(definition) {
@@ -797,11 +797,11 @@ module.exports = function makeSqlgen(sql) {
       .trim()
       .replace(/^;\s*/, '');
     // 剥掉单层 TRY/CATCH 外壳，只保留成功分支的业务语句；
-    // 合并时由 buildTriggerFromStatements 统一包一层，避免 @momo_msg 重复声明。
+    // 合并时由 buildTriggerFromStatements 统一包一层，避免 @nb_msg 重复声明。
     const tryMatch = body.match(/^BEGIN\s+TRY\b([\s\S]*?)\bEND\s+TRY\b/i);
     if (tryMatch) body = tryMatch[1].replace(/^;\s*/, '').trim();
-    // 兜底：旧版本可能残留声明，不能让它在合并后的批次里再出现一次
-    body = body.replace(/\bDECLARE\s+@momo_msg\b[\s\S]*?;\s*/i, '').trim();
+    // 兜底：旧版本可能残留 @momo_msg/@nb_msg 声明，不能让它在合并后的批次里再出现一次
+    body = body.replace(/\bDECLARE\s+@(?:momo|nb)_msg\b[\s\S]*?;\s*/i, '').trim();
     return body.replace(/;+\s*$/, '').trim();
   }
 

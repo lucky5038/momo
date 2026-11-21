@@ -1,4 +1,4 @@
-// Electron 主进程 —— 奶蕉助手 独立应用版
+// Electron 主进程 —— N-B助手 独立应用版
 // 启动内置 HTTP 后端 (app.js) + 创建无边框应用窗口指向它
 'use strict';
 
@@ -7,11 +7,11 @@ const fs = require('fs');
 const path = require('path');
 
 // 最终效果预览：使用独立临时 userData，不读取/覆盖真实配置。
-// 启动参数：奶蕉助手.exe --preview
+// 启动参数：N-B助手.exe --preview
 const isPreview = process.argv.includes('--preview');
 if (isPreview) {
   try {
-    const previewDir = path.join(app.getPath('temp'), 'NaijiaoPreviewRun');
+    const previewDir = path.join(app.getPath('temp'), 'NBPreviewRun');
     fs.mkdirSync(previewDir, { recursive: true });
     app.setPath('userData', previewDir);
     console.log('[preview] 使用临时配置目录: ' + previewDir);
@@ -30,23 +30,29 @@ function baseDir() {
 
 // 读取 app.js 写入的实际端口（端口冲突时可能 > 8787）
 // 从旧品牌数据目录迁移配置与标志，避免改名后要求重新配置数据库。
+// 按品牌演进顺序尝试：奶蕉助手 -> N-B助手，再兜底更早的 Momo传值助手。
 function migrateLegacyUserData() {
   if (process.env.PORTABLE_EXECUTABLE_DIR) return;
   try {
-    const oldDir = path.join(app.getPath('appData'), 'Momo传值助手');
+    const appData = app.getPath('appData');
     const newDir = app.getPath('userData');
-    if (oldDir === newDir || !fs.existsSync(oldDir)) return;
-    fs.mkdirSync(newDir, { recursive: true });
+    const legacyDirs = ['奶蕉助手', 'Momo传值助手'];
     const files = [
       'config.js', 'creds.json', 'chain_registry.json', 'invoice_source_map.json',
-      'first_open.flag', 'onboarding_done.flag', 'fresh_install.flag', 'momo_backup_picked.flag'
+      'first_open.flag', 'onboarding_done.flag', 'fresh_install.flag',
+      'nb_backup_picked.flag', 'momo_backup_picked.flag'
     ];
-    for (const name of files) {
-      const from = path.join(oldDir, name);
-      const to = path.join(newDir, name);
-      if (fs.existsSync(from) && !fs.existsSync(to)) fs.copyFileSync(from, to);
+    for (const oldName of legacyDirs) {
+      const oldDir = path.join(appData, oldName);
+      if (oldDir === newDir || !fs.existsSync(oldDir)) continue;
+      fs.mkdirSync(newDir, { recursive: true });
+      for (const name of files) {
+        const from = path.join(oldDir, name);
+        const to = path.join(newDir, name);
+        if (fs.existsSync(from) && !fs.existsSync(to)) fs.copyFileSync(from, to);
+      }
+      console.log('[migrate] 已从旧数据目录迁移: ' + oldDir + ' -> ' + newDir);
     }
-    console.log('[migrate] 已从旧数据目录迁移: ' + oldDir + ' -> ' + newDir);
   } catch (e) {
     console.error('[migrate] 旧数据迁移失败: ' + e.message);
   }
@@ -86,7 +92,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     backgroundColor: '#0b1220',
-    title: '奶蕉助手 · 让ERP在中国普遍成功',
+    title: 'N-B助手 · 让ERP在中国普遍成功',
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
