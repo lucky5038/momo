@@ -930,8 +930,9 @@ function inspectService(baseDir, options) {
       const pad = n => String(n).padStart(2, '0');
       const stamp = ts.getFullYear() + pad(ts.getMonth() + 1) + pad(ts.getDate()) + '_' + pad(ts.getHours()) + pad(ts.getMinutes()) + pad(ts.getSeconds());
       const profile = profileOf(job.template);
+      const isPreview = !!(opts && opts.preview);
       const base = profile === 'GENERIC' ? '数据导入包' : profile + '_导入包';
-      const xlsPath = path.join(outDir, base + '_' + stamp + '.xls');
+      const xlsPath = path.join(outDir, (isPreview ? '预览_' : '') + base + '_' + stamp + '.xls');
 
       // 只写入“有映射/默认/派生”的列；保留模板其它列原有内容
       const outputCols = [];
@@ -966,8 +967,8 @@ function inspectService(baseDir, options) {
         marks
       });
 
-      const manifestPath = path.join(outDir, 'result.json');
-      fs.writeFileSync(manifestPath, JSON.stringify({ xlsPath, stats: result.stats, createdAt: Date.now() }), 'utf8');
+      const manifestPath = path.join(outDir, isPreview ? 'preview.json' : 'result.json');
+      fs.writeFileSync(manifestPath, JSON.stringify({ xlsPath, stats: result.stats, preview: isPreview, createdAt: Date.now() }), 'utf8');
       return { ok: true, jobId: job.jobId, xlsPath, stats: result.stats, issues: result.issues.slice(0, 100), mapping: result.mapping };
     }
   };

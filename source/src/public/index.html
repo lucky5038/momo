@@ -1105,7 +1105,7 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
       </div>
     </div>
     <div class="clean-auto-row">
-      <label class="chk"><input type="checkbox" id="cleanAutoOpen" checked> 生成后自动打开文件，人工确认</label>
+      <label class="chk"><input type="checkbox" id="cleanAutoOpen" checked> 预览时自动打开文件，人工确认</label>
       <span>黄色单元格表示按简称匹配，需人工确认；来源列选错会报错并定位。</span>
     </div>
 
@@ -2662,18 +2662,35 @@ chainRow();
       status('读取失败：'+e.message, true); toast('读取失败：'+e.message, 'error');
     } finally { busy(btn, false); updateCleanActions(); }
   }
+  function showOutput(out, isPreview){
+    $('cleanResult').innerHTML = '<b>'+(isPreview?'预览文件已生成':'生成成功')+'</b><br>'+
+      (isPreview?'用于人工检查，确认无误后再点【生成】。':'')+
+      '<br>文件：<span class="clean-path">'+esc(out.xlsPath)+'</span>'+
+      '<div class="clean-result-actions">'+
+      '<button class="btn sm" type="button" data-save="'+esc(out.xlsPath)+'" data-name="'+esc((out.xlsPath||'').split(/[\\\\/]/).pop()||'导入包.xls')+'">另存为…</button>'+
+      '<button class="btn sm" type="button" data-reveal="'+esc(out.xlsPath)+'">打开文件夹</button>'+
+      '</div>';
+    $('cleanResult').style.display = 'block';
+  }
   async function previewCurrent(btn){
     if(!state.jobId) return toast('请先点【读取】', 'error');
     busy(btn, true, '预览中...');
     try {
-      status('正在预览校验，不生成文件...');
+      status('正在校验并生成预览文件...');
       const pre = await getValidation();
       if(pre.stats.errors > 0){
         status('发现 '+pre.stats.errors+' 个硬错误，请补默认值或调整来源列后重新预览。', true);
         toast('预览未通过', 'error');
-      } else {
-        status('预览通过：'+pre.stats.outputRows+' 行，可以生成导入包。');
-        toast('预览通过', 'success');
+        return;
+      }
+      const out = await call('/api/cleaning/generate', {jobId:state.jobId, mapping:collectMapping(), options:{allowErrors:false, preview:true}});
+      renderResult(out);
+      showOutput(out, true);
+      status('预览文件已生成：'+out.stats.outputRows+' 行，请打开检查，没问题再点【生成】。');
+      toast('预览文件已生成', 'success');
+      if($('cleanAutoOpen') && $('cleanAutoOpen').checked && window.nb && window.nb.openCleaningFile){
+        try { await window.nb.openCleaningFile(out.xlsPath); status('预览文件已打开，请人工确认后点【生成】。'); }
+        catch(err) { status('预览文件已生成；自动打开失败：'+err.message, true); }
       }
     } catch(e) {
       status('预览失败：'+e.message, true); toast('预览失败：'+e.message, 'error');
@@ -2683,7 +2700,7 @@ chainRow();
     if(!state.jobId) return toast('请先点【读取】', 'error');
     busy(btn, true, '生成中...');
     try {
-      status('正在校验并生成 XLS...');
+      status('正在生成正式导入包...');
       const pre = await getValidation();
       if(pre.stats.errors > 0){
         status('发现 '+pre.stats.errors+' 个硬错误，未生成导入包。请补默认值或调整来源列后重新预览。', true);
@@ -2692,18 +2709,9 @@ chainRow();
       }
       const out = await call('/api/cleaning/generate', {jobId:state.jobId, mapping:collectMapping(), options:{allowErrors:false}});
       renderResult(out);
-      $('cleanResult').innerHTML = '<b>生成成功</b><br>导入包：<span class="clean-path">'+esc(out.xlsPath)+'</span>'+
-        '<div class="clean-result-actions">'+
-        '<button class="btn sm" type="button" data-save="'+esc(out.xlsPath)+'" data-name="'+esc((out.xlsPath||'').split(/[\\\\/]/).pop()||'导入包.xls')+'">另存为…</button>'+
-        '<button class="btn sm" type="button" data-reveal="'+esc(out.xlsPath)+'">打开文件夹</button>'+
-        '</div>';
-      $('cleanResult').style.display = 'block';
+      showOutput(out, false);
       status('生成完成：'+out.stats.outputRows+' 行。');
       toast('导入包已生成', 'success');
-      if($('cleanAutoOpen') && $('cleanAutoOpen').checked && window.nb && window.nb.openCleaningFile){
-        try { await window.nb.openCleaningFile(out.xlsPath); status('生成完成，已打开导入包，请人工确认标黄单元格。'); }
-        catch(err) { status('生成完成；自动打开失败：'+err.message, true); }
-      }
     } catch(e) {
       status('生成失败：'+e.message, true); toast('生成失败：'+e.message, 'error');
     } finally { busy(btn, false); updateCleanActions(); }
