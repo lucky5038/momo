@@ -1869,9 +1869,21 @@ async function handleDropCred(req, res) {
 }
 
 
+async function supplierMasterMap() {
+  try {
+    const pool = await getPool();
+    const r = await pool.request().query('SELECT DGA001 AS code, DGA002 AS name FROM TPADGA');
+    return (r.recordset || []).map(x => ({ code: x.code, name: x.name }));
+  } catch (_) {
+    return null;
+  }
+}
+
 async function handleCleaningInspect(req, res) {
   try {
     const body = JSON.parse((await readBody(req)) || '{}');
+    // 供应商在 ERP 存厂商代码，清洗时只读加载 TPADGA 资料档用于名称→代码转换。
+    if (body.masterMap == null) body.masterMap = await supplierMasterMap();
     const r = await cleaningService.inspect(body);
     sendJSON(res, 200, r);
   } catch (e) {

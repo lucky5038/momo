@@ -263,6 +263,7 @@ const SYNONYMS = {
   '人工分摊权数': ['人工权数', '人工分摊权数', '人工费用权数'],
   '制费分摊权数': ['制费权数', '制造费用权数', '制费分摊权数'],
   '主要来源': ['主要来源', '商品来源', '货源', '来源类型', '商品主要来源', '物料来源'],
+  '主供应商': ['主供应商', '主供货商', '供应商', '默认供应商', '委外供应商', '默认供应商或委外供应商', '供应商名称', '厂商'],
   '商品分类': ['商品分类', '存货分类', '物料分类', '产品分类'],
   '是否含税': ['是否含税', '含税', '含税否']
 };
@@ -653,7 +654,8 @@ function inspectService(baseDir, options) {
           templatePath: tFile.path, sourcePath: sFile.path,
           templateId: key, templateName: storedTemplate.name || tFile.name,
           templateNameRaw: tFile.name, sourceName: sFile.name,
-          template, source, suggested, profileKey: key
+          template, source, suggested, profileKey: key,
+          masterMap: Array.isArray(body.masterMap) ? body.masterMap : null
         };
         fs.writeFileSync(path.join(jobDir, 'job.json'), JSON.stringify(manifest), 'utf8');
         return {
@@ -717,6 +719,31 @@ function inspectService(baseDir, options) {
         }
         return null;
       };
+      // 供应商字段在 ERP 里存厂商代码（TPADGA.DGA001），来源表常写名称。
+      // 只读转换；没有资料档时保留名称并警告，不静默写错代码。
+      const resolveMaster = (raw) => {
+        const s = cleanText(raw);
+        if (!s) return null;
+        const list = Array.isArray(job.masterMap) ? job.masterMap : [];
+        if (!list.length) return null;
+        const code = list.find(x => cleanText(x.code).toUpperCase() === s.toUpperCase());
+        if (code) return { value: code.code, ambiguous: false, name: code.name };
+        const exact = list.find(x => normText(x.name) === normText(s));
+        if (exact) return { value: exact.code, ambiguous: false, name: exact.name };
+        const part = list.filter(x => normText(x.name).includes(normText(s)) || normText(s).includes(normText(x.name)));
+        if (part.length === 1) return { value: part[0].code, ambiguous: true, name: part[0].name };
+        if (s.length >= 3) {
+          const chars = a => Array.from(normText(a));
+          const diff = (a, b) => {
+            const x = chars(a), y = chars(b);
+            if (x.length !== y.length) return 99;
+            return x.reduce((n, ch, i) => n + (ch === y[i] ? 0 : 1), 0);
+          };
+          const near = list.filter(x => diff(s, x.name) <= 1);
+          if (near.length === 1) return { value: near[0].code, ambiguous: true };
+        }
+        return null;
+      };
       const colByCode = new Map(cols.map(c => [c.code, c]));
 
       sourceRows.forEach((src, ri) => {
@@ -740,6 +767,25 @@ function inspectService(baseDir, options) {
             values[c.code] = '';
           } else if (tr.empty) {
             values[c.code] = '';
+          } else if (c.code === 'DEA010' || /^(主供应商|主供货商|供应商)$/.test(normText(c.name || ''))) {
+            const master = resolveMaster(tr.value);
+            if (!master) {
+              errors.push({
+                row: rowNo, code: c.code, name: c.name, severity: 'error',
+                message: '供应商「' + tr.value + '」不在厂商资料档 TPADGA，请先补厂商资料或修正名称'
+              });
+              values[c.code] = '';
+            } else {
+              values[c.code] = master.value;
+              if (master.ambiguous) {
+                warnings.push({
+                  row: rowNo, code: c.code, name: c.name, severity: 'warning',
+                  message: master.name
+                    ? '供应商「' + tr.value + '」按近似名称匹配为「' + master.value + '（' + master.name + '）」，已标黄，请人工确认'
+                    : '未连接厂商资料，暂保留供应商「' + tr.value + '」原值，导入前请确认'
+                });
+              }
+            }
           } else if (m.options && m.options.length) {
             const option = matchOption(tr.value, m.options);
             if (option == null) {
