@@ -144,6 +144,13 @@ try {
           }
         }
       }
+      # 低置信度/简称匹配的单元格标黄，提示人工确认；硬错误不会走到这里。
+      foreach ($m in @($in.marks)) {
+        if ($null -eq $m) { continue }
+        try {
+          $ws.Cells.Item([int]$m.row, [int]$m.col).Interior.Color = [int]$m.color
+        } catch {}
+      }
       $wb.Save()
     } finally {
       $wb.Close($false)
@@ -687,10 +694,10 @@ function inspectService(baseDir) {
         const s = cleanText(raw);
         if (!s) return null;
         const byCode = options.find(o => cleanText(o.value).toUpperCase() === s.toUpperCase());
-        if (byCode) return byCode.value;
+        if (byCode) return { value: byCode.value, ambiguous: false };
         const sn = normText(s);
         const byLabel = options.find(o => o.label && normText(o.label) === sn);
-        if (byLabel) return byLabel.value;
+        if (byLabel) return { value: byLabel.value, ambiguous: false };
         // 业务口语常与模板标签不完全一致：厂内件/厂内生产件、委外/委外生产件、外购/采购件。
         const canonical = v => normText(v)
           .replace(/外购|外协|外发/g, '委外')
@@ -699,12 +706,12 @@ function inspectService(baseDir) {
         const sCore = canonical(s);
         if (sCore) {
           const byCore = options.find(o => o.label && canonical(o.label) === sCore);
-          if (byCore) return byCore.value;
+          if (byCore) return { value: byCore.value, ambiguous: true };
         }
         // “委外件”与“委外生产件”这类业务简称，用前缀匹配兜底。
         if (sn.length >= 2) {
           const byPrefix = options.find(o => o.label && normText(o.label).startsWith(sn.slice(0, 2)));
-          if (byPrefix) return byPrefix.value;
+          if (byPrefix) return { value: byPrefix.value, ambiguous: true };
         }
         return null;
       };
@@ -740,7 +747,13 @@ function inspectService(baseDir) {
               });
               values[c.code] = '';
             } else {
-              values[c.code] = option;
+              values[c.code] = option.value;
+              if (option.ambiguous) {
+                warnings.push({
+                  row: rowNo, code: c.code, name: c.name, severity: 'warning',
+                  message: '值「' + tr.value + '」按简称匹配为「' + option.value + '」，已标黄，请人工确认'
+                });
+              }
             }
           } else {
             values[c.code] = tr.value;
@@ -888,13 +901,21 @@ function inspectService(baseDir) {
         const c = templateCols.find(x => x.index === idx);
         return c ? r.values[c.code] : '';
       }));
+      const marks = result.issues
+        .filter(x => x.severity === 'warning' && x.row > 0 && x.code)
+        .map(x => {
+          const c = templateCols.find(y => y.code === x.code);
+          return c ? { row: (job.template.dataStartRow || 3) + x.row - 1, col: c.index, color: 65535 } : null;
+        })
+        .filter(Boolean);
       await this.runExcel('generate', {
         template: job.templatePath,
         output: xlsPath,
         dataStart: job.template.dataStartRow || 3,
         columns: outputCols,
         types,
-        rows
+        rows,
+        marks
       });
 
       const manifestPath = path.join(outDir, 'result.json');

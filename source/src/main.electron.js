@@ -2,7 +2,7 @@
 // 启动内置 HTTP 后端 (app.js) + 创建无边框应用窗口指向它
 'use strict';
 
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -37,6 +37,53 @@ function baseDir() {
   try { return app.getPath('userData'); } catch (_) {}
   return path.dirname(process.execPath);
 }
+
+function insideDir(target, dir) {
+  const rel = path.relative(path.resolve(dir), path.resolve(target));
+  return rel && !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
+function cleaningRoots() {
+  const roots = [];
+  try { roots.push(path.join(baseDir(), 'cleaning')); } catch (_) {}
+  try { roots.push(path.join(app.getPath('userData'), 'cleaning')); } catch (_) {}
+  return [...new Set(roots.map(p => path.resolve(p)))];
+}
+
+function isCleaningOutput(target) {
+  return cleaningRoots().some(root => insideDir(target, root));
+}
+
+// 另存为：只允许把 cleaning 任务输出复制到用户选择的位置，不能读取任意文件。
+ipcMain.handle('cleaning:save-as', async (_event, payload) => {
+  const sourcePath = String(payload && payload.sourcePath || '');
+  if (!sourcePath || !isCleaningOutput(sourcePath) || !fs.existsSync(sourcePath)) {
+    throw new Error('无效的清洗文件路径');
+  }
+  const suggested = String(payload && payload.suggestedName || path.basename(sourcePath));
+  const safe = suggested.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_') || '导入包.xls';
+  const result = await dialog.showSaveDialog({
+    title: '保存清洗后的导入包',
+    defaultPath: path.join(app.getPath('documents'), safe),
+    filters: [{ name: 'Excel 文件', extensions: ['xls'] }],
+    properties: ['createDirectory', 'showOverwriteConfirmation']
+  });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  let dest = result.filePath;
+  if (!/\.xls$/i.test(dest)) dest += '.xls';
+  fs.copyFileSync(sourcePath, dest);
+  return { ok: true, path: dest };
+});
+
+ipcMain.handle('cleaning:open', async (_event, target) => {
+  const file = String(target || '');
+  if (!file || !isCleaningOutput(file) || !fs.existsSync(file)) {
+    throw new Error('无效的清洗文件路径');
+  }
+  const error = await shell.openPath(file);
+  if (error) throw new Error(error);
+  return { ok: true };
+});
 
 // 读取 app.js 写入的实际端口（端口冲突时可能 > 8787）
 // 从旧品牌数据目录迁移配置与标志，避免改名后要求重新配置数据库。
@@ -145,6 +192,7 @@ function createWindow() {
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true
     }
