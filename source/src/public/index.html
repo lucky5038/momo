@@ -832,6 +832,8 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
 .clean-tpl-btn.danger:hover{background:#450A0A;}
 .clean-tpl-btn:disabled{opacity:.45;cursor:not-allowed;}
 .clean-tpl-hint{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#64748B;}
+.clean-actions{align-self:center;display:flex;gap:6px;white-space:nowrap;}
+.clean-actions .btn{min-height:42px;padding:0 14px;}
 .clean-parse{align-self:center;min-height:42px;white-space:nowrap;}
 .clean-auto-row{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:10px;font-size:11px;color:#64748B;}
 .clean-auto-row .chk{color:#94A3B8;white-space:nowrap;}
@@ -891,6 +893,8 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
   .clean-pill{display:inline-block;margin-top:10px;}
   .clean-file-grid{grid-template-columns:1fr;}
   .clean-parse{width:100%;}
+  .clean-actions{width:100%;}
+  .clean-actions .btn{flex:1;}
   .clean-map select,.clean-map input[type=text]{max-width:none;}
 }
 </style>
@@ -1094,7 +1098,11 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
         <small>支持列名不完全一致，系统会自动匹配同义词</small>
         <input type="file" id="cleanSrc" accept=".xls,.xlsx,.xlsm">
       </label>
-      <button class="btn primary clean-parse" id="btnCleanParse" type="button">读取并生成</button>
+      <div class="clean-actions">
+        <button class="btn" id="btnCleanRead" type="button">读取</button>
+        <button class="btn" id="btnCleanPreview" type="button" disabled>预览</button>
+        <button class="btn primary" id="btnCleanGenerate" type="button" disabled>生成</button>
+      </div>
     </div>
     <div class="clean-auto-row">
       <label class="chk"><input type="checkbox" id="cleanAutoOpen" checked> 生成后自动打开文件，人工确认</label>
@@ -2395,7 +2403,7 @@ chainRow();
 (function(){
   const $ = id => document.getElementById(id);
   const MAX_FILE = 30 * 1024 * 1024;
-  const state = { jobId:null, info:null, mapping:[], result:null, templateList:[] };
+  const state = { jobId:null, info:null, mapping:[], result:null, templateList:[], previewOk:false };
   let rememberTimer = null;
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const toast = (msg, type) => { if (window.showMomoToast) window.showMomoToast(msg, type); };
@@ -2405,10 +2413,16 @@ chainRow();
     btn.disabled = !!on;
     btn.classList.toggle('loading', !!on);
     if(on) { if(label) btn.textContent = label; }
-    else { btn.textContent = btn.dataset.label || '读取并匹配'; }
+    else { btn.textContent = btn.dataset.label || ''; }
   }
   function initBtns(){
-    ['btnCleanParse','btnCleanPreview','btnCleanGenerate','btnCleanTplFile','btnCleanTplDelete'].forEach(id=>{ const b=$(id); if(b) b.dataset.label=b.textContent; });
+    ['btnCleanRead','btnCleanPreview','btnCleanGenerate','btnCleanTplFile','btnCleanTplDelete'].forEach(id=>{ const b=$(id); if(b) b.dataset.label=b.textContent; });
+  }
+  function updateCleanActions(){
+    const hasJob = !!state.jobId;
+    if($('btnCleanRead')) $('btnCleanRead').disabled = false;
+    if($('btnCleanPreview')) $('btnCleanPreview').disabled = !hasJob;
+    if($('btnCleanGenerate')) $('btnCleanGenerate').disabled = !hasJob || !state.previewOk;
   }
   function readFile(file){
     return new Promise((resolve,reject)=>{
@@ -2432,12 +2446,13 @@ chainRow();
     return d;
   }
   function resetCleanState(){
-    state.jobId = null; state.info = null; state.mapping = []; state.result = null;
+    state.jobId = null; state.info = null; state.mapping = []; state.result = null; state.previewOk = false;
     if($('cleanShowAll')) $('cleanShowAll').checked = false;
     $('cleanSummary').style.display = 'none';
     $('cleanBody').style.display = 'none';
     $('cleanResult').style.display = 'none';
     $('cleanStatus').textContent = '';
+    updateCleanActions();
   }
   async function loadTemplates(selectedId){
     const sel = $('cleanTplSelect');
@@ -2538,6 +2553,8 @@ chainRow();
           const f = el.dataset.field;
           if (f === 'sourceIndex') c.sourceIndex = el.value === '' ? null : Number(el.value);
           else c[f] = el.value;
+          state.previewOk = false;
+          updateCleanActions();
           // 来源改变会影响“按来源逐行转换”提示，重绘一次；输入默认值时只更新备注，避免失焦。
           if (f === 'sourceIndex') { renderMapping(); return; }
           updateRuleNote();
@@ -2600,45 +2617,21 @@ chainRow();
     const box = tr.querySelector('select[data-field="sourceIndex"]:not(:disabled),input[data-field="defaultValue"]:not(:disabled),select[data-field="defaultValue"]:not(:disabled)');
     if(box) box.focus({preventScroll:true});
   }
-  async function generateCurrent(btn){
+  async function getValidation(){
     const pre = await call('/api/cleaning/preview', {jobId:state.jobId, mapping:collectMapping()});
     renderResult(pre);
     renderMapping();
-    if(pre.stats.errors > 0){
-      status('发现 '+pre.stats.errors+' 个硬错误，未生成导入包。请在下方补默认值或调整来源列后重试。', true);
-      toast('校验未通过，未生成文件', 'error');
-      return;
-    }
-    status('校验通过，正在生成 XLS...');
-    const out = await call('/api/cleaning/generate', {jobId:state.jobId, mapping:collectMapping(), options:{allowErrors:false}});
-    renderResult(out);
-    $('cleanResult').innerHTML = '<b>生成成功</b><br>导入包：<span class="clean-path">'+esc(out.xlsPath)+'</span>'+
-      '<div class="clean-result-actions">'+
-      '<button class="btn sm" type="button" data-save="'+esc(out.xlsPath)+'" data-name="'+esc((out.xlsPath||'').split(/[\\\\/]/).pop()||'导入包.xls')+'">另存为…</button>'+
-      '<button class="btn sm" type="button" data-reveal="'+esc(out.xlsPath)+'">打开文件夹</button>'+
-      '</div>';
-    $('cleanResult').style.display = 'block';
-    status('生成完成：'+out.stats.outputRows+' 行。');
-    toast('导入包已生成', 'success');
-    if($('cleanAutoOpen') && $('cleanAutoOpen').checked && window.nb && window.nb.openCleaningFile){
-      try { await window.nb.openCleaningFile(out.xlsPath); status('生成完成，已打开导入包，请人工确认标黄单元格。'); }
-      catch(err) { status('生成完成；自动打开失败：'+err.message, true); }
-    }
+    state.previewOk = Number((pre.stats||{}).errors||0) === 0;
+    updateCleanActions();
+    return pre;
   }
-  async function autoGenerate(){
+  async function readCurrent(btn){
     const t = $('cleanTpl').files[0], s = $('cleanSrc').files[0];
     const tplId = $('cleanTplSelect') ? $('cleanTplSelect').value : '';
     if((!t && !tplId) || !s) return toast('请先选择模板和来源数据', 'error');
-    const btn = $('btnCleanParse');
-    busy(btn, true, '处理中...');
+    busy(btn, true, '读取中...');
     try {
-      // 已经识别过字段时，按用户当前确认的规则重新生成，不重新覆盖规则。
-      if(state.jobId && state.mapping.length){
-        status('按当前字段规则重新校验并生成...');
-        await generateCurrent(btn);
-        return;
-      }
-      status('正在读取并自动匹配，请稍候...');
+      status('正在读取模板和来源数据...');
       $('cleanSummary').style.display = 'none';
       $('cleanBody').style.display = 'none';
       $('cleanStats').style.display = 'none';
@@ -2651,6 +2644,7 @@ chainRow();
       const info = await call('/api/cleaning/inspect', payload);
       state.jobId = info.jobId;
       state.info = info;
+      state.previewOk = false;
       if(info.templateId){
         await loadTemplates(info.templateId);
         $('cleanTplName').textContent = info.templateName || '已保存模板';
@@ -2661,12 +2655,58 @@ chainRow();
       renderMapping();
       $('cleanSummary').style.display = 'block';
       $('cleanBody').style.display = 'block';
-      status('已自动匹配，正在校验数据...');
-      await generateCurrent(btn);
+      updateCleanActions();
+      status('读取完成，请检查字段规则，再点【预览】。');
+      toast('读取完成，请先预览', 'success');
     } catch(e) {
-      if(e.data && e.data.validation) renderResult(e.data.validation);
-      status('处理失败：'+e.message, true); toast('处理失败：'+e.message, 'error');
-    } finally { busy(btn, false); }
+      status('读取失败：'+e.message, true); toast('读取失败：'+e.message, 'error');
+    } finally { busy(btn, false); updateCleanActions(); }
+  }
+  async function previewCurrent(btn){
+    if(!state.jobId) return toast('请先点【读取】', 'error');
+    busy(btn, true, '预览中...');
+    try {
+      status('正在预览校验，不生成文件...');
+      const pre = await getValidation();
+      if(pre.stats.errors > 0){
+        status('发现 '+pre.stats.errors+' 个硬错误，请补默认值或调整来源列后重新预览。', true);
+        toast('预览未通过', 'error');
+      } else {
+        status('预览通过：'+pre.stats.outputRows+' 行，可以生成导入包。');
+        toast('预览通过', 'success');
+      }
+    } catch(e) {
+      status('预览失败：'+e.message, true); toast('预览失败：'+e.message, 'error');
+    } finally { busy(btn, false); updateCleanActions(); }
+  }
+  async function generateCurrent(btn){
+    if(!state.jobId) return toast('请先点【读取】', 'error');
+    busy(btn, true, '生成中...');
+    try {
+      status('正在校验并生成 XLS...');
+      const pre = await getValidation();
+      if(pre.stats.errors > 0){
+        status('发现 '+pre.stats.errors+' 个硬错误，未生成导入包。请补默认值或调整来源列后重新预览。', true);
+        toast('校验未通过，未生成文件', 'error');
+        return;
+      }
+      const out = await call('/api/cleaning/generate', {jobId:state.jobId, mapping:collectMapping(), options:{allowErrors:false}});
+      renderResult(out);
+      $('cleanResult').innerHTML = '<b>生成成功</b><br>导入包：<span class="clean-path">'+esc(out.xlsPath)+'</span>'+
+        '<div class="clean-result-actions">'+
+        '<button class="btn sm" type="button" data-save="'+esc(out.xlsPath)+'" data-name="'+esc((out.xlsPath||'').split(/[\\\\/]/).pop()||'导入包.xls')+'">另存为…</button>'+
+        '<button class="btn sm" type="button" data-reveal="'+esc(out.xlsPath)+'">打开文件夹</button>'+
+        '</div>';
+      $('cleanResult').style.display = 'block';
+      status('生成完成：'+out.stats.outputRows+' 行。');
+      toast('导入包已生成', 'success');
+      if($('cleanAutoOpen') && $('cleanAutoOpen').checked && window.nb && window.nb.openCleaningFile){
+        try { await window.nb.openCleaningFile(out.xlsPath); status('生成完成，已打开导入包，请人工确认标黄单元格。'); }
+        catch(err) { status('生成完成；自动打开失败：'+err.message, true); }
+      }
+    } catch(e) {
+      status('生成失败：'+e.message, true); toast('生成失败：'+e.message, 'error');
+    } finally { busy(btn, false); updateCleanActions(); }
   }
   function bind(){
     initBtns();
@@ -2742,8 +2782,14 @@ chainRow();
         if($('btnCleanTplDelete')) $('btnCleanTplDelete').disabled = !$('cleanTplSelect').value;
       }
     };
-    $('cleanSrc').onchange = () => { fileLabel('cleanSrc','cleanSrcName'); };
-    $('btnCleanParse').onclick = autoGenerate;
+    $('cleanSrc').onchange = () => {
+      resetCleanState();
+      fileLabel('cleanSrc','cleanSrcName');
+    };
+    $('btnCleanRead').onclick = () => readCurrent($('btnCleanRead'));
+    $('btnCleanPreview').onclick = () => previewCurrent($('btnCleanPreview'));
+    $('btnCleanGenerate').onclick = () => generateCurrent($('btnCleanGenerate'));
+    updateCleanActions();
     loadTemplates();
     $('cleanResult').onclick = async (e) => {
       const save = e.target.closest('[data-save]');
