@@ -419,8 +419,85 @@ function inspectService(baseDir) {
     fs.writeFileSync(profilePath(key), JSON.stringify(body, null, 2), 'utf8');
     return body;
   };
+
+  // 已保存的导入模板库：复制模板文件到软件数据目录，按模板内容 hash 去重。
+  // 模板基本不更新，用户下次从下拉框选择即可，不再反复找文件。
+  const libraryDir = path.join(profilesDir, 'library');
+  fs.mkdirSync(libraryDir, { recursive: true });
+  const libraryPath = id => path.join(libraryDir, String(id || ''));
+  function readLibraryMeta(id) {
+    if (!/^[a-f0-9]{24}$/.test(String(id || ''))) return null;
+    try {
+      const f = path.join(libraryPath(id), 'meta.json');
+      return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null;
+    } catch (_) { return null; }
+  }
+  function listLibraryTemplates() {
+    try {
+      return fs.readdirSync(libraryDir, { withFileTypes: true })
+        .filter(d => d.isDirectory() && /^[a-f0-9]{24}$/.test(d.name))
+        .map(d => readLibraryMeta(d.name))
+        .filter(Boolean)
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN'));
+    } catch (_) { return []; }
+  }
+  function loadLibraryTemplate(id) {
+    const meta = readLibraryMeta(id);
+    if (!meta) throw new Error('模板库中的模板不存在，请重新选择模板文件');
+    const p = path.join(libraryPath(id), 'template' + (meta.ext || '.xls'));
+    if (!fs.existsSync(p)) throw new Error('模板文件已丢失，请重新导入模板');
+    return { ...meta, path: p };
+  }
+  function saveLibraryTemplate(filePath, originalName, template) {
+    const id = templateKey(template);
+    const dir = libraryPath(id);
+    fs.mkdirSync(dir, { recursive: true });
+    const ext = extOf(originalName) || '.xls';
+    fs.copyFileSync(filePath, path.join(dir, 'template' + ext));
+    const old = readLibraryMeta(id);
+    const meta = {
+      id,
+      name: String(originalName || '').replace(/\.(xls|xlsx|xlsm)$/i, ''),
+      fileName: originalName,
+      ext,
+      updatedAt: new Date().toISOString(),
+      createdAt: (old && old.createdAt) || new Date().toISOString()
+    };
+    fs.writeFileSync(path.join(dir, 'meta.json'), JSON.stringify(meta, null, 2), 'utf8');
+    return meta;
+  }
+
   return {
     root,
+    listTemplates() { return listLibraryTemplates(); },
+    deleteTemplate(id) {
+      const key = String(id || '');
+      if (!/^[a-f0-9]{24}$/i.test(key)) throw new Error('模板 ID 无效');
+      const dir = libraryPath(key);
+      if (!fs.existsSync(dir)) throw new Error('模板不存在或已删除');
+      fs.rmSync(dir, { recursive: true, force: true });
+      return { ok: true };
+    },
+    async importTemplate(body) {
+      const file = body && body.template;
+      if (!file || !file.data) throw new Error('缺少模板文件');
+      const name = safeName(file.name, 'template.xls');
+      const ext = extOf(name);
+      if (!['.xls', '.xlsx', '.xlsm'].includes(ext)) throw new Error('模板仅支持 .xls / .xlsx');
+      const buf = Buffer.from(String(file.data), 'base64');
+      if (buf.length > MAX_UPLOAD) throw new Error('模板文件超过 30MB');
+      const tmpDir = path.join(root, 'imports', crypto.randomUUID());
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const tmpFile = path.join(tmpDir, 'template' + ext);
+      fs.writeFileSync(tmpFile, buf);
+      try {
+        const template = await this.runExcel('parse', { file: tmpFile, template: true });
+        const meta = saveLibraryTemplate(tmpFile, name, template);
+        return { ok: true, ...meta, columns: (template.columns || []).length };
+      } finally {
+        try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
+      }
+    },
     async runExcel(action, input) {
       const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nb-clean-'));
       const script = path.join(tmp, 'excel.ps1');
@@ -514,8 +591,18 @@ function inspectService(baseDir) {
         fs.writeFileSync(p, buf);
         return { path: p, name };
       };
-      const tFile = save('template', body.template);
       const sFile = save('source', body.source);
+      let tFile;
+      let libraryTemplate = null;
+      if (body.templateId) {
+        libraryTemplate = loadLibraryTemplate(body.templateId);
+        const ext = libraryTemplate.ext || '.xls';
+        const p = path.join(jobDir, 'template' + ext);
+        fs.copyFileSync(libraryTemplate.path, p);
+        tFile = { path: p, name: libraryTemplate.fileName || libraryTemplate.name };
+      } else {
+        tFile = save('template', body.template);
+      }
       try {
         const template = await this.runExcel('parse', { file: tFile.path, template: true });
         const source = await this.runExcel('parse', { file: sFile.path, template: false });
@@ -525,6 +612,9 @@ function inspectService(baseDir) {
         // 每条模板字段都带上批注规则，后续 UI/校验共用，不再靠单据类型硬编码。
         template.columns = (template.columns || []).map(c => ({ ...c, rule: parseCommentRule(c.comment) }));
         const key = templateKey(template);
+        const storedTemplate = body.templateId
+          ? libraryTemplate
+          : saveLibraryTemplate(tFile.path, tFile.name, template);
         const saved = readProfile(key);
         const suggested = this.suggest(template, source);
         suggested.profileKey = key;
@@ -543,12 +633,14 @@ function inspectService(baseDir) {
         const manifest = {
           jobId, createdAt: Date.now(),
           templatePath: tFile.path, sourcePath: sFile.path,
-          templateName: tFile.name, sourceName: sFile.name,
+          templateId: key, templateName: storedTemplate.name || tFile.name,
+          templateNameRaw: tFile.name, sourceName: sFile.name,
           template, source, suggested, profileKey: key
         };
         fs.writeFileSync(path.join(jobDir, 'job.json'), JSON.stringify(manifest), 'utf8');
         return {
           ok: true, jobId,
+          templateId: key, templateName: storedTemplate.name || tFile.name,
           template: { fileName: template.fileName, sheet: template.sheet, columns: template.columns, rowCount: template.rowCount, dataStartRow: template.dataStartRow },
           source: { fileName: source.fileName, sheet: source.sheet, columns: source.columns, rowCount: source.rowCount, sample: source.sample },
           suggested

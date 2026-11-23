@@ -9,6 +9,7 @@ const path = require('path');
 // 最终效果预览：使用独立临时 userData，不读取/覆盖真实配置。
 // 启动参数：N-B助手.exe --preview
 const isPreview = process.argv.includes('--preview');
+const isDev = !isPreview && (process.env.NB_DEV === '1' || process.argv.includes('--dev'));
 if (isPreview) {
   try {
     const previewDir = path.join(app.getPath('temp'), 'NBPreviewRun');
@@ -17,6 +18,15 @@ if (isPreview) {
     console.log('[preview] 使用临时配置目录: ' + previewDir);
   } catch (e) {
     console.error('[preview] 初始化临时目录失败: ' + e.message);
+  }
+} else if (isDev) {
+  try {
+    const devDir = path.join(app.getPath('appData'), 'N-B助手-开发版');
+    fs.mkdirSync(devDir, { recursive: true });
+    app.setPath('userData', devDir);
+    console.log('[dev] 使用开发数据目录: ' + devDir);
+  } catch (e) {
+    console.error('[dev] 初始化开发目录失败: ' + e.message);
   }
 }
 
@@ -79,6 +89,37 @@ function getActualPort() {
 
 let mainWindow = null;
 
+// 开发版：源码一改就热更新；界面文件刷新页面，后端代码自动重启进程。
+// 正式版不会进入这里（isDev 仅在 NB_DEV=1 或 --dev 时成立）。
+function installDevWatcher() {
+  if (!isDev) return;
+  let timer = null;
+  const onChange = (_event, filename) => {
+    const name = String(filename || '');
+    if (/port\.txt$|server_debug|\.log$|cleaning[\\/]jobs/i.test(name)) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const uiChange = /\.(html|css|js)$/i.test(name) && /public|public_inline/i.test(name);
+      if (uiChange && mainWindow && !mainWindow.isDestroyed()) {
+        console.log('[dev] 界面变更，刷新: ' + name);
+        mainWindow.webContents.reloadIgnoringCache();
+        return;
+      }
+      console.log('[dev] 源码变更，重启: ' + name);
+      app.relaunch();
+      app.exit(0);
+    }, 600);
+  };
+  try {
+    fs.watch(__dirname, { recursive: true }, onChange);
+    const inlineFile = path.join(__dirname, '..', 'public_inline.js');
+    if (fs.existsSync(inlineFile)) fs.watch(inlineFile, onChange);
+    console.log('[dev] 已监听源码变更');
+  } catch (e) {
+    console.error('[dev] 监听源码失败: ' + e.message);
+  }
+}
+
 // 单实例锁：避免两个进程各自监听端口、互相覆盖 port.txt，导致窗口连错后端/账套
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
@@ -112,6 +153,14 @@ function createWindow() {
   // 移除默认菜单，彻底"桌面软件化"
   mainWindow.setMenuBarVisibility(false);
   mainWindow.removeMenu();
+
+  if (isDev) {
+    mainWindow.setTitle('N-B助手 · 开发版');
+    mainWindow.on('page-title-updated', (e) => {
+      e.preventDefault();
+      mainWindow.setTitle('N-B助手 · 开发版');
+    });
+  }
 
   // 加载本地 http 后端提供的界面（端口以 port.txt 为准，冲突时自动递增）
   // 等待 app.js 写入 port.txt 后再加载（首次加载失败自动重试一次）
@@ -198,6 +247,7 @@ app.whenReady().then(async () => {
 
   // 备份路径不再启动时弹窗，改为主界面「备份路径」按钮选择（/api/backup-dir）
   createWindow();
+  installDevWatcher();
 
   // 在进程内直接启动后端（app.js 顶层即 listen + 建库连接）
   try {

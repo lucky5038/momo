@@ -1878,6 +1878,32 @@ async function handleCleaningInspect(req, res) {
   }
 }
 
+async function handleCleaningTemplates(req, res) {
+  try {
+    sendJSON(res, 200, { ok: true, templates: cleaningService.listTemplates() });
+  } catch (e) {
+    sendJSON(res, 500, { error: e.message });
+  }
+}
+
+async function handleCleaningTemplateImport(req, res) {
+  try {
+    const body = JSON.parse((await readBody(req)) || '{}');
+    sendJSON(res, 200, await cleaningService.importTemplate(body));
+  } catch (e) {
+    sendJSON(res, 400, { error: e.message });
+  }
+}
+
+async function handleCleaningTemplateDelete(req, res) {
+  try {
+    const body = JSON.parse((await readBody(req)) || '{}');
+    sendJSON(res, 200, await cleaningService.deleteTemplate(body.id));
+  } catch (e) {
+    sendJSON(res, 400, { error: e.message });
+  }
+}
+
 async function handleCleaningRemember(req, res) {
   try {
     const body = JSON.parse((await readBody(req)) || '{}');
@@ -1929,6 +1955,9 @@ async function handleCleaningReveal(req, res) {
 const router = {
   '/api/meta': handleMeta,
   '/api/cleaning/inspect': handleCleaningInspect,
+  '/api/cleaning/templates': handleCleaningTemplates,
+  '/api/cleaning/template-import': handleCleaningTemplateImport,
+  '/api/cleaning/template-delete': handleCleaningTemplateDelete,
   '/api/cleaning/remember': handleCleaningRemember,
   '/api/cleaning/preview': handleCleaningPreview,
   '/api/cleaning/generate': handleCleaningGenerate,

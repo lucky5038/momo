@@ -820,6 +820,16 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
 .clean-file-label{font-size:10px;letter-spacing:1.2px;color:#38BDF8;font-weight:700;}
 .clean-file b{font-size:12px;color:#E2E8F0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .clean-file small{font-size:10px;color:#64748B;line-height:1.5;}
+.clean-file-template{cursor:default;}
+.clean-tpl-select{width:100%;min-width:0;background:#0B1220;color:#E2E8F0;border:1px solid #475569;border-radius:7px;padding:8px 9px;font-size:12px;outline:none;}
+.clean-tpl-select:focus{border-color:#38BDF8;box-shadow:0 0 0 2px rgba(56,189,248,.16);}
+.clean-tpl-actions{display:flex;gap:8px;align-items:center;min-width:0;}
+.clean-tpl-btn{flex:0 0 auto;background:#1E293B;color:#BAE6FD;border:1px solid #38BDF8;border-radius:7px;padding:5px 9px;font-size:11px;cursor:pointer;}
+.clean-tpl-btn:hover{background:#0C4A6E;}
+.clean-tpl-btn.danger{color:#FCA5A5;border-color:#7F1D1D;background:#2A1215;}
+.clean-tpl-btn.danger:hover{background:#450A0A;}
+.clean-tpl-btn:disabled{opacity:.45;cursor:not-allowed;}
+.clean-tpl-hint{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#64748B;}
 .clean-parse{align-self:center;min-height:42px;white-space:nowrap;}
 .clean-summary{margin-top:14px;padding:10px 12px;border:1px solid #1E3A5F;border-radius:8px;background:#0B1728;font-size:11px;color:#94A3B8;line-height:1.8;}
 .clean-summary b{color:#BAE6FD;font-weight:600;}
@@ -1058,12 +1068,16 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
     </div>
 
     <div class="clean-file-grid">
-      <label class="clean-file">
+      <div class="clean-file clean-file-template">
         <span class="clean-file-label">01 目标模板</span>
-        <b id="cleanTplName">选择易助导入模板 (.xls / .xlsx)</b>
-        <small>模板中的绿色字段、批注和默认值会作为规则</small>
-        <input type="file" id="cleanTpl" accept=".xls,.xlsx,.xlsm">
-      </label>
+        <select id="cleanTplSelect" class="clean-tpl-select"></select>
+        <div class="clean-tpl-actions">
+          <button class="clean-tpl-btn" type="button" id="btnCleanTplFile">导入模板文件</button>
+          <button class="clean-tpl-btn danger" type="button" id="btnCleanTplDelete" disabled>删除模板</button>
+          <span id="cleanTplName" class="clean-tpl-hint">模板保存一次，下次直接选</span>
+        </div>
+        <input type="file" id="cleanTpl" accept=".xls,.xlsx,.xlsm" hidden>
+      </div>
       <label class="clean-file">
         <span class="clean-file-label">02 来源数据</span>
         <b id="cleanSrcName">选择客户数据 (.xls / .xlsx)</b>
@@ -2367,7 +2381,7 @@ chainRow();
 (function(){
   const $ = id => document.getElementById(id);
   const MAX_FILE = 30 * 1024 * 1024;
-  const state = { jobId:null, info:null, mapping:[], result:null };
+  const state = { jobId:null, info:null, mapping:[], result:null, templateList:[] };
   let rememberTimer = null;
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const toast = (msg, type) => { if (window.showMomoToast) window.showMomoToast(msg, type); };
@@ -2380,7 +2394,7 @@ chainRow();
     else { btn.textContent = btn.dataset.label || '读取并匹配'; }
   }
   function initBtns(){
-    ['btnCleanParse','btnCleanPreview','btnCleanGenerate'].forEach(id=>{ const b=$(id); if(b) b.dataset.label=b.textContent; });
+    ['btnCleanParse','btnCleanPreview','btnCleanGenerate','btnCleanTplFile','btnCleanTplDelete'].forEach(id=>{ const b=$(id); if(b) b.dataset.label=b.textContent; });
   }
   function readFile(file){
     return new Promise((resolve,reject)=>{
@@ -2403,16 +2417,34 @@ chainRow();
     }
     return d;
   }
-  function fileLabel(inputId, labelId){
-    const f = $(inputId).files[0];
-    if(f) $(labelId).textContent = f.name + '  ·  ' + (f.size/1024).toFixed(1) + ' KB';
-    else $(labelId).textContent = inputId === 'cleanTpl' ? '选择易助导入模板 (.xls / .xlsx)' : '选择客户数据 (.xls / .xlsx)';
+  function resetCleanState(){
     state.jobId = null; state.info = null; state.mapping = []; state.result = null;
     if($('cleanShowAll')) $('cleanShowAll').checked = false;
     $('cleanSummary').style.display = 'none';
     $('cleanBody').style.display = 'none';
     $('cleanResult').style.display = 'none';
     $('cleanStatus').textContent = '';
+  }
+  async function loadTemplates(selectedId){
+    const sel = $('cleanTplSelect');
+    if(!sel) return;
+    try {
+      const r = await call('/api/cleaning/templates');
+      state.templateList = r.templates || [];
+    } catch (_) { state.templateList = []; }
+    sel.innerHTML = '<option value="">请选择已保存模板</option>' + state.templateList.map(t =>
+      '<option value="'+esc(t.id)+'">'+esc(t.name || t.fileName || '未命名模板')+'</option>'
+    ).join('');
+    if(selectedId) sel.value = selectedId;
+    const picked = state.templateList.find(t => t.id === sel.value);
+    $('cleanTplName').textContent = picked ? picked.name : '模板保存一次，下次直接选';
+    if($('btnCleanTplDelete')) $('btnCleanTplDelete').disabled = !sel.value;
+  }
+  function fileLabel(inputId, labelId){
+    const f = $(inputId).files[0];
+    if(f) $(labelId).textContent = f.name + '  ·  ' + (f.size/1024).toFixed(1) + ' KB';
+    else $(labelId).textContent = inputId === 'cleanTpl' ? '模板保存一次，下次直接选' : '选择客户数据 (.xls / .xlsx)';
+    resetCleanState();
   }
   function renderSummary(info){
     const srcRows = info.source ? info.source.rowCount : 0;
@@ -2553,7 +2585,8 @@ chainRow();
   }
   async function autoGenerate(){
     const t = $('cleanTpl').files[0], s = $('cleanSrc').files[0];
-    if(!t || !s) return toast('请先选择模板和来源数据', 'error');
+    const tplId = $('cleanTplSelect') ? $('cleanTplSelect').value : '';
+    if((!t && !tplId) || !s) return toast('请先选择模板和来源数据', 'error');
     const btn = $('btnCleanParse');
     busy(btn, true, '处理中...');
     try {
@@ -2569,10 +2602,17 @@ chainRow();
       $('cleanStats').style.display = 'none';
       $('cleanIssues').style.display = 'none';
       $('cleanResult').style.display = 'none';
-      const [td, sd] = await Promise.all([readFile(t), readFile(s)]);
-      const info = await call('/api/cleaning/inspect', { template:{name:t.name,data:td}, source:{name:s.name,data:sd} });
+      const sd = await readFile(s);
+      const payload = { source:{name:s.name,data:sd} };
+      if(t) payload.template = { name:t.name, data: await readFile(t) };
+      else payload.templateId = tplId;
+      const info = await call('/api/cleaning/inspect', payload);
       state.jobId = info.jobId;
       state.info = info;
+      if(info.templateId){
+        await loadTemplates(info.templateId);
+        $('cleanTplName').textContent = info.templateName || '已保存模板';
+      }
       state.mapping = (info.suggested.columns || []).map(c => ({...c}));
       state.result = null;
       renderSummary(info);
@@ -2588,9 +2628,81 @@ chainRow();
   }
   function bind(){
     initBtns();
-    $('cleanTpl').onchange = () => { fileLabel('cleanTpl','cleanTplName'); };
+    $('btnCleanTplFile').onclick = () => $('cleanTpl').click();
+    $('cleanTpl').onchange = async () => {
+      const f = $('cleanTpl').files[0];
+      if (!f) return;
+      const btn = $('btnCleanTplFile');
+      if ($('cleanTplSelect')) $('cleanTplSelect').value = '';
+      fileLabel('cleanTpl','cleanTplName');
+      busy(btn, true, '保存中...');
+      try {
+        const data = await readFile(f);
+        const r = await call('/api/cleaning/template-import', { template: { name: f.name, data } });
+        $('cleanTpl').value = '';
+        await loadTemplates(r.id);
+        $('cleanTplName').textContent = r.name || f.name;
+        status('模板已保存，可直接使用。');
+        toast('模板已保存到模板库', 'success');
+      } catch(e) {
+        $('cleanTplName').textContent = '模板保存失败，请重试';
+        status('模板保存失败：' + e.message, true);
+        toast('模板保存失败：' + e.message, 'error');
+      } finally {
+        busy(btn, false);
+      }
+    };
+    $('cleanTplSelect').onchange = () => {
+      $('cleanTpl').value = '';
+      resetCleanState();
+      const picked = state.templateList.find(t => t.id === $('cleanTplSelect').value);
+      $('cleanTplName').textContent = picked ? picked.name : '模板保存一次，下次直接选';
+      const del = $('btnCleanTplDelete');
+      if (del) {
+        del.dataset.confirm = '';
+        del.textContent = del.dataset.label || '删除模板';
+        del.disabled = !$('cleanTplSelect').value;
+      }
+    };
+    $('btnCleanTplDelete').onclick = async () => {
+      const btn = $('btnCleanTplDelete');
+      const id = $('cleanTplSelect').value;
+      if (!id) return;
+      // 不用原生 confirm：部分 Electron/远程窗口会吞掉对话框。
+      // 第一次点击进入确认态，第二次点击才真正删除。
+      if (btn.dataset.confirm !== id) {
+        btn.dataset.confirm = id;
+        btn.textContent = '确认删除';
+        status('再点一次【确认删除】；只删除模板库文件，不影响已生成的 XLS。');
+        setTimeout(() => {
+          if (btn.dataset.confirm === id) {
+            btn.dataset.confirm = '';
+            btn.textContent = btn.dataset.label || '删除模板';
+          }
+        }, 5000);
+        return;
+      }
+      btn.dataset.confirm = '';
+      busy(btn, true, '删除中...');
+      try {
+        await call('/api/cleaning/template-delete', { id });
+        $('cleanTpl').value = '';
+        resetCleanState();
+        await loadTemplates();
+        $('cleanTplName').textContent = '模板已删除';
+        status('模板已删除。');
+        toast('模板已删除', 'success');
+      } catch(e) {
+        status('删除模板失败：' + e.message, true);
+        toast('删除模板失败：' + e.message, 'error');
+      } finally {
+        busy(btn, false);
+        if($('btnCleanTplDelete')) $('btnCleanTplDelete').disabled = !$('cleanTplSelect').value;
+      }
+    };
     $('cleanSrc').onchange = () => { fileLabel('cleanSrc','cleanSrcName'); };
     $('btnCleanParse').onclick = autoGenerate;
+    loadTemplates();
     $('cleanResult').onclick = async (e) => {
       const b = e.target.closest('[data-reveal]');
       if(!b) return;
