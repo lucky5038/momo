@@ -291,6 +291,8 @@ app.whenReady().then(async () => {
   if (!gotSingleInstanceLock) return;
   // 设置后端运行模式，避免 app.js 再去开 Edge/Chrome 窗口
   process.env.CHZ_ELECTRON = '1';
+  // 模板库/模板记忆放在用户数据目录，升级或移动便携版 exe 不会丢。
+  process.env.NB_CLEANING_TEMPLATES_DIR = path.join(app.getPath('userData'), 'cleaning', 'templates');
   migrateLegacyUserData();
 
   // 备份路径不再启动时弹窗，改为主界面「备份路径」按钮选择（/api/backup-dir）

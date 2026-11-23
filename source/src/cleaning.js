@@ -412,9 +412,11 @@ function transformFor(templateCol) {
   return 'text';
 }
 
-function inspectService(baseDir) {
+function inspectService(baseDir, options) {
   const root = path.join(baseDir, 'cleaning');
-  const profilesDir = path.join(root, 'templates');
+  // 模板库和模板记忆必须跨版本稳定：放在 Electron userData 下，而不是便携版 exe 旁边。
+  // 旧调用不传 options 时仍退回 baseDir，避免影响测试脚本。
+  const profilesDir = (options && options.templatesDir) || path.join(root, 'templates');
   fs.mkdirSync(root, { recursive: true });
   fs.mkdirSync(profilesDir, { recursive: true });
   const profilePath = key => path.join(profilesDir, key + '.json');

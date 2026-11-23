@@ -57,7 +57,8 @@ const sqlgen = require('./sqlgen')(sql);
 const chainBuilder = require('./chain');
 const fieldDict = require('./field-dict');
 const { createCleaningService } = require('./cleaning');
-const cleaningService = createCleaningService(BASE_DIR);
+const CLEANING_TEMPLATES_DIR = process.env.NB_CLEANING_TEMPLATES_DIR || path.join(BASE_DIR, 'cleaning', 'templates');
+const cleaningService = createCleaningService(BASE_DIR, { templatesDir: CLEANING_TEMPLATES_DIR });
 
 // ====== 日志 ======
 
