@@ -11,6 +11,7 @@
 | `source/node_modules/` | 运行依赖（mssql 等），随 asar 一起提取 |
 | `source/public_inline.js` | 由 `src/public/index.html` 生成，改界面后需重新生成 |
 | `dist-electron/` | 最后一次构建产物（便携版、Setup、blockmap） |
+| `releases/current/` | 固定启动器 `N-B助手.exe` + `config.js`；桌面快捷方式只指向这里，升级不丢配置 |
 | `releases/2.2.90/` | 当前正式发布包：便携版、安装包、blockmap |
 | `releases/2.2.89/` | 上一版正式发布包，保留用于快速回退 |
 | `docs/` | 开发历程、工具作用与研发说明 |
@@ -33,6 +34,7 @@
    - `N-B助手 Setup 2.2.90.exe`（安装包，带安装向导，可选安装路径）
    构建完成后直接运行便携版验证；不再保留开发版/win-unpacked。
 4. 更新 `releases/2.2.90/` 为当前构建产物，同时保留 `releases/2.2.89/` 作为上一版回退包。
+5. 构建脚本自动把新 exe 覆盖到 `releases/current/N-B助手.exe`；桌面快捷方式固定指向该文件，升级不需要重新配置。
 
 ## 回归测试
 

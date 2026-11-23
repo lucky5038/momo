@@ -61,5 +61,15 @@ Get-ChildItem $OutDir -File -ErrorAction SilentlyContinue |
     catch { Write-Warning "暂时无法清理旧版本 $($_.Name): $($_.Exception.Message)" }
   }
 
+# 桌面快捷方式必须始终指向固定路径，不能跟着版本号变。
+# 新版构建完成后覆盖 releases\current\N-B助手.exe；配置仍在同一目录，升级不丢。
+$StableDir = Join-Path $Dev "releases\current"
+New-Item -ItemType Directory -Force -Path $StableDir | Out-Null
+$portable = Join-Path $OutDir "N-B助手 $versionText.exe"
+if (Test-Path -LiteralPath $portable) {
+  Copy-Item -LiteralPath $portable -Destination (Join-Path $StableDir "N-B助手.exe") -Force
+  Write-Host "稳定启动器已更新: $(Join-Path $StableDir 'N-B助手.exe')"
+}
+
 Write-Host "==== 输出 ===="
 Get-ChildItem $OutDir | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize
