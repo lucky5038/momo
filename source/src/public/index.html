@@ -863,7 +863,11 @@ html,body{height:auto;overflow-y:auto;overscroll-behavior-y:auto;}
 .clean-stats b{font-family:Consolas,monospace;font-size:13px;margin-left:4px;color:#E2E8F0;}
 .clean-stats .err b{color:#FCA5A5;}.clean-stats .warn b{color:#FCD34D;}.clean-stats .ok b{color:#6EE7B7;}
 .clean-issues{margin-top:10px;max-height:220px;overflow:auto;border:1px solid #26364D;border-radius:7px;}
-.clean-issue{display:flex;gap:10px;padding:7px 10px;border-bottom:1px solid #1B2940;font-size:11px;line-height:1.6;}
+.clean-issue{display:flex;gap:10px;padding:7px 10px;border-bottom:1px solid #1B2940;font-size:11px;line-height:1.6;cursor:pointer;}
+.clean-issue:hover{background:#101C30;}
+.clean-issue-hint{padding:6px 10px;color:#7DD3FC;background:#0B1B2B;border-bottom:1px solid #1B2940;font-size:10px;}
+.clean-target-hit td{background:#14304A !important;box-shadow:inset 0 0 0 1px #38BDF8;}
+.clean-auto-note{display:block;color:#6EE7B7;font-size:10px;line-height:1.5;padding:3px 0;}
 .clean-issue:last-child{border-bottom:0;}
 .clean-issue .sev{flex:0 0 44px;font-weight:700;font-size:10px;}
 .clean-issue.error .sev{color:#F87171;}.clean-issue.warning .sev{color:#FBBF24;}.clean-issue.info .sev{color:#7DD3FC;}
@@ -2491,6 +2495,10 @@ chainRow();
       ).join('') + '</select>';
     }
     if (c.options && c.options.length) {
+      if (c.sourceIndex != null && c.sourceIndex !== '') {
+        return '<span class="clean-auto-note">按来源逐行转换，不再设全局值<br>'+
+          (c.options.map(o=>o.value+(o.label?' '+o.label:'')).join(' / '))+'</span>';
+      }
       return '<select data-field="defaultValue">' + optionOptions(c, c.defaultValue) + '</select>';
     }
     return '<input type="text" data-field="defaultValue" value="'+esc(c.defaultValue||'')+'" placeholder="来源为空时使用">';
@@ -2501,7 +2509,7 @@ chainRow();
     $('cleanMapBody').innerHTML = cols.map(c => {
       const idx = state.mapping.indexOf(c);
       const fixed = !!c.fixed || !!c.derivedFrom;
-      return '<tr data-idx="'+idx+'" class="'+(badCodes.has(c.code)?'clean-row-bad ':'')+(fixed?'clean-fixed':'')+'">'+
+      return '<tr data-idx="'+idx+'" data-code="'+esc(c.code)+'" class="'+(badCodes.has(c.code)?'clean-row-bad ':'')+(fixed?'clean-fixed':'')+'">'+
         '<td><span class="clean-code">'+esc(c.code)+'</span>'+(c.fixed?'<span class="clean-fixed-tag">固定</span>':'')+
         (badCodes.has(c.code)?'<span class="clean-req">问题</span>':'')+
         '<span class="clean-name" title="'+esc(c.comment||c.name||'')+'">'+esc(c.name||'')+(c.required?'<span class="clean-req">必填</span>':'')+'</span></td>'+
@@ -2520,7 +2528,8 @@ chainRow();
           const f = el.dataset.field;
           if (f === 'sourceIndex') c.sourceIndex = el.value === '' ? null : Number(el.value);
           else c[f] = el.value;
-          // 只更新当前单元格，避免整表重绘导致输入框失焦、滚动位置跳回顶部。
+          // 来源改变会影响“按来源逐行转换”提示，重绘一次；输入默认值时只更新备注，避免失焦。
+          if (f === 'sourceIndex') { renderMapping(); return; }
           updateRuleNote();
           if (f === 'defaultValue') rememberCurrent();
         };
@@ -2559,11 +2568,27 @@ chainRow();
       '<span class="err">问题 <b>'+Number(st.errors||0)+'</b></span>';
     $('cleanStats').style.display = 'flex';
     const issues = (r.issues || []).filter(x => x.severity === 'error' || x.severity === 'warning').slice(0, 40);
-    $('cleanIssues').innerHTML = issues.length ? issues.map(x =>
-      '<div class="clean-issue '+esc(x.severity)+'"><span class="sev">'+(x.severity==='error'?'错误':'提示')+'</span>'+
+    $('cleanIssues').innerHTML = issues.length ? '<div class="clean-issue-hint">双击问题行，可定位到下方对应字段</div>' + issues.map(x =>
+      '<div class="clean-issue '+esc(x.severity)+'" data-code="'+esc(x.code||'')+'" data-row="'+esc(String(x.row||''))+'" title="双击定位到字段">'+
+      '<span class="sev">'+(x.severity==='error'?'错误':'提示')+'</span>'+
       '<span class="msg">'+esc(x.message)+'</span><span class="loc">'+esc(x.code||'')+(x.row?' · 行'+x.row:'')+'</span></div>'
     ).join('') : '<div class="clean-issue info"><span class="sev">通过</span><span class="msg">没有硬错误或警告。</span></div>';
     $('cleanIssues').style.display = 'block';
+    $('cleanIssues').ondblclick = e => {
+      const item = e.target.closest('.clean-issue[data-code]');
+      if (item) locateIssue(item);
+    };
+  }
+  function locateIssue(el){
+    if(!el) return;
+    const code = String(el.dataset.code||'').split('+')[0];
+    const tr = Array.from($('cleanMapBody').querySelectorAll('tr[data-code]')).find(x => x.dataset.code === code);
+    if(!tr) return;
+    tr.scrollIntoView({block:'center'});
+    tr.classList.add('clean-target-hit');
+    setTimeout(()=>tr.classList.remove('clean-target-hit'), 1400);
+    const box = tr.querySelector('select[data-field="sourceIndex"]:not(:disabled),input[data-field="defaultValue"]:not(:disabled),select[data-field="defaultValue"]:not(:disabled)');
+    if(box) box.focus({preventScroll:true});
   }
   async function generateCurrent(btn){
     const pre = await call('/api/cleaning/preview', {jobId:state.jobId, mapping:collectMapping()});

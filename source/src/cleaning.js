@@ -254,7 +254,10 @@ const SYNONYMS = {
   '组成用量': ['组成用量', '用量', '组成量', '单位用量'],
   '替代料': ['替代料', '替代件', '替代物料'],
   '人工分摊权数': ['人工权数', '人工分摊权数', '人工费用权数'],
-  '制费分摊权数': ['制费权数', '制造费用权数', '制费分摊权数']
+  '制费分摊权数': ['制费权数', '制造费用权数', '制费分摊权数'],
+  '主要来源': ['主要来源', '商品来源', '货源', '来源类型', '商品主要来源', '物料来源'],
+  '商品分类': ['商品分类', '存货分类', '物料分类', '产品分类'],
+  '是否含税': ['是否含税', '含税', '含税否']
 };
 
 // 从模板批注里提炼规则：必填、可选值、固定值。
@@ -547,7 +550,7 @@ function inspectService(baseDir) {
         let sourceIndex = rule.fixed || derivedFrom
           ? null
           : (rule.options.length
-            ? (exactSource ? exactSource.index : null)
+            ? (exactSource ? exactSource.index : sourceMatch(c, source.columns, source.rows))
             : sourceMatch(c, source.columns, source.rows));
         if (defaultValue && options.length && !options.some(o => o.value === defaultValue)) {
           options.unshift({ value: defaultValue, label: '' });
@@ -604,6 +607,12 @@ function inspectService(baseDir) {
         tFile = save('template', body.template);
       }
       try {
+        // 模板和客户数据必须是两个不同文件。误把模板选成来源时，源行会变成
+        // “品名/主要来源”等表头文字，后续枚举校验会产生大量假错误。
+        const fileHash = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+        if (fileHash(sFile.path) === fileHash(tFile.path)) {
+          throw new Error('来源文件不能与模板文件相同，请重新选择客户数据文件');
+        }
         const template = await this.runExcel('parse', { file: tFile.path, template: true });
         const source = await this.runExcel('parse', { file: sFile.path, template: false });
         // Excel 解析拿到的是临时文件名，界面必须显示用户实际选择的文件名。
@@ -682,6 +691,16 @@ function inspectService(baseDir) {
         const sn = normText(s);
         const byLabel = options.find(o => o.label && normText(o.label) === sn);
         if (byLabel) return byLabel.value;
+        // 业务口语常与模板标签不完全一致：厂内件/厂内生产件、委外/委外生产件、外购/采购件。
+        const canonical = v => normText(v)
+          .replace(/外购|外协|外发/g, '委外')
+          .replace(/自制/g, '厂内')
+          .replace(/生产|加工|制造|件/g, '');
+        const sCore = canonical(s);
+        if (sCore) {
+          const byCore = options.find(o => o.label && canonical(o.label) === sCore);
+          if (byCore) return byCore.value;
+        }
         // “委外件”与“委外生产件”这类业务简称，用前缀匹配兜底。
         if (sn.length >= 2) {
           const byPrefix = options.find(o => o.label && normText(o.label).startsWith(sn.slice(0, 2)));
@@ -717,7 +736,7 @@ function inspectService(baseDir) {
             if (option == null) {
               errors.push({
                 row: rowNo, code: c.code, name: c.name, severity: 'error',
-                message: '值「' + tr.value + '」不在允许选项：' + m.options.map(o => o.value).join(' / ')
+                message: '值「' + tr.value + '」无法匹配选项：' + m.options.map(o => o.value + (o.label ? '（' + o.label + '）' : '')).join(' / ')
               });
               values[c.code] = '';
             } else {
