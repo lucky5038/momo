@@ -56,7 +56,7 @@ const { docs: DOC_ITEMS, srcs: SRC_ITEMS } = require('./dicts');
 const sqlgen = require('./sqlgen')(sql);
 const chainBuilder = require('./chain');
 const fieldDict = require('./field-dict');
-const { createCleaningService } = require('./cleaning');
+const { createCleaningService, MASTER_TABLES } = require('./cleaning');
 const CLEANING_TEMPLATES_DIR = process.env.NB_CLEANING_TEMPLATES_DIR || path.join(BASE_DIR, 'cleaning', 'templates');
 const cleaningService = createCleaningService(BASE_DIR, { templatesDir: CLEANING_TEMPLATES_DIR });
 
@@ -1879,12 +1879,45 @@ async function supplierMasterMap() {
   }
 }
 
+async function masterOptions(table) {
+  const def = MASTER_TABLES[table];
+  if (!def) throw new Error('不支持的资料档');
+  const pool = await getPool();
+  const r = await pool.request().query(
+    'SELECT ' + def.code + ' AS code, ' + def.name + ' AS name FROM ' + def.table +
+    ' WHERE ' + def.code + " IS NOT NULL AND " + def.code + " <> '' ORDER BY " + def.code
+  );
+  return (r.recordset || []).map(x => ({ code: String(x.code).trim(), name: String(x.name == null ? '' : x.name).trim() }))
+    .filter(x => x.code);
+}
+
 async function handleCleaningInspect(req, res) {
   try {
     const body = JSON.parse((await readBody(req)) || '{}');
     // 供应商在 ERP 存厂商代码，清洗时只读加载 TPADGA 资料档用于名称→代码转换。
     if (body.masterMap == null) body.masterMap = await supplierMasterMap();
     const r = await cleaningService.inspect(body);
+    // 模板批注/字段名指向系统资料档时，读取当前账套的真实代码+名称，供前端做下拉。
+    const tables = [...new Set((r.suggested && r.suggested.columns || [])
+      .map(c => c.master && c.master.table).filter(Boolean))];
+    r.masterOptions = {};
+    for (const table of tables) {
+      try {
+        const opts = await masterOptions(table);
+        r.masterOptions[table] = opts;
+        (r.suggested.columns || []).forEach(c => {
+          if (c.master && c.master.table === table && !(c.options && c.options.length)) {
+            const useName = c.master.valueField === 'name';
+            c.options = opts.map(o => ({
+              value: useName ? o.name : o.code,
+              label: o.name || o.code
+            }));
+          }
+        });
+      } catch (_) {
+        r.masterOptions[table] = [];
+      }
+    }
     sendJSON(res, 200, r);
   } catch (e) {
     sendJSON(res, 400, { error: e.message });

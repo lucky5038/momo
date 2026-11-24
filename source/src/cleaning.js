@@ -293,6 +293,53 @@ const SYNONYMS = {
   '增加方式': ['增加方式', '增加方式代码', '取得方式']
 };
 
+// 系统资料档：字段有“需存在于 XX 档”或字段名明确指向主档时，界面用数据库现有值做下拉。
+// 这里只登记能确定代码/名称列的只读主档，查询时仍按白名单校验表名。
+const MASTER_TABLES = {
+  TPADAA: { table: 'TPADAA', code: 'DAA001', name: 'DAA002', label: '部门' },
+  TPADBA: { table: 'TPADBA', code: 'DBA001', name: 'DBA002', label: '人员' },
+  TPADEA: { table: 'TPADEA', code: 'DEA001', name: 'DEA002', label: '商品' },
+  TPADED: { table: 'TPADED', code: 'DED001', name: 'DED002', label: '商品分类' },
+  TPADFA: { table: 'TPADFA', code: 'DFA001', name: 'DFA002', label: '客户' },
+  TPADGA: { table: 'TPADGA', code: 'DGA001', name: 'DGA002', label: '供应商' },
+  ZCSTAA: { table: 'ZCSTAA', code: 'TAA001', name: 'TAA002', label: '增减方式' },
+  ZCSTBA: { table: 'ZCSTBA', code: 'TBA001', name: 'TBA002', label: '资产类别' },
+  ZCSTCA: { table: 'ZCSTCA', code: 'TCA001', name: 'TCA002', label: '使用状况' },
+  ZCSTEA: { table: 'ZCSTEA', code: 'TEA001', name: 'TEA002', label: '折旧方法' }
+};
+
+function masterForField(fieldName, comment) {
+  const n = cleanText(fieldName);
+  const text = cleanText(comment);
+  if (!n && !text) return null;
+  // 选项控制类字段不是主档；避免把“指定主供应商”之类 T/F 字段做成资料档下拉。
+  if (/^(指定|是否|按需|控制|管理)/.test(n)) return null;
+  const hints = [
+    [/资产类别|资产分类|固定资产类别|财产类别/, 'ZCSTBA'],
+    [/折旧方法|折旧方式|折旧法/, 'ZCSTEA'],
+    [/增加方式|增减方式|取得方式/, 'ZCSTAA'],
+    [/使用状况/, 'ZCSTCA'],
+    [/使用部门|部门编码|部门$/, 'TPADAA'],
+    [/供应商|厂商|主供货商|主供应商/, 'TPADGA'],
+    [/保管人|责任人|人员信息/, 'TPADBA'],
+    [/商品分类|商品类别|存货分类/, 'TPADED'],
+    [/客户(?:编号|编码|名称)?$/, 'TPADFA'],
+    [/(?:^|[^指])商品(?:编号|编码|品号|名称)?$/, 'TPADEA']
+  ];
+  // 先按字段名判断，避免“使用年限”批注里提到折旧方法就被误当主档。
+  let key = null;
+  for (const [re, k] of hints) if (re.test(n)) { key = k; break; }
+  if (!key) {
+    // 只有明确的“需存在 XX 档”才算主档；泛泛提到表名不算。
+    const table = text.match(/(?:需存在|必须存在|需存在于|必须存在于|存在于)\s*(TPAD[A-Z]{2}|ZCST[A-Z]{2})\s*档/i);
+    if (table) key = table[1].toUpperCase();
+  }
+  if (!key || !MASTER_TABLES[key]) return null;
+  const def = MASTER_TABLES[key];
+  // 名称类字段（供应商名称、保管人姓名）要用名称值；编号类字段用代码值。
+  return { ...def, valueField: /名称|姓名/.test(n) ? 'name' : 'code' };
+}
+
 // 从模板批注里提炼规则：必填、可选值、固定值。
 // 例：T：是、F：否；1.零售价 / 2.定价一；请一律给预设值F。
 function parseCommentRule(comment) {
@@ -365,7 +412,7 @@ function parseCommentRule(comment) {
   // “否则填入0”这类规则：条件不满足时应写固定值，而不是报必填。
   const elseMatch = text.match(/否则\s*(?:填入|填|为|设为)?\s*([A-Za-z0-9+\-]+)/);
   const otherwise = elseMatch ? elseMatch[1] : '';
-  return { required, options, fixed, defaultValue, sameAs: same ? cleanText(same[1]) : '', requiredIf, otherwise };
+  return { required, options, fixed, defaultValue, sameAs: same ? cleanText(same[1]) : '', requiredIf, otherwise, master: null };
 }
 
 function findSynonym(targetName) {
@@ -614,6 +661,7 @@ function inspectService(baseDir, options) {
       });
       const columns = template.columns.map(c => {
         const rule = c.rule || parseCommentRule(c.comment);
+        const master = rule.master || masterForField(c.name, c.comment);
         const options = (rule.options || []).map(o => ({ ...o }));
         const defaultValue = rule.defaultValue || '';
         let derivedFrom = rule.sameAs ? (byName.get(normText(rule.sameAs)) || '') : '';
@@ -643,6 +691,7 @@ function inspectService(baseDir, options) {
           otherwise: rule.otherwise || '',
           derivedFrom,
           options,
+          master: master || null,
           fixed: !!rule.fixed,
           editable: !rule.fixed,
           note: ''
@@ -777,6 +826,9 @@ function inspectService(baseDir, options) {
         const sn = normText(s);
         const byLabel = options.find(o => o.label && normText(o.label) === sn);
         if (byLabel) return { value: byLabel.value, ambiguous: false };
+        // “平均年限法”对“平均年限法(一)”这类主档标签，选第一项但标黄提示人工确认。
+        const labelPrefix = options.find(o => o.label && normText(o.label).startsWith(sn));
+        if (labelPrefix) return { value: labelPrefix.value, ambiguous: true };
         // 业务口语常与模板标签不完全一致：厂内件/厂内生产件、委外/委外生产件、外购/采购件。
         const canonical = v => normText(v)
           .replace(/外购|外协|外发/g, '委外')
@@ -1067,4 +1119,4 @@ function inspectService(baseDir, options) {
   };
 }
 
-module.exports = { createCleaningService: inspectService, _internals: { cleanText, parseNumber, parseDate, transformValue, keyCodes, profileOf, parseCommentRule } };
+module.exports = { createCleaningService: inspectService, MASTER_TABLES, _internals: { cleanText, parseNumber, parseDate, transformValue, keyCodes, profileOf, parseCommentRule, masterForField } };
