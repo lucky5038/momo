@@ -1,0 +1,467 @@
+[
+  {
+    "file": "DCSHDB(采购单)转入易助.xls",
+    "stats": {
+      "columns": 42,
+      "comments": 9,
+      "required": 8,
+      "conditional": 0,
+      "fixed": 1,
+      "options": 2,
+      "master": 2,
+      "defaults": 1,
+      "derived": 0
+    },
+    "anomalies": [
+      {
+        "code": "品号",
+        "name": "",
+        "kind": "options",
+        "comment": "20字符\n注:品号或供应商品号只能输入一个且必须为商品信息档中未失效品号"
+      },
+      {
+        "code": "供应商品号",
+        "name": "",
+        "kind": "options",
+        "comment": "35字符\n注:供应商品号或品号只能输入一个且须存在于供应商品号档中及对应品号需为商品信息档中未失效品号"
+      },
+      {
+        "code": "供应商品号",
+        "name": "",
+        "kind": "master",
+        "comment": "35字符\n注:供应商品号或品号只能输入一个且须存在于供应商品号档中及对应品号需为商品信息档中未失效品号"
+      }
+    ]
+  },
+  {
+    "file": "DCSIBB(订单)转入易助.xls",
+    "stats": {
+      "columns": 43,
+      "comments": 9,
+      "required": 8,
+      "conditional": 0,
+      "fixed": 1,
+      "options": 2,
+      "master": 2,
+      "defaults": 1,
+      "derived": 0
+    },
+    "anomalies": [
+      {
+        "code": "品号",
+        "name": "",
+        "kind": "options",
+        "comment": "20字符\n注:品号或客户品号只能输入一个且必须为商品信息档中未失效品号"
+      },
+      {
+        "code": "客户品号",
+        "name": "",
+        "kind": "options",
+        "comment": "35字符\n注:客户品号或品号只能输入一个且须存在于客户品号档中及对应品号需为商品信息档中未失效品号"
+      },
+      {
+        "code": "客户品号",
+        "name": "",
+        "kind": "master",
+        "comment": "35字符\n注:客户品号或品号只能输入一个且须存在于客户品号档中及对应品号需为商品信息档中未失效品号"
+      }
+    ]
+  },
+  {
+    "file": "GZSXKA(考勤记录)转入易助.xls",
+    "stats": {
+      "columns": 27,
+      "comments": 27,
+      "required": 4,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 0,
+      "master": 2,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "JSKLBA(库存开账)转入易助.xls",
+    "stats": {
+      "columns": 10,
+      "comments": 10,
+      "required": 6,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 1,
+      "master": 2,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "PDAMMA(条码信息)转入易助.xls",
+    "stats": {
+      "columns": 5,
+      "comments": 0,
+      "required": 0,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 0,
+      "master": 0,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "PJMPNB(录入银行对账单)转入易助.xls",
+    "stats": {
+      "columns": 18,
+      "comments": 2,
+      "required": 0,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 2,
+      "master": 0,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "SGMQAA(产品结构)转入易助.xls",
+    "stats": {
+      "columns": 33,
+      "comments": 9,
+      "required": 6,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 0,
+      "master": 2,
+      "defaults": 4,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "TPADEA(商品基本信息)转入易助.xls",
+    "stats": {
+      "columns": 118,
+      "comments": 94,
+      "required": 19,
+      "conditional": 0,
+      "fixed": 2,
+      "options": 16,
+      "master": 6,
+      "defaults": 2,
+      "derived": 2
+    },
+    "anomalies": [
+      {
+        "code": "DEA005",
+        "name": "商品分类",
+        "kind": "conditional",
+        "comment": "商品分类 6 非必要\n若输入，须同时存在于商品类别档\n中.(tpaded)"
+      },
+      {
+        "code": "DEA006",
+        "name": "会计分类",
+        "kind": "conditional",
+        "comment": "会计分类 6 非必要\n若输入，须同时存在于商品类别档中.(tpaded)"
+      },
+      {
+        "code": "DEA010",
+        "name": "主供货商",
+        "kind": "conditional",
+        "comment": "主供应商 10\n 当DEA009=P且指定供应商为DEA073=T or S \n为必要字段。\n当DEA009=M 为非必要字段。\n若输入，须同时存在于厂商资料档中.(tpadga)"
+      }
+    ]
+  },
+  {
+    "file": "TPADEF(客户品号)转入易助.xls",
+    "stats": {
+      "columns": 37,
+      "comments": 5,
+      "required": 4,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 0,
+      "master": 2,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "TPADEG(供应商品号)转入易助.xls",
+    "stats": {
+      "columns": 37,
+      "comments": 5,
+      "required": 4,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 0,
+      "master": 4,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "TPADFA(客户基本信息)转入易助.xls",
+    "stats": {
+      "columns": 116,
+      "comments": 114,
+      "required": 30,
+      "conditional": 1,
+      "fixed": 1,
+      "options": 11,
+      "master": 6,
+      "defaults": 3,
+      "derived": 0
+    },
+    "anomalies": [
+      {
+        "code": "DFA031",
+        "name": "折扣率",
+        "kind": "conditional",
+        "comment": "折扣率 N 非必要\n若不知道，请填预设值=1"
+      },
+      {
+        "code": "DFA038",
+        "name": "月结日",
+        "kind": "conditional",
+        "comment": "月结月 N 必要\n结账方式：月结：在下_月_日结账\n输入值只可在1-31之间\n（如果月结日为每月月底请设为31）"
+      },
+      {
+        "code": "DFA038",
+        "name": "月结日",
+        "kind": "options",
+        "comment": "月结月 N 必要\n结账方式：月结：在下_月_日结账\n输入值只可在1-31之间\n（如果月结日为每月月底请设为31）"
+      },
+      {
+        "code": "DFA041",
+        "name": "每月收款日",
+        "kind": "conditional",
+        "comment": "每月收款日 N 必要\n每月_日收款\n输入值只可在1-31之间\n（如果收款日为每月 月底请设为31）"
+      },
+      {
+        "code": "DFA041",
+        "name": "每月收款日",
+        "kind": "options",
+        "comment": "每月收款日 N 必要\n每月_日收款\n输入值只可在1-31之间\n（如果收款日为每月 月底请设为31）"
+      },
+      {
+        "code": "DFA045",
+        "name": "兑现日",
+        "kind": "conditional",
+        "comment": "兑现日 N 必要\n结账后_月_日到期票\n输入值只可在1-31之间\n（如果兑现日为每月月底请设为31）"
+      },
+      {
+        "code": "DFA045",
+        "name": "兑现日",
+        "kind": "options",
+        "comment": "兑现日 N 必要\n结账后_月_日到期票\n输入值只可在1-31之间\n（如果兑现日为每月月底请设为31）"
+      }
+    ]
+  },
+  {
+    "file": "TPADFB(客户商品价格)转入易助.xls",
+    "stats": {
+      "columns": 40,
+      "comments": 7,
+      "required": 6,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 1,
+      "master": 4,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "TPADGA(供应商基本信息)转入易助.xls",
+    "stats": {
+      "columns": 73,
+      "comments": 70,
+      "required": 14,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 3,
+      "master": 7,
+      "defaults": 1,
+      "derived": 0
+    },
+    "anomalies": [
+      {
+        "code": "DGA027",
+        "name": "月结日",
+        "kind": "conditional",
+        "comment": "月结日 N 非必要\n结账方式：月结：在下_月_日结账\n输入值只可在1-31之间\n（如果月结日为每月月底请设为31）"
+      },
+      {
+        "code": "DGA027",
+        "name": "月结日",
+        "kind": "options",
+        "comment": "月结日 N 非必要\n结账方式：月结：在下_月_日结账\n输入值只可在1-31之间\n（如果月结日为每月月底请设为31）"
+      },
+      {
+        "code": "DGA029",
+        "name": "付款日",
+        "kind": "conditional",
+        "comment": "付款日 N\n每月_日付款 \n輸入值只可在1-31之间\n(如果付款日为每月月底请设为31)"
+      },
+      {
+        "code": "DGA029",
+        "name": "付款日",
+        "kind": "options",
+        "comment": "付款日 N\n每月_日付款 \n輸入值只可在1-31之间\n(如果付款日为每月月底请设为31)"
+      },
+      {
+        "code": "DGA032",
+        "name": "票期日",
+        "kind": "conditional",
+        "comment": "票期日 N\n结账后_月_日到期票\n輸入值必须在1-31之间\n(如果兑现日为每月月底请设为31)"
+      }
+    ]
+  },
+  {
+    "file": "TPADGB(供应商商品价格)转入易助.xls",
+    "stats": {
+      "columns": 234,
+      "comments": 7,
+      "required": 6,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 1,
+      "master": 4,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "TPADTA(设备信息档)转入易助.xls",
+    "stats": {
+      "columns": 20,
+      "comments": 20,
+      "required": 1,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 0,
+      "master": 0,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "TPADUA(基本单位)转入易助.xls",
+    "stats": {
+      "columns": 2,
+      "comments": 2,
+      "required": 1,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 0,
+      "master": 0,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "YSFGEB(应收账款开帐)转入易助.xls",
+    "stats": {
+      "columns": 18,
+      "comments": 5,
+      "required": 5,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 0,
+      "master": 1,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "YSFGRB(应付账款开帐)转入易助.xls",
+    "stats": {
+      "columns": 18,
+      "comments": 5,
+      "required": 5,
+      "conditional": 0,
+      "fixed": 0,
+      "options": 0,
+      "master": 1,
+      "defaults": 0,
+      "derived": 0
+    },
+    "anomalies": []
+  },
+  {
+    "file": "ZCSTHA(固定资产信息)转入易助.xls",
+    "stats": {
+      "columns": 45,
+      "comments": 27,
+      "required": 12,
+      "conditional": 6,
+      "fixed": 0,
+      "options": 3,
+      "master": 13,
+      "defaults": 0,
+      "derived": 1
+    },
+    "anomalies": [
+      {
+        "code": "THA004",
+        "name": "单号",
+        "kind": "conditional",
+        "comment": "如果编码方式为手动编码则不可空白，否则空白不需输入"
+      },
+      {
+        "code": "THA016",
+        "name": "主件编号",
+        "kind": "conditional",
+        "comment": "当类型为1.主件，则填入当前资产编号，否则填入的资产编号需存在于资产信息档"
+      },
+      {
+        "code": "THA016",
+        "name": "主件编号",
+        "kind": "master",
+        "comment": "当类型为1.主件，则填入当前资产编号，否则填入的资产编号需存在于资产信息档"
+      },
+      {
+        "code": "THA019",
+        "name": "多部门使用",
+        "kind": "conditional",
+        "comment": "只能为T或F\n当为F时填入使用部门\n当为T时填入使用部门信息档"
+      },
+      {
+        "code": "THA019",
+        "name": "多部门使用",
+        "kind": "master",
+        "comment": "只能为T或F\n当为F时填入使用部门\n当为T时填入使用部门信息档"
+      },
+      {
+        "code": "THA035",
+        "name": "资产科目",
+        "kind": "master",
+        "comment": "需存在会计科目档"
+      },
+      {
+        "code": "THA036",
+        "name": "累计折旧科目",
+        "kind": "master",
+        "comment": "需存在会计科目档"
+      },
+      {
+        "code": "THA037",
+        "name": "减值准备科目",
+        "kind": "master",
+        "comment": "需存在会计科目档"
+      }
+    ]
+  }
+]

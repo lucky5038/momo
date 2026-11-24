@@ -300,6 +300,9 @@ const MASTER_TABLES = {
   TPADBA: { table: 'TPADBA', code: 'DBA001', name: 'DBA002', label: '人员' },
   TPADEA: { table: 'TPADEA', code: 'DEA001', name: 'DEA002', label: '商品' },
   TPADED: { table: 'TPADED', code: 'DED001', name: 'DED002', label: '商品分类' },
+  TPADDA: { table: 'TPADDA', code: 'DDA001', name: 'DDA003', label: '仓库' },
+  TPADUA: { table: 'TPADUA', code: 'DUA001', name: 'DUA002', label: '基本单位' },
+  TPABBA: { table: 'TPABBA', code: 'BBA001', name: 'BBA002', label: '币种' },
   TPADFA: { table: 'TPADFA', code: 'DFA001', name: 'DFA002', label: '客户' },
   TPADGA: { table: 'TPADGA', code: 'DGA001', name: 'DGA002', label: '供应商' },
   ZCSTAA: { table: 'ZCSTAA', code: 'TAA001', name: 'TAA002', label: '增减方式' },
@@ -314,6 +317,9 @@ function masterForField(fieldName, comment) {
   if (!n && !text) return null;
   // 选项控制类字段不是主档；避免把“指定主供应商”之类 T/F 字段做成资料档下拉。
   if (/^(指定|是否|按需|控制|管理)/.test(n)) return null;
+  // 客户品号/供应商品号是“按客户/供应商维护的外部品号”，不是全量商品主档，
+  // 不能直接用商品档做一个无过滤的下拉。
+  if (/客户品号|供应商品号/.test(n)) return null;
   const hints = [
     [/资产类别|资产分类|固定资产类别|财产类别/, 'ZCSTBA'],
     [/折旧方法|折旧方式|折旧法/, 'ZCSTEA'],
@@ -321,10 +327,13 @@ function masterForField(fieldName, comment) {
     [/使用状况/, 'ZCSTCA'],
     [/使用部门|部门编码|部门$/, 'TPADAA'],
     [/供应商|厂商|主供货商|主供应商/, 'TPADGA'],
-    [/保管人|责任人|人员信息/, 'TPADBA'],
-    [/商品分类|商品类别|存货分类/, 'TPADED'],
+    [/保管人|责任人|员工编号|人员编号|业务员|采购人/, 'TPADBA'],
+    [/商品分类|商品类别|会计分类|存货分类/, 'TPADED'],
     [/客户(?:编号|编码|名称)?$/, 'TPADFA'],
-    [/(?:^|[^指])商品(?:编号|编码|品号|名称)?$/, 'TPADEA']
+    [/仓库(?:编号|代号)?$|主要仓库/, 'TPADDA'],
+    [/交易单位|计量单位|^单位$/, 'TPADUA'],
+    [/币种|币别|货币/, 'TPABBA'],
+    [/(?:^|[^指])商品(?:编号|编码|品号|名称)?$|(?:^|主件|子件|物料|存货)品号$|料号$/, 'TPADEA']
   ];
   // 先按字段名判断，避免“使用年限”批注里提到折旧方法就被误当主档。
   let key = null;
@@ -385,9 +394,19 @@ function parseCommentRule(comment) {
     const only = text.match(/只能(?:为|是|填|输入)?\s*([A-Za-z0-9+\-]+)\s*或\s*([A-Za-z0-9+\-]+)/);
     if (only) { add(only[1], ''); add(only[2], ''); }
   }
+  // “格式：T/F”“T/F”这种没有冒号的二值枚举。
+  if (!options.length) {
+    const pair = text.match(/(?:格式\s*[:：]?\s*)?([A-Za-z])\s*\/\s*([A-Za-z])\b/);
+    if (pair) { add(pair[1], ''); add(pair[2], ''); }
+  }
   const fixedMatch = text.match(/(?:一律|统一|固定|预设值|只可|只允许|必须为|必须填|必须使用)\s*(?:(?:给|填|为|是|使用|设置|设为|预设值)\s*)*([A-Za-z0-9+\-]+)/);
   let fixed = !!fixedMatch;
   let defaultValue = fixedMatch ? fixedMatch[1] : '';
+  // “默认1”“缺省0”“预设值F”这类默认值不是固定值，仍允许用户修改。
+  if (!defaultValue) {
+    const dm = text.match(/(?:默认|缺省|预设值|预设)\s*[:：]?\s*([A-Za-z0-9+\-]+)/);
+    if (dm) defaultValue = dm[1];
+  }
   if (!fixed && options.length === 1 && /(一律|统一|只能|固定|预设值|只可)/.test(text)) {
     fixed = true;
     defaultValue = options[0].value;
@@ -678,7 +697,7 @@ function inspectService(baseDir, options) {
       });
       const columns = template.columns.map(c => {
         const rule = c.rule || parseCommentRule(c.comment);
-        const master = rule.master || masterForField(c.name, c.comment);
+        const master = rule.master || masterForField(c.name || c.code, c.comment);
         const options = (rule.options || []).map(o => ({ ...o }));
         const defaultValue = rule.defaultValue || '';
         let derivedFrom = rule.sameAs ? (byName.get(normText(rule.sameAs)) || '') : '';

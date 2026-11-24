@@ -1,0 +1,232 @@
+[
+  {
+    "file": "DCSHDB(采购单)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 42,
+    "comments": 9,
+    "masters": 2,
+    "masterOptions": {
+      "TPADEA": 39,
+      "TPADUA": 3
+    }
+  },
+  {
+    "file": "DCSIBB(订单)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 43,
+    "comments": 9,
+    "masters": 2,
+    "masterOptions": {
+      "TPADEA": 39,
+      "TPADUA": 3
+    }
+  },
+  {
+    "file": "GZSXKA(考勤记录)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 27,
+    "comments": 27,
+    "masters": 2,
+    "masterOptions": {
+      "TPADBA": 18,
+      "TPADAA": 11
+    }
+  },
+  {
+    "file": "JSKLBA(库存开账)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 10,
+    "comments": 10,
+    "masters": 2,
+    "masterOptions": {
+      "TPADEA": 39,
+      "TPADDA": 7
+    }
+  },
+  {
+    "file": "PDAMMA(条码信息)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 5,
+    "comments": 0,
+    "masters": 0,
+    "masterOptions": {}
+  },
+  {
+    "file": "PJMPNB(录入银行对账单)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 18,
+    "comments": 2,
+    "masters": 0,
+    "masterOptions": {}
+  },
+  {
+    "file": "SGMQAA(产品结构)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 33,
+    "comments": 9,
+    "masters": 2,
+    "masterOptions": {
+      "TPADEA": 39
+    }
+  },
+  {
+    "file": "TPADEA(商品基本信息)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 118,
+    "comments": 94,
+    "masters": 6,
+    "masterOptions": {
+      "TPADEA": 39,
+      "TPADED": 8,
+      "TPADDA": 7,
+      "TPADGA": 9,
+      "TPADAA": 11
+    }
+  },
+  {
+    "file": "TPADEF(客户品号)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 37,
+    "comments": 5,
+    "masters": 2,
+    "masterOptions": {
+      "TPADEA": 39,
+      "TPADFA": 40
+    }
+  },
+  {
+    "file": "TPADEG(供应商品号)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 37,
+    "comments": 5,
+    "masters": 4,
+    "masterOptions": {
+      "TPADEA": 39,
+      "TPADGA": 9
+    }
+  },
+  {
+    "file": "TPADFA(客户基本信息)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 116,
+    "comments": 114,
+    "masters": 6,
+    "masterOptions": {
+      "TPADFA": 40,
+      "TPADBA": 18,
+      "TPABBA": 6,
+      "TPADDA": 7
+    }
+  },
+  {
+    "file": "TPADFB(客户商品价格)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 40,
+    "comments": 7,
+    "masters": 4,
+    "masterOptions": {
+      "TPADFA": 40,
+      "TPADEA": 39,
+      "TPADUA": 3,
+      "TPABBA": 6
+    }
+  },
+  {
+    "file": "TPADGA(供应商基本信息)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 73,
+    "comments": 70,
+    "masters": 7,
+    "masterOptions": {
+      "TPADGA": 9,
+      "TPADBA": 18,
+      "TPABBA": 6
+    }
+  },
+  {
+    "file": "TPADGB(供应商商品价格)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 234,
+    "comments": 7,
+    "masters": 4,
+    "masterOptions": {
+      "TPADGA": 9,
+      "TPADEA": 39,
+      "TPADUA": 3,
+      "TPABBA": 6
+    }
+  },
+  {
+    "file": "TPADTA(设备信息档)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 20,
+    "comments": 20,
+    "masters": 0,
+    "masterOptions": {}
+  },
+  {
+    "file": "TPADUA(基本单位)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 2,
+    "comments": 2,
+    "masters": 0,
+    "masterOptions": {}
+  },
+  {
+    "file": "YSFGEB(应收账款开帐)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 18,
+    "comments": 5,
+    "masters": 1,
+    "masterOptions": {
+      "TPADFA": 40
+    }
+  },
+  {
+    "file": "YSFGRB(应付账款开帐)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 18,
+    "comments": 5,
+    "masters": 1,
+    "masterOptions": {
+      "TPADGA": 9
+    }
+  },
+  {
+    "file": "ZCSTHA(固定资产信息)转入易助.xls",
+    "http": 200,
+    "error": "",
+    "columns": 45,
+    "comments": 27,
+    "masters": 13,
+    "masterOptions": {
+      "ZCSTBA": 3,
+      "ZCSTEA": 7,
+      "TPADGA": 9,
+      "TPADBA": 18,
+      "TPADAA": 11,
+      "TPADUA": 3,
+      "ZCSTAA": 3,
+      "ZCSTCA": 5,
+      "TPABBA": 6
+    }
+  }
+]
