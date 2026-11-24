@@ -690,7 +690,7 @@ module.exports = function makeSqlgen(sql) {
     const body = '; ' + list.join('; ') + ';';
     return 'CREATE TRIGGER [dbo].[' + trgName + '] ON [dbo].[' + onTable + '] AFTER INSERT AS BEGIN SET NOCOUNT ON; SET XACT_ABORT ON; ' +
       'BEGIN TRY' + body + ' END TRY BEGIN CATCH DECLARE @nb_msg nvarchar(2048)=N\'N-B助手触发器 ' + ctx +
-      ' 执行失败: \'+ERROR_MESSAGE(); THROW 50001,@nb_msg,1; END CATCH END;';
+      ' 执行失败: \'+ERROR_MESSAGE(); RAISERROR(@nb_msg,16,1); END CATCH END;';
   }
 
   // 找最外层 WHERE（忽略字符串、方括号和括号内的子查询 WHERE）
@@ -764,7 +764,7 @@ module.exports = function makeSqlgen(sql) {
     const val = 'CAST(' + p.valExpr + ' AS nvarchar(max))';
     return 'IF EXISTS (SELECT 1 FROM ' + p.fromBody +
       ' WHERE EXISTS (SELECT 1 FROM inserted i WHERE ' + pkJoin + ') AND (' + p.whereBody + ') GROUP BY ' + cols +
-      ' HAVING COUNT(*) > 1 AND COUNT(DISTINCT ' + val + ') > 1) THROW 50002, N\'N-B助手触发器 ' + ctx + '：目标行匹配多条来源行且值不一致，已拒绝写入\', 1';
+      ' HAVING COUNT(*) > 1 AND COUNT(DISTINCT ' + val + ') > 1) RAISERROR(N\'N-B助手触发器 ' + ctx + '：目标行匹配多条来源行且值不一致，已拒绝写入\',16,1)';
   }
 
   // 同一目标行匹配多条来源行时，先按目标主键做 ROW_NUMBER，只取第一条，
