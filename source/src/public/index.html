@@ -1438,9 +1438,15 @@ function onDocChange(){
   document.getElementById('mainTbl').textContent=doc.main+'.'+doc.mainKeyCol;
   document.getElementById('subTbl').textContent=doc.sub+'.'+doc.keyCol;
 
-  tgtCols=(META.tgtAllCols?.[doc.id])||[];
-  document.getElementById('fTgt').value='';
-  document.getElementById('tgtSub').textContent='共 '+tgtCols.length+' 个可选目标列（请选择）';
+  const allTgtCols=(META.tgtAllCols?.[doc.id])||[];
+  tgtCols=allTgtCols.filter(c=>c.custom===true || (c.custom===undefined && /9[6-9]\d$/.test(c.col)));
+  const tgtInput=document.getElementById('fTgt');
+  tgtInput.value='';
+  tgtInput.disabled=!tgtCols.length;
+  tgtInput.placeholder=tgtCols.length?'搜索自定义字段...':'该单据没有自定义字段';
+  document.getElementById('tgtSub').textContent=tgtCols.length
+    ? '共 '+tgtCols.length+' 个自定义字段（系统默认字段不支持带值，请选择）'
+    : '该单据没有自定义字段（960–995），不能传值';
   updateClearColBtn();
 
   const ss=document.getElementById('srcSel');

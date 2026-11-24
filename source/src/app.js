@@ -526,6 +526,15 @@ async function handleTestConn(req, res) {
   }
 }
 
+// 易助的自定义字段是各表 960–995 号段（自定文字/自定数字/预留）。
+// 目标列只允许写这一段，避免覆盖 JDB004 这类系统默认字段。
+function isCustomColumn(col) {
+  const m = String(col || '').trim().match(/^([A-Za-z][A-Za-z0-9_]*?)(\d{3})$/);
+  if (!m) return false;
+  const n = Number(m[2]);
+  return n >= 960 && n <= 995;
+}
+
 async function handleMeta(req, res) {
   let p, docs, srcs;
   // 切换账套/服务器瞬间连接池可能处于重建窗口：连接类错误时强制开新池，最多重试 6 次
@@ -566,7 +575,7 @@ async function handleMeta(req, res) {
     }
   }
   if (srcIds.length) await scanColsBatch(srcIds, null, (row) => { (srcAllCols[row.tbl] = srcAllCols[row.tbl] || []).push({ col: row.col, maxLen: row.maxLen, desc: row.desc }); });
-  if (tgtIds.length) await scanColsBatch(tgtIds, 'c.column_id>=4', (row) => { const k = docs.find(d => d.sub === row.tbl)?.id; if (k) (tgtAllCols[k] = tgtAllCols[k] || []).push({ col: row.col, maxLen: row.maxLen, desc: row.desc }); });
+  if (tgtIds.length) await scanColsBatch(tgtIds, 'c.column_id>=4', (row) => { const k = docs.find(d => d.sub === row.tbl)?.id; if (k) (tgtAllCols[k] = tgtAllCols[k] || []).push({ col: row.col, maxLen: row.maxLen, desc: row.desc, custom: isCustomColumn(row.col) }); });
   CUR_DOCS = docs; CUR_SRCS = srcs;
   // 只排除同一单据家族（头/单/选配），不按业务流向排除下游：
   // 只要字段能关联、数据能流通，反向直接取值也允许。
@@ -934,6 +943,7 @@ async function handleClearColumn(req, res) {
   const col = String(b.tgtCol || '').trim();
   if (!doc) return sendJSON(res, 400, { error: '目标单据不存在' });
   if (!/^[A-Za-z0-9_]+$/.test(col)) return sendJSON(res, 400, { error: '目标字段不合法' });
+  if (!isCustomColumn(col)) return sendJSON(res, 400, { error: '系统默认字段不允许清除，只能清除自定义字段（960–995）' });
   const p = await ensurePoolDb((CUR_CONFIG || CONFIG.db).database);
   const meta = (await p.request()
     .input('t', sql.NVarChar, doc.sub)
@@ -965,6 +975,9 @@ async function handleClearColumn(req, res) {
 async function handleRun(req, res) {
   const b = JSON.parse(await readBody(req));
   const { docId, tgtCol, srcId, srcValCol, partyKey, mode, confirm, force, chain, createTrigger, triggerTimeMode, mergeDisplay } = b;
+  if (tgtCol && !isCustomColumn(tgtCol)) {
+    return sendJSON(res, 400, { error: '系统默认字段不支持带值，请选择目标单据的自定义字段（960–995）' });
+  }
   // 写操作前先确认真实连接库，避免“界面选 DSB、SQL 落到 XBK”
   try { await ensurePoolDb((CUR_CONFIG || CONFIG.db).database); }
   catch (e) { return sendJSON(res, 500, { error: '账套校验失败: ' + e.message }); }
@@ -983,6 +996,7 @@ async function handleRun(req, res) {
     const mSrcId = String(mapping.srcId || '').trim();
     const mSrcValCol = String(mapping.srcValCol || '').trim();
     if (!mTgtCol || !mSrcId || !mSrcValCol) throw new Error('多字段映射缺少目标列、来源档或来源值列');
+    if (!isCustomColumn(mTgtCol)) throw new Error('系统默认字段不支持带值，请选择自定义字段（960–995）');
     const targetDoc = CUR_DOCS.find(d => d.id === docId);
     if (!targetDoc) throw new Error('目标单据 ' + docId + ' 不存在');
     await verifyColsForTrig(await getPool(), targetDoc, mTgtCol, mSrcId, mSrcValCol);
