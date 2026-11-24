@@ -71,5 +71,20 @@ if (Test-Path -LiteralPath $portable) {
   Write-Host "稳定启动器已更新: $(Join-Path $StableDir 'N-B助手.exe')"
 }
 
+# 桌面快捷方式指向固定启动器；缺失时自动重建，避免清理/移动后快捷方式消失。
+$desktop = [Environment]::GetFolderPath('Desktop')
+$lnkPath = Join-Path $desktop "N-B助手.lnk"
+$exePath = Join-Path $StableDir "N-B助手.exe"
+if ((Test-Path -LiteralPath $exePath) -and -not (Test-Path -LiteralPath $lnkPath)) {
+  $shell = New-Object -ComObject WScript.Shell
+  $shortcut = $shell.CreateShortcut($lnkPath)
+  $shortcut.TargetPath = $exePath
+  $shortcut.WorkingDirectory = $StableDir
+  $shortcut.IconLocation = "$exePath,0"
+  $shortcut.Description = "N-B助手"
+  $shortcut.Save()
+  Write-Host "桌面快捷方式已重建: $lnkPath"
+}
+
 Write-Host "==== 输出 ===="
 Get-ChildItem $OutDir | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize
