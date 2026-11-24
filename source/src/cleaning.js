@@ -74,7 +74,7 @@ try {
           name = $name
           comment = $comment.Trim()
           green = (Fill-Green $cell)
-          required = (($comment -match '必须输入|必须|必填|必需|必要') -and ($comment -notmatch '非必要|非必须|不必要|非必填'))
+          required = (($comment -match '必须输入|必须|必填|必需|必要|不可空白|不能为空|不允许为空') -and ($comment -notmatch '非必要|非必须|不必要|非必填'))
         }
       }
       $rows = @()
@@ -238,6 +238,12 @@ function transformValue(raw, kind) {
     }
     return parseNumber(v);
   }
+  if (kind === 'deptFlag') {
+    if (/^[TtFf]$/.test(v)) return { value: v.toUpperCase() };
+    if (/单一|单部门|一个部门/.test(v)) return { value: 'F' };
+    if (/多部门|多人|分摊/.test(v)) return { value: 'T' };
+    return { value: v };
+  }
   if (kind === 'number') return parseNumber(v);
   if (kind === 'date') return parseDate(v);
   if (kind === 'phone') return { value: v.replace(/[^\d+\-() ]/g, '').trim() };
@@ -265,7 +271,22 @@ const SYNONYMS = {
   '主要来源': ['主要来源', '商品来源', '货源', '来源类型', '商品主要来源', '物料来源'],
   '主供应商': ['主供应商', '主供货商', '供应商', '默认供应商', '委外供应商', '默认供应商或委外供应商', '供应商名称', '厂商'],
   '商品分类': ['商品分类', '存货分类', '物料分类', '产品分类'],
-  '是否含税': ['是否含税', '含税', '含税否']
+  '是否含税': ['是否含税', '含税', '含税否'],
+  // 固定资产期初卡片
+  '资产编号': ['资产编号', '财产编码', '资产编码', '固定资产编号', '财产编号'],
+  '资产名称': ['资产名称', '财产名称', '固定资产名称', '资产名'],
+  '资产类别': ['资产类别', '资产分类', '固定资产类别', '财产类别'],
+  '折旧方法': ['折旧方法', '折旧方式', '折旧法'],
+  '使用年限': ['使用年限', '总年数', '总年数以月表示', '总年数(以月表示)', '折旧年限'],
+  '已计提月份': ['已计提月份', '已使用年数', '已使用年数以月表示', '已使用年数(以月表示)', '已使用月数'],
+  '计量单位': ['计量单位', '计数单位', '单位'],
+  '本币原值': ['本币原值', '原始成本', '原始成本计价单位元', '原值', '资产原值'],
+  '累计折旧': ['累计折旧', '已提折旧'],
+  '残值率': ['残值率', '净残值率'],
+  '多部门使用': ['多部门使用', '费用分摊方式', '分摊方式'],
+  '使用部门': ['使用部门', '使用部门编码', '部门编码', '部门'],
+  '保管人': ['保管人', '保管员', '责任人'],
+  '增加方式': ['增加方式', '增加方式代码', '取得方式']
 };
 
 // 从模板批注里提炼规则：必填、可选值、固定值。
@@ -280,7 +301,7 @@ function parseCommentRule(comment) {
     .replace(/[ \t]+/g, ' ')
     .trim();
   if (!text) return { required: false, options: [], fixed: false, defaultValue: '', sameAs: '' };
-  const required = /必须输入|必须|必填|必需|必要/.test(text) &&
+  const required = /必须输入|必须|必填|必需|必要|不可空白|不能为空|不允许为空/.test(text) &&
     !/非必要|非必须|不必要|非必填/.test(text);
   const options = [];
   const add = (value, label) => {
@@ -307,6 +328,11 @@ function parseCommentRule(comment) {
       tokens.forEach(x => add(x, ''));
     }
   }
+  // “只能为T或F”“只能1或2”这种夹在说明文字里的枚举。
+  if (!options.length) {
+    const only = text.match(/只能(?:为|是|填|输入)?\s*([A-Za-z0-9+\-]+)\s*或\s*([A-Za-z0-9+\-]+)/);
+    if (only) { add(only[1], ''); add(only[2], ''); }
+  }
   const fixedMatch = text.match(/(?:一律|统一|固定|预设值|只可|只允许|必须为|必须填|必须使用)\s*(?:(?:给|填|为|是|使用|设置|设为|预设值)\s*)*([A-Za-z0-9+\-]+)/);
   let fixed = !!fixedMatch;
   let defaultValue = fixedMatch ? fixedMatch[1] : '';
@@ -322,10 +348,15 @@ function parseCommentRule(comment) {
     options.unshift({ value: defaultValue, label: '' });
   }
   // “需要与库存单位相同”这类批注不写死具体字段代码，按字段名在当前模板内解析。
-  const same = text.match(/(?:与|同)\s*([^\s\/、,，;；:：]{2,20}?)\s*相同/);
-  // 条件必填：IF 寄售客户=‘T’ 则必须要填 否则为空。
-  const ifMatch = text.match(/IF\s*([^\s=＝]+)\s*[=＝]\s*['‘’"]?([^'"‘’\s]+)/i);
-  const requiredIf = ifMatch ? { fieldName: cleanText(ifMatch[1]), value: cleanText(ifMatch[2]) } : null;
+  const same = text.match(/(?:与|同)\s*([^\s\/、,，;；:：]{2,20}?)\s*相同/)
+    || text.match(/填入当前([^\s，,。;；:：]{2,20})/);
+  // 条件必填：IF 寄售客户=‘T’ 则必须要填 否则为空；也支持“当多部门使用='T'时”。
+  const ifMatch = text.match(/IF\s*([^\s=＝]+)\s*[=＝]\s*['‘’"]?([^'"‘’\s]+)/i)
+    || text.match(/(?:当)?\s*([^\s=＝，,。;；:：]{2,20})\s*[=＝]\s*['‘’"]?([A-Za-z0-9]+)['"‘’]?\s*时/);
+  const multiDept = text.match(/多部门使用\s*[=＝]\s*['‘’"]?([TF])['"‘’]?\s*时/i);
+  const requiredIf = ifMatch
+    ? { fieldName: cleanText(ifMatch[1]), value: cleanText(ifMatch[2]) }
+    : (multiDept ? { fieldName: '多部门使用', value: multiDept[1].toUpperCase() } : null);
   return { required, options, fixed, defaultValue, sameAs: same ? cleanText(same[1]) : '', requiredIf };
 }
 
@@ -346,12 +377,21 @@ function sourceMatch(templateCol, sourceCols, sourceRows) {
   sourceCols.forEach(sc => {
     const sn = normText(sc.name || sc.code);
     if (!sn) return;
+    // “累计折旧科目”不能拿“累计折旧”金额列去填，只有来源列本身是科目才允许。
+    if (/科目$/.test(tn) && !/科目/.test(sn)) return;
     if (sn === tn || aliases.some(a => sn === normText(a))) candidates.push({ col: sc, score: 100 });
     else if (aliases.some(a => sn.includes(normText(a)) || normText(a).includes(sn))) candidates.push({ col: sc, score: 80 });
     else if (tn && (sn.includes(tn) || tn.includes(sn))) candidates.push({ col: sc, score: 60 });
   });
   candidates.sort((a, b) => b.score - a.score || a.col.index - b.col.index);
   if (candidates.length) return candidates[0].col.index;
+  // 固定资产来源表里“使用部门”列常因 M:N 合并而没有表头，
+  // 但它紧挨在“保管人”列前面；只在这种情况下按位置兜底。
+  if (/使用部门/.test(tn)) {
+    const keeper = sourceCols.find(sc => /保管人/.test(normText(sc.name)));
+    const prev = keeper ? sourceCols.find(sc => sc.index === keeper.index - 1) : null;
+    if (prev && !normText(prev.name)) return prev.index;
+  }
   // 无表头列按内容识别邮箱/电话
   const lower = tn;
   if (lower.includes('邮件') || lower.includes('邮箱') || lower.includes('email')) {
@@ -407,6 +447,7 @@ function templateKey(template) {
 
 function transformFor(templateCol) {
   const n = templateCol.name || '';
+  if (/多部门使用/.test(n)) return 'deptFlag';
   if (/日期/.test(n)) return 'date';
   if (/(金额|价格|税率|比例|数量|用量|权数|额度|天数|月数|人数|注册资本|营业额)/.test(n)) return 'number';
   if (/(电话|手机)/.test(n)) return 'phone';
@@ -686,6 +727,7 @@ function inspectService(baseDir, options) {
       const resultRows = [];
       const issues = [];
       const keySeen = new Map();
+      let skippedRows = 0;
 
       const getSourceValue = (row, sourceIndex) => {
         if (sourceIndex == null || sourceIndex === '') return '';
@@ -745,9 +787,18 @@ function inspectService(baseDir, options) {
         return null;
       };
       const colByCode = new Map(cols.map(c => [c.code, c]));
+      const suggestedByCode = new Map((job.suggested && job.suggested.columns || []).map(c => [c.code, c]));
+      const keySourceIndexes = keyCols
+        .map(k => (byCode.get(k) || {}).sourceIndex ?? (suggestedByCode.get(k) || {}).sourceIndex)
+        .filter(i => i != null && i !== '');
 
       sourceRows.forEach((src, ri) => {
         const rowNo = ri + 1;
+        // Excel 末尾的“合计/汇总”行通常只有金额，没有业务主键；不能当资产/商品数据导入。
+        if (keySourceIndexes.length && keySourceIndexes.every(i => !String(getSourceValue(src, i)).trim())) {
+          skippedRows++;
+          return;
+        }
         const values = {};
         const errors = [];
         const warnings = [];
@@ -841,6 +892,9 @@ function inspectService(baseDir, options) {
         resultRows.push({ rowNo, values, errors, warnings });
       });
 
+      if (skippedRows) {
+        issues.push({ row: 0, code: '', name: '来源数据', severity: 'info', message: '已跳过 ' + skippedRows + ' 行没有主键的汇总/空行，不参与导入' });
+      }
       // 模板中非必填但完全未映射的字段给出提示（最多 12 条）
       let unmapped = 0;
       cols.forEach(c => {
