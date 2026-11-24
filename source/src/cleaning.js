@@ -74,7 +74,9 @@ try {
           name = $name
           comment = $comment.Trim()
           green = (Fill-Green $cell)
-          required = (($comment -match '必须输入|必须|必填|必需|必要|不可空白|不能为空|不允许为空') -and ($comment -notmatch '非必要|非必须|不必要|非必填'))
+          required = (($comment -match '必须输入|必须|必填|必需|必要|不可空白|不能为空|不允许为空') -and
+            ($comment -notmatch '非必要|非必须|不必要|非必填') -and
+            ($comment -notmatch '否则[^。；\n]{0,30}(空白|为空|不输入)|空白不需要输入'))
         }
       }
       $rows = @()
@@ -302,7 +304,8 @@ function parseCommentRule(comment) {
     .trim();
   if (!text) return { required: false, options: [], fixed: false, defaultValue: '', sameAs: '' };
   const required = /必须输入|必须|必填|必需|必要|不可空白|不能为空|不允许为空/.test(text) &&
-    !/非必要|非必须|不必要|非必填/.test(text);
+    !/非必要|非必须|不必要|非必填/.test(text) &&
+    !/否则[^。；\n]{0,30}(空白|为空|不输入)|空白不需要输入/.test(text);
   const options = [];
   const add = (value, label) => {
     const v = cleanText(value);
