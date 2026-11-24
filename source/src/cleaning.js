@@ -444,8 +444,25 @@ function sourceMatch(templateCol, sourceCols, sourceRows) {
   // 但它紧挨在“保管人”列前面；只在这种情况下按位置兜底。
   if (/使用部门/.test(tn)) {
     const keeper = sourceCols.find(sc => /保管人/.test(normText(sc.name)));
-    const prev = keeper ? sourceCols.find(sc => sc.index === keeper.index - 1) : null;
-    if (prev && !normText(prev.name)) return prev.index;
+    if (keeper) {
+      // 固定资产来源表的部门列可能被合并单元格吞掉表头，旁边还有一列
+      // 只有部分行有部门代码；只在本列附近找“空白表头/备注/部门”列，
+      // 并优先文本型部门名，避免把累计折旧、费用分摊方式当成部门。
+      let best = null;
+      for (let idx = Math.max(1, keeper.index - 3); idx <= keeper.index - 1; idx++) {
+        const col = sourceCols.find(sc => sc.index === idx);
+        if (!col || /保管人/.test(normText(col.name))) continue;
+        if (normText(col.name) && !/备注|部门/.test(normText(col.name))) continue;
+        const vals = sourceRows.slice(0, 100)
+          .map(row => String(row[idx - 1] == null ? '' : row[idx - 1]).trim())
+          .filter(Boolean);
+        if (!vals.length) continue;
+        const textCount = vals.filter(v => !/^[+-]?\d+(\.\d+)?$/.test(v)).length;
+        const score = textCount * 10 + vals.length;
+        if (!best || score > best.score) best = { idx, score };
+      }
+      if (best) return best.idx;
+    }
   }
   // 无表头列按内容识别邮箱/电话
   const lower = tn;
@@ -887,6 +904,7 @@ function inspectService(baseDir, options) {
         const values = {};
         const errors = [];
         const warnings = [];
+        const conditionOff = new Set();
         // 先处理直接来源与默认值
         cols.forEach(c => {
           const m = byCode.get(c.code) || {};
@@ -925,9 +943,13 @@ function inspectService(baseDir, options) {
           } else if (m.options && m.options.length) {
             const option = matchOption(tr.value, m.options);
             if (option == null) {
+              const multiCell = (c.code === 'THB002' || c.code === 'THB003') &&
+                /[、,，/]|共用/.test(String(tr.value));
               errors.push({
                 row: rowNo, code: c.code, name: c.name, severity: 'error',
-                message: '值「' + tr.value + '」无法匹配选项：' + m.options.map(o => o.value + (o.label ? '（' + o.label + '）' : '')).join(' / ')
+                message: multiCell
+                  ? '多部门资产必须逐行提供“部门代码+分摊比率”；来源值「' + tr.value + '」是合并文本，不能当作一个部门。'
+                  : '值「' + tr.value + '」无法匹配选项：' + m.options.map(o => o.value + (o.label ? '（' + o.label + '）' : '')).join(' / ')
               });
               values[c.code] = '';
             } else {
@@ -962,8 +984,15 @@ function inspectService(baseDir, options) {
             conditionTrue = depVal === String(requiredIf.value).trim();
             required = conditionTrue;
           }
-          if (!conditionTrue && m.otherwise !== undefined && m.otherwise !== '') {
-            if (values[c.code] == null || String(values[c.code]).trim() === '') values[c.code] = String(m.otherwise);
+          if (!conditionTrue) {
+            // 条件不满足的字段不应沿用来源值（例如多部门=T 时单部门必须为空），
+            // 否则会留下错误的资料档校验。
+            conditionOff.add(c.code);
+            if (m.otherwise !== undefined && m.otherwise !== '') {
+              values[c.code] = String(m.otherwise);
+            } else {
+              values[c.code] = '';
+            }
             return;
           }
           if (!required) return;
@@ -979,8 +1008,10 @@ function inspectService(baseDir, options) {
             errors.push({ row: rowNo, code: keyCols.join('+'), name: '主键', severity: 'error', message: '与第 ' + keySeen.get(key) + ' 行重复' });
           } else keySeen.set(key, rowNo);
         }
-        issues.push(...errors, ...warnings);
-        resultRows.push({ rowNo, values, errors, warnings });
+        const keptErrors = conditionOff.size ? errors.filter(x => !conditionOff.has(x.code)) : errors;
+        const keptWarnings = conditionOff.size ? warnings.filter(x => !conditionOff.has(x.code)) : warnings;
+        issues.push(...keptErrors, ...keptWarnings);
+        resultRows.push({ rowNo, values, errors: keptErrors, warnings: keptWarnings });
       });
 
       if (skippedRows) {
@@ -998,8 +1029,14 @@ function inspectService(baseDir, options) {
       // 必填缺失是“字段配置”问题，不是每一行独立错误；按字段去重，
       // 避免 39 行 × 26 字段产生上千条重复提示，用户无法定位。
       const missingSeen = new Set();
+      // 同一字段已有更具体的错误（例如多部门合并文本）时，不再追加
+      // 一条“必填为空”，避免一个原因报两次。
+      const specificErrorCodes = new Set(issues
+        .filter(x => x.severity === 'error' && x.message !== '必填字段为空')
+        .map(x => x.code));
       const visibleIssues = issues.filter(x => {
         if (x.severity === 'error' && x.message === '必填字段为空') {
+          if (specificErrorCodes.has(x.code)) return false;
           if (missingSeen.has(x.code)) return false;
           missingSeen.add(x.code);
           x.row = 0;

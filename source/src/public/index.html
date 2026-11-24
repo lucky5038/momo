@@ -2521,8 +2521,8 @@ chainRow();
     }
     if (c.options && c.options.length) {
       if (c.sourceIndex != null && c.sourceIndex !== '') {
-        return '<span class="clean-auto-note">按来源逐行转换，不再设全局值<br>'+
-          (c.options.map(o=>o.value+(o.label?' '+o.label:'')).join(' / '))+'</span>';
+        return '<select data-field="defaultValue">' + optionOptions(c, c.defaultValue) + '</select>'+
+          '<span class="clean-auto-note">空=按来源逐行转换；选值=覆盖来源</span>';
       }
       return '<select data-field="defaultValue">' + optionOptions(c, c.defaultValue) + '</select>';
     }
@@ -2551,12 +2551,22 @@ chainRow();
         if (el.disabled) return;
         el.onchange = () => {
           const f = el.dataset.field;
-          if (f === 'sourceIndex') c.sourceIndex = el.value === '' ? null : Number(el.value);
-          else c[f] = el.value;
+          let redraw = false;
+          if (f === 'sourceIndex') {
+            c.sourceIndex = el.value === '' ? null : Number(el.value);
+            redraw = true;
+          } else {
+            c[f] = el.value;
+            // 枚举字段选择具体值时，视为“覆盖来源”，不再要求先清空来源列；
+            // 这样才能修正来源列与模板枚举不一致的行。
+            if (f === 'defaultValue' && el.value !== '' && c.sourceIndex != null) {
+              c.sourceIndex = null;
+              redraw = true;
+            }
+          }
           state.previewOk = false;
           updateCleanActions();
-          // 来源改变会影响“按来源逐行转换”提示，重绘一次；输入默认值时只更新备注，避免失焦。
-          if (f === 'sourceIndex') { renderMapping(); return; }
+          if (redraw) { renderMapping(); return; }
           updateRuleNote();
           if (f === 'defaultValue') rememberCurrent();
         };

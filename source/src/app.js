@@ -1913,6 +1913,14 @@ async function handleCleaningInspect(req, res) {
               label: o.name || o.code
             }));
           }
+          // 旧的模板记忆可能保存了已失效的代码（如 GYS001/00），
+          // 不能让它继续覆盖当前账套资料档；清空后由用户重新选择。
+          if (!c.fixed && c.defaultValue && c.options && c.options.length) {
+            const hit = c.options.find(o =>
+              String(o.value) === String(c.defaultValue) || String(o.label) === String(c.defaultValue));
+            if (hit) c.defaultValue = hit.value;
+            else c.defaultValue = '';
+          }
         });
       } catch (_) {
         r.masterOptions[table] = [];
