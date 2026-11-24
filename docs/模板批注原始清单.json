@@ -1,0 +1,3845 @@
+﻿[
+    {
+        "File":  "DCSHDB(采购单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "品号",
+        "Header":  "",
+        "Comment":  "20字符\n注:品号或供应商品号只能输入一个且必须为商品信息档中未失效品号"
+    },
+    {
+        "File":  "DCSHDB(采购单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "供应商品号",
+        "Header":  "",
+        "Comment":  "35字符\n注:供应商品号或品号只能输入一个且须存在于供应商品号档中及对应品号需为商品信息档中未失效品号"
+    },
+    {
+        "File":  "DCSHDB(采购单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "交易单位",
+        "Header":  "",
+        "Comment":  "必要 4字符\n注：需存在于商品换算单位档"
+    },
+    {
+        "File":  "DCSHDB(采购单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "交易数量",
+        "Header":  "",
+        "Comment":  "必要 numeric(12,4)\n注：不可小于0，按数量做小数取位\n"
+    },
+    {
+        "File":  "DCSHDB(采购单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "税率",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6) \n不可小于0\n"
+    },
+    {
+        "File":  "DCSHDB(采购单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "含税",
+        "Header":  "",
+        "Comment":  "必要 1字符 T/F\nF:不含税\nT:含税\n"
+    },
+    {
+        "File":  "DCSHDB(采购单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "单价",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n不可小于0，按单价做小数位数取位\n"
+    },
+    {
+        "File":  "DCSHDB(采购单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "赠品",
+        "Header":  "",
+        "Comment":  "必要 1字符 T/F\nF:非赠品\nT:赠品\n如进销存参数未勾选赠品管理请一律设置为F\n"
+    },
+    {
+        "File":  "DCSHDB(采购单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "预交货日期",
+        "Header":  "",
+        "Comment":  "必要 8字符\n需大于等于导入订单日期\n"
+    },
+    {
+        "File":  "DCSIBB(订单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "品号",
+        "Header":  "",
+        "Comment":  "20字符\n注:品号或客户品号只能输入一个且必须为商品信息档中未失效品号"
+    },
+    {
+        "File":  "DCSIBB(订单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "客户品号",
+        "Header":  "",
+        "Comment":  "35字符\n注:客户品号或品号只能输入一个且须存在于客户品号档中及对应品号需为商品信息档中未失效品号"
+    },
+    {
+        "File":  "DCSIBB(订单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "交易单位",
+        "Header":  "",
+        "Comment":  "必要 4字符\n注：需存在于商品换算单位档"
+    },
+    {
+        "File":  "DCSIBB(订单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "交易数量",
+        "Header":  "",
+        "Comment":  "必要 numeric(12,4)\n注：不可小于0，按数量做小数取位\n"
+    },
+    {
+        "File":  "DCSIBB(订单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "税率",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6) \n不可小于0\n"
+    },
+    {
+        "File":  "DCSIBB(订单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "含税",
+        "Header":  "",
+        "Comment":  "必要 1字符 T/F\nF:不含税\nT:含税\n"
+    },
+    {
+        "File":  "DCSIBB(订单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "单价",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n不可小于0，按单价做小数位数取位\n"
+    },
+    {
+        "File":  "DCSIBB(订单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "赠品",
+        "Header":  "",
+        "Comment":  "必要 1字符 T/F\nF:非赠品\nT:赠品\n如进销存参数未勾选赠品管理请一律设置为F\n"
+    },
+    {
+        "File":  "DCSIBB(订单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "预交货日期",
+        "Header":  "",
+        "Comment":  "必要 8字符\n需大于等于导入订单日期\n"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "XKA001",
+        "Header":  "员工编号",
+        "Comment":  "员工编号 8 必要\n员工编号+刷卡时间不可重复，输入的员工编号必须存在于人员信息档(TPADBA)中"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "XKA002",
+        "Header":  "刷卡时间",
+        "Comment":  "刷卡时间 不可空白\n日期加时间格式，如：2014-2-28 09:00:00"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "XKA003",
+        "Header":  "员工姓名",
+        "Comment":  "人员姓名 20 非必要\n"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "XKA004",
+        "Header":  "部门",
+        "Comment":  "部门 6 必要\n输入的部门编号必须存在于部门信息档(TPADAA)中"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "XKA005",
+        "Header":  "考勤卡号",
+        "Comment":  "考勤卡号 60 必要\n"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "XKA006",
+        "Header":  "单别",
+        "Comment":  "单别 非必要 不需要填值"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "XKA007",
+        "Header":  "单号",
+        "Comment":  "单号 非必要 不须填值\n"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "XKA008",
+        "Header":  "备注",
+        "Comment":  "备注  非必要 可空白"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "XKA009",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 1 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  10,
+        "Code":  "XKA010",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 1 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  11,
+        "Code":  "XKA011",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 20 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  12,
+        "Code":  "XKA012",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 20 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  13,
+        "Code":  "XKA013",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 4 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  14,
+        "Code":  "XKA014",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 4 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  15,
+        "Code":  "XKA960",
+        "Header":  "自定文字1",
+        "Comment":  "自定文字1 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  16,
+        "Code":  "XKA961",
+        "Header":  "自定文字2",
+        "Comment":  "自定文字2 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  17,
+        "Code":  "XKA962",
+        "Header":  "自定文字3",
+        "Comment":  "自定文字3 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  18,
+        "Code":  "XKA963",
+        "Header":  "自定文字4",
+        "Comment":  "自定文字4 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  19,
+        "Code":  "XKA964",
+        "Header":  "自定文字5",
+        "Comment":  "自定文字5 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  20,
+        "Code":  "XKA965",
+        "Header":  "自定文字6",
+        "Comment":  "自定文字6 非必要"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  21,
+        "Code":  "XKA980",
+        "Header":  "自定数字1",
+        "Comment":  "自定数字1\n不须填值"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  22,
+        "Code":  "XKA981",
+        "Header":  "自定数字2",
+        "Comment":  "自定数字2\n不须填值"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  23,
+        "Code":  "XKA982",
+        "Header":  "自定数字3",
+        "Comment":  "自定数字3\n不须填值"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  24,
+        "Code":  "XKA983",
+        "Header":  "自定数字4",
+        "Comment":  "自定数字4\n不须填值"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  25,
+        "Code":  "XKA984",
+        "Header":  "自定数字5",
+        "Comment":  "自定数字5\n不须填值"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  26,
+        "Code":  "XKA985",
+        "Header":  "自定数字6",
+        "Comment":  "自定数字6\n不须填值"
+    },
+    {
+        "File":  "GZSXKA(考勤记录)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  27,
+        "Code":  "XKA905",
+        "Header":  "更改标记",
+        "Comment":  "自定数字6\n不须填值"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "LBB003",
+        "Header":  "品号",
+        "Comment":  "品号 20 必要\n不可重复，输入的品号必须存在于商品信息档(TPADEA)中"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "LBB006",
+        "Header":  "仓库",
+        "Comment":  "仓库 6 必要\n输入的仓库编号必须存在于仓库信息档(TPADDA)中且仓库的库性必须为存货仓\n"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "LBB007",
+        "Header":  "+ / -",
+        "Comment":  "+/-  必要\n只能为选项的值\n选项值 : + , -"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "LBB008",
+        "Header":  "数量",
+        "Comment":  "数量 ，必须输入\n需为大于等于0\n数量*单位成本=成本"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "LBB009",
+        "Header":  "单位成本",
+        "Comment":  "单位成本 ，必须输入\n需为大于等于0\n数量*单位成本=成本\n"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "LBB010",
+        "Header":  "成本",
+        "Comment":  "成本 ，必须输入\n需为大于等于0\n数量*单位成本=成本\n"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "LBB019",
+        "Header":  "批号",
+        "Comment":  "批号，非必要\n"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "LBB021",
+        "Header":  "批号说明",
+        "Comment":  "批号说明，非必要"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "LBB022",
+        "Header":  "生产日期",
+        "Comment":  "生产日期，非必要\n"
+    },
+    {
+        "File":  "JSKLBA(库存开账)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  10,
+        "Code":  "LBB023",
+        "Header":  "有效日期",
+        "Comment":  "有效日期 非必要\n"
+    },
+    {
+        "File":  "PJMPNB(录入银行对账单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "PNB005\r(结算方式)",
+        "Header":  "",
+        "Comment":  "11245:\n1.存提款\n2.电汇\n3.支票\n4.银行汇票\n5.商业汇票\n9.其他\n"
+    },
+    {
+        "File":  "PJMPNB(录入银行对账单)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "PNB008\r(借贷类型)",
+        "Header":  "",
+        "Comment":  "11245:\n 1：借\n-1：贷"
+    },
+    {
+        "File":  "SGMQAA(产品结构)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "QAA001",
+        "Header":  "主件品号",
+        "Comment":  "主件品号 20 必须输入\n必须存在于商品信息档(TPADEA)\n"
+    },
+    {
+        "File":  "SGMQAA(产品结构)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "QAA003",
+        "Header":  "批量",
+        "Comment":  "批量 必须输入\n需为大于0，默认1"
+    },
+    {
+        "File":  "SGMQAA(产品结构)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "QAB003",
+        "Header":  "子件品号",
+        "Comment":  "品号 20 必须输入\n必须存在于商品信息档(TPADEA),同一主件品号中子件品号不能重复"
+    },
+    {
+        "File":  "SGMQAA(产品结构)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "QAB005",
+        "Header":  "组成量",
+        "Comment":  "组成量 ，必须输入\n需为大于0，默认1"
+    },
+    {
+        "File":  "SGMQAA(产品结构)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "QAB006",
+        "Header":  "底数",
+        "Comment":  "底数，必须输入\n需为大于0，默认1"
+    },
+    {
+        "File":  "SGMQAA(产品结构)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "QAB007",
+        "Header":  "损耗率",
+        "Comment":  "底数，必须输入\n不能为负数，默认0"
+    },
+    {
+        "File":  "SGMQAA(产品结构)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "QAB021",
+        "Header":  "选配代号",
+        "Comment":  "选配代号 20 非必要\n\n"
+    },
+    {
+        "File":  "SGMQAA(产品结构)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "QAB022",
+        "Header":  "位号                    \nC41,C42,C43,C44,C47,C48,C61,C63,C65,C66,C77,C78,C79,C80,C94,C126,C127,C128,C129,C130,C131,C132,C133,C134,C135,C143,C144,C145,C146,C147,C148,C149,C150,C151,C152,C153,C154,C155,C156,C158,C159,C164,C165,C168,C169,C175,C176,C184,C187,C191,C192,C194,C195,C196,C197,C220,C230,C232,C209,C211,C213,C218,C219,C220,C41,C42,C43,C44,C47,C48,C61,C63,C65,C66,C77,C78,C79,C80,C94,C126,C127,C128,C129,C130,C131,C132,C133,C134,C135,C143,C144,C145,C146,C147,C148,C149,C150,C151,C152,C153,C154,C155,C156,C158,C159,C164,C165,C168,C169,C175,C176,C184,C187,C191,C192,C194,C195,C196,C197,C220,C230,C232,C209,C211,C213,C218,C219,C220",
+        "Comment":  "位号 2147483647 非必要\n\n"
+    },
+    {
+        "File":  "SGMQAA(产品结构)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "QAB008",
+        "Header":  "备注",
+        "Comment":  "备注 255 非必要\n\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "DEA001",
+        "Header":  "品号",
+        "Comment":  "品号 20 必要\n不可重复"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "DEA002",
+        "Header":  "品名",
+        "Comment":  "品名 60 非必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "DEA003",
+        "Header":  "库存单位",
+        "Comment":  "库存单位 4 必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "DEA044",
+        "Header":  "采购单位",
+        "Comment":  "采购单位 4 必要\n需要与库存单位相同"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "DEA078",
+        "Header":  "销售单位",
+        "Comment":  "必要\n需与库存单位相同\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "DEA005",
+        "Header":  "商品分类",
+        "Comment":  "商品分类 6 非必要\n若输入，须同时存在于商品类别档\n中.(tpaded)\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "DEA006",
+        "Header":  "会计分类",
+        "Comment":  "会计分类 6 非必要\n若输入，须同时存在于商品类别档中.(tpaded)\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "DEA007",
+        "Header":  "预留(计算库存)=T",
+        "Comment":  "预留字段\n请一律给预设值 T"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "DEA008",
+        "Header":  "主要仓库代号",
+        "Comment":  "主要仓库代号 6 必要\n须同时存在于仓库资料档中.(tpadda)"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  10,
+        "Code":  "DEA009",
+        "Header":  "主要来源",
+        "Comment":  "主要来源 1 必要\nP：采购件\nM：厂内生产件\nS：委外生产件"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  11,
+        "Code":  "DEA010",
+        "Header":  "主供货商",
+        "Comment":  "主供应商 10\n 当DEA009=P且指定供应商为DEA073=T or S \n为必要字段。\n当DEA009=M 为非必要字段。\n若输入，须同时存在于厂商资料档中.(tpadga)"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  12,
+        "Code":  "DEA013",
+        "Header":  "注销",
+        "Comment":  "注销  1 必要\nT:失效\nF:未失效"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  13,
+        "Code":  "DEA017",
+        "Header":  "按需求补货",
+        "Comment":  "按需求补货 1 必要\nT：依需求\nF:不依需求"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  14,
+        "Code":  "DEA030",
+        "Header":  "领料码",
+        "Comment":  "领料码 1 必要\n请一律给预设值B"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  15,
+        "Code":  "DEA033",
+        "Header":  "保税品",
+        "Comment":  "保税品 1 必要\nT:保税品\nF:非保税品"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  16,
+        "Code":  "DEA043",
+        "Header":  "售价含税",
+        "Comment":  "售价含税 1 必要\nT.含税\nF.未税"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  17,
+        "Code":  "DEA046",
+        "Header":  "最近进价含税",
+        "Comment":  "最近进价含税 1 必要\nT.含税\nF.未税"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  18,
+        "Code":  "DEA049",
+        "Header":  "进价控制",
+        "Comment":  "进价控制 必要\nT\nF\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  19,
+        "Code":  "DEA051",
+        "Header":  "单价上限含税",
+        "Comment":  "进价控制 必要\nT\nF"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  20,
+        "Code":  "DEA052",
+        "Header":  "售价控制",
+        "Comment":  " 必要\nT\nF"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  21,
+        "Code":  "DEA055",
+        "Header":  "批号管理",
+        "Comment":  "批号管理 1 必要\nT.管理\nF.不管理"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  22,
+        "Code":  "DEA056",
+        "Header":  "成本计价方式",
+        "Comment":  "成本计价:\n1 先进先出\n2 月加权平均\n3 移动平均\n4 分批认定"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  23,
+        "Code":  "DEA073",
+        "Header":  "指定主供应商",
+        "Comment":  "必要\nT.指定\nF.不指定\n\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  24,
+        "Code":  "DEA074",
+        "Header":  "存货核算",
+        "Comment":  "必要\nT.参与\nF.不参与\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  25,
+        "Code":  "DEA077",
+        "Header":  "免检",
+        "Comment":  "必要\nT.免检\nF.必须检验"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  26,
+        "Code":  "DEA004",
+        "Header":  "条码编号",
+        "Comment":  "条码编号 13 非必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  27,
+        "Code":  "DEA011",
+        "Header":  "循环盘点码",
+        "Comment":  "循环盘点码 4 非必要 "
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  28,
+        "Code":  "DEA012",
+        "Header":  "库位",
+        "Comment":  "库位 8 非必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  29,
+        "Code":  "DEA014",
+        "Header":  "注销日",
+        "Comment":  "注销日 8 非必要\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  30,
+        "Code":  "DEA015",
+        "Header":  "(预留)上次入库日",
+        "Comment":  "（预留）上次入库日 8\n预留字段 请空白"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  31,
+        "Code":  "DEA016",
+        "Header":  "(预留)上次出库日",
+        "Comment":  "（预留）上次出库日 8\n预留字段 请空白"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  32,
+        "Code":  "DEA018",
+        "Header":  "前置天数",
+        "Comment":  "前置天数 N 非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  33,
+        "Code":  "DEA019",
+        "Header":  "安全存量",
+        "Comment":  "安全存量 N 非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  34,
+        "Code":  "DEA020",
+        "Header":  "最低补量",
+        "Comment":  "最低补量 N 非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  35,
+        "Code":  "DEA021",
+        "Header":  "补货倍量",
+        "Comment":  "补货倍量 N 非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  36,
+        "Code":  "DEA022",
+        "Header":  "标准进价",
+        "Comment":  "标准进价 N 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  37,
+        "Code":  "DEA023",
+        "Header":  "最近进价(未税)",
+        "Comment":  "最近进价 N 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  38,
+        "Code":  "DEA024",
+        "Header":  "零售价",
+        "Comment":  "零售价 N 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  39,
+        "Code":  "DEA025",
+        "Header":  "定价一",
+        "Comment":  "定价一 N 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  40,
+        "Code":  "DEA026",
+        "Header":  "定价二",
+        "Comment":  "定价二 N 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  41,
+        "Code":  "DEA027",
+        "Header":  "定价三",
+        "Comment":  "定价三 N 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  42,
+        "Code":  "DEA028",
+        "Header":  "定价四",
+        "Comment":  "定价四 N 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  43,
+        "Code":  "DEA029",
+        "Header":  "低阶码",
+        "Comment":  "低阶码 2 非必要\n可由程序计算，\n不用填入"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  44,
+        "Code":  "DEA031",
+        "Header":  "商品描述",
+        "Comment":  "商品描述 150 非必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  45,
+        "Code":  "DEA032",
+        "Header":  "税率",
+        "Comment":  "税率 N 非必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  46,
+        "Code":  "DEA034",
+        "Header":  "预留字段",
+        "Comment":  "预留字段\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  47,
+        "Code":  "DEA035",
+        "Header":  "预留字段",
+        "Comment":  "预留字段\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  48,
+        "Code":  "DEA036",
+        "Header":  "快捷码",
+        "Comment":  "快捷码 20 非必要\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  49,
+        "Code":  "DEA037",
+        "Header":  "备注",
+        "Comment":  "备注 255 非必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  50,
+        "Code":  "DEA038",
+        "Header":  "预留字段",
+        "Comment":  "预留字段\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  51,
+        "Code":  "DEA039",
+        "Header":  "预留字段",
+        "Comment":  "预留字段\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  52,
+        "Code":  "DEA040",
+        "Header":  "预留字段",
+        "Comment":  "预留字段\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  53,
+        "Code":  "DEA041",
+        "Header":  "预留字段",
+        "Comment":  "预留字段\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  54,
+        "Code":  "DEA042",
+        "Header":  "(预留)领用倍量",
+        "Comment":  "预留字段\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  55,
+        "Code":  "DEA045",
+        "Header":  "工艺路线编号",
+        "Comment":  "工艺路线编号 4 非必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  56,
+        "Code":  "DEA047",
+        "Header":  "人工分摊权数",
+        "Comment":  "人工分摊权数 N 非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  57,
+        "Code":  "DEA048",
+        "Header":  "制费分摊权数",
+        "Comment":  "制费分摊权数 N 非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  58,
+        "Code":  "DEA050",
+        "Header":  "单价上限",
+        "Comment":  "制费分摊权数 N 非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  59,
+        "Code":  "DEA053",
+        "Header":  "单价下限",
+        "Comment":  " N 非必要\n需为正整数\n\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  60,
+        "Code":  "DEA054",
+        "Header":  "指定BOM",
+        "Comment":  " N 非必要\n\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  61,
+        "Code":  "DEA057",
+        "Header":  "规格",
+        "Comment":  "规格 N 非必要\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  62,
+        "Code":  "DEA058",
+        "Header":  "型号",
+        "Comment":  "型号 N 非必要\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  63,
+        "Code":  "DEA059",
+        "Header":  "商品利润率",
+        "Comment":  " N 非必要\n需为正百分比数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  64,
+        "Code":  "DEA060",
+        "Header":  "标准材料",
+        "Comment":  "标准材料 N 非必要\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  65,
+        "Code":  "DEA061",
+        "Header":  "标准人工",
+        "Comment":  "标准人工  N 非必要\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  66,
+        "Code":  "DEA062",
+        "Header":  "标准制费",
+        "Comment":  " N 非必要\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  67,
+        "Code":  "DEA063",
+        "Header":  "委外加工费",
+        "Comment":  "委外加工费  N 非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  68,
+        "Code":  "DEA064",
+        "Header":  "商品主保修期_年",
+        "Comment":  "非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  69,
+        "Code":  "DEA065",
+        "Header":  "商品主保修期_月",
+        "Comment":  "非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  70,
+        "Code":  "DEA066",
+        "Header":  "商品主保修期_天",
+        "Comment":  "非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  71,
+        "Code":  "DEA067",
+        "Header":  "商品维修保修期_年",
+        "Comment":  "非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  72,
+        "Code":  "DEA068",
+        "Header":  "商品维修保修期_月",
+        "Comment":  "非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  73,
+        "Code":  "DEA069",
+        "Header":  "商品维修保修期_天",
+        "Comment":  "非必要\n需为正整数"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  75,
+        "Code":  "DEA071",
+        "Header":  "选配属性二",
+        "Comment":  "非必要\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  76,
+        "Code":  "DEA072",
+        "Header":  "选配属性三",
+        "Comment":  "非必要\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  78,
+        "Code":  "DEA076",
+        "Header":  "生产部门",
+        "Comment":  "dea009(主要来源)=M.厂内生产件 OR S.委外生产件时，可输入，输入值需存在于部门信息(TPADAA)\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  79,
+        "Code":  "DEA079",
+        "Header":  "条码格式编号",
+        "Comment":  "条码格式编号\n10\n非必要\n必须是条码编号档中存在的\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  80,
+        "Code":  "DEA080",
+        "Header":  "税收政策编号",
+        "Comment":  "税收政策编号\n30\n非必要\n必须是税收政策档中存在的\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  81,
+        "Code":  "DEA081",
+        "Header":  "开票品名",
+        "Comment":  "开票品号\n92\n非必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  82,
+        "Code":  "DEA082",
+        "Header":  "开票规格",
+        "Comment":  "开票规格\n40\n非必要"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  85,
+        "Code":  "DEA905",
+        "Header":  "更新标记",
+        "Comment":  "非必须\n"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  86,
+        "Code":  "DEA960",
+        "Header":  "自定文字1",
+        "Comment":  "自定文字1\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  87,
+        "Code":  "DEA961",
+        "Header":  "自定文字2",
+        "Comment":  "自定文字2\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  88,
+        "Code":  "DEA962",
+        "Header":  "自定文字3",
+        "Comment":  "自定文字3\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  89,
+        "Code":  "DEA963",
+        "Header":  "自定文字4",
+        "Comment":  "自定文字4\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  90,
+        "Code":  "DEA964",
+        "Header":  "自定文字5",
+        "Comment":  "自定文字5\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  91,
+        "Code":  "DEA965",
+        "Header":  "自定文字6",
+        "Comment":  "自定文字6\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  102,
+        "Code":  "DEA980",
+        "Header":  "自定数字1",
+        "Comment":  "自定数字1\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  103,
+        "Code":  "DEA981",
+        "Header":  "自定数字2",
+        "Comment":  "自定数字2\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  104,
+        "Code":  "DEA982",
+        "Header":  "自定数字3",
+        "Comment":  "自定数字3\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  105,
+        "Code":  "DEA983",
+        "Header":  "自定数字4",
+        "Comment":  "自定数字4\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  106,
+        "Code":  "DEA984",
+        "Header":  "自定数字5",
+        "Comment":  "自定数字5\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  107,
+        "Code":  "DEA985",
+        "Header":  "自定数字6",
+        "Comment":  "自定数字6\n不须填值"
+    },
+    {
+        "File":  "TPADEA(商品基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  118,
+        "Code":  "DEA979",
+        "Header":  "单头二维码",
+        "Comment":  "非必要\n"
+    },
+    {
+        "File":  "TPADEF(客户品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "DEF001",
+        "Header":  "品号",
+        "Comment":  "品号： 20 必要\n品号须存在于商品信息档中\n"
+    },
+    {
+        "File":  "TPADEF(客户品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "DEF002",
+        "Header":  "客户编号",
+        "Comment":  "客户编号 10 必要\n客户编号须存在于客户信息档中"
+    },
+    {
+        "File":  "TPADEF(客户品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "DEF003",
+        "Header":  "客户品号",
+        "Comment":  "客户品号 35 必要"
+    },
+    {
+        "File":  "TPADEF(客户品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "DEF004",
+        "Header":  "客户品名",
+        "Comment":  "客户品名 80  必要\n"
+    },
+    {
+        "File":  "TPADEF(客户品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "DEF006",
+        "Header":  "客户规格",
+        "Comment":  "客户规格 120 非必要"
+    },
+    {
+        "File":  "TPADEG(供应商品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "DEG001",
+        "Header":  "品号",
+        "Comment":  "品号： 20 必要\n品号须存在于商品信息档中\n"
+    },
+    {
+        "File":  "TPADEG(供应商品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "DEG002",
+        "Header":  "供应商编号",
+        "Comment":  "供应商编号 10 必要\n供应商编号须存在于供应商信息档中"
+    },
+    {
+        "File":  "TPADEG(供应商品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "DEG003",
+        "Header":  "供应商品号",
+        "Comment":  "供应商品号 35 必要"
+    },
+    {
+        "File":  "TPADEG(供应商品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "DEG004",
+        "Header":  "供应商品名",
+        "Comment":  "供应商品名 80  必要\n"
+    },
+    {
+        "File":  "TPADEG(供应商品号)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "DEG006",
+        "Header":  "供应商规格",
+        "Comment":  "供应商规格 120 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "DFA001",
+        "Header":  "客户编号",
+        "Comment":  "客户编号 10 必要\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "DFA002",
+        "Header":  "客户简称",
+        "Comment":  "客户简称 10 必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "DFA003",
+        "Header":  "客户全称",
+        "Comment":  "客户全称 72 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "DFA004",
+        "Header":  "请款客户",
+        "Comment":  "请款客户 10 必要\n输入值须存在客户资料中"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "DFA005",
+        "Header":  "税号",
+        "Comment":  "税号 20 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "DFA006",
+        "Header":  "类型",
+        "Comment":  "类型 10 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "DFA007",
+        "Header":  "等级",
+        "Comment":  "等級 10 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "DFA008",
+        "Header":  "地区",
+        "Comment":  "地区 10 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "DFA009",
+        "Header":  "国外客户否",
+        "Comment":  "国外客户否 1 必要\nT：是、F：否\n请一律给预设值F"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  10,
+        "Code":  "DFA010",
+        "Header":  "法人",
+        "Comment":  "法人 30 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  11,
+        "Code":  "DFA011",
+        "Header":  "开业日期",
+        "Comment":  "开业日期 8 非必要\n请以西元年的格式输入\n例如:20030217"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  12,
+        "Code":  "DFA012",
+        "Header":  "注册资金",
+        "Comment":  "注册资金 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  13,
+        "Code":  "DFA013",
+        "Header":  "年营业额",
+        "Comment":  "年营业额 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  14,
+        "Code":  "DFA014",
+        "Header":  "员工人数",
+        "Comment":  "员工人数 非必要\n限制条件\u003e=0"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  15,
+        "Code":  "DFA015",
+        "Header":  "联系人",
+        "Comment":  "联系人 30 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  16,
+        "Code":  "DFA016",
+        "Header":  "联系电话",
+        "Comment":  "联系电话 30 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  17,
+        "Code":  "DFA017",
+        "Header":  "会计",
+        "Comment":  "会计 30 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  18,
+        "Code":  "DFA018",
+        "Header":  "会计电话",
+        "Comment":  "会计电话 30 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  19,
+        "Code":  "DFA019",
+        "Header":  "传真号码",
+        "Comment":  "传真号码 30 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  20,
+        "Code":  "DFA020",
+        "Header":  "EMAIL",
+        "Comment":  "EMAIL 40 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  21,
+        "Code":  "DFA021",
+        "Header":  "网址",
+        "Comment":  "网址 80 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  22,
+        "Code":  "DFA022",
+        "Header":  "发票邮编",
+        "Comment":  "发票邮编 6 非必要\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  23,
+        "Code":  "DFA023",
+        "Header":  "发票地址",
+        "Comment":  "发票地址 80 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  24,
+        "Code":  "DFA024",
+        "Header":  "营业邮编",
+        "Comment":  "营业邮编 6 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  25,
+        "Code":  "DFA025",
+        "Header":  "营业地址",
+        "Comment":  "营业地址 80 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  26,
+        "Code":  "DFA026",
+        "Header":  "送货邮编",
+        "Comment":  "送货邮编 6 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  27,
+        "Code":  "DFA027",
+        "Header":  "送货地址",
+        "Comment":  "送货地址 80 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  28,
+        "Code":  "DFA028",
+        "Header":  "业务员",
+        "Comment":  "业务员 8 必要\n输入值 须同时存在于使用者资料档\n中.(tpadba)"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  29,
+        "Code":  "DFA029",
+        "Header":  "交易币种",
+        "Comment":  "交易币种 4 必要\n输入值 须同时存在\n于币种资料档中.(tpabba)"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  30,
+        "Code":  "DFA030",
+        "Header":  "适用价格",
+        "Comment":  "适用价格 1 必要\n0.零售价\n1.定价一\n2.定价二\n3.定价三\n4.定价四"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  31,
+        "Code":  "DFA031",
+        "Header":  "折扣率",
+        "Comment":  "折扣率 N 非必要\n若不知道，请填预设值=1"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  32,
+        "Code":  "DFA032",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  33,
+        "Code":  "DFA033",
+        "Header":  "发票种类",
+        "Comment":  "发票种类 1 必要\nA.专用发票（缺省）\nB.普陀发票\nZ.其他"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  34,
+        "Code":  "DFA034",
+        "Header":  "结账方式",
+        "Comment":  "结账方式 1 必要\n1.货到天数\n2.月结"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  35,
+        "Code":  "DFA035",
+        "Header":  "货到天数",
+        "Comment":  "货到天数 N 必要\n货到后_天结账\n不可小于0"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  36,
+        "Code":  "DFA036",
+        "Header":  "每月结账日",
+        "Comment":  "每月结账日 N 必要\n结账方式：月结：每月_日前交易\n输入值必须在1-31之间"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  37,
+        "Code":  "DFA037",
+        "Header":  "月结月",
+        "Comment":  "月结月 N 必要\n结账方式：月结：在下_月_日结账\n输入值必须在0-12之间\n(0表示本月)"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  38,
+        "Code":  "DFA038",
+        "Header":  "月结日",
+        "Comment":  "月结月 N 必要\n结账方式：月结：在下_月_日结账\n输入值只可在1-31之间\n（如果月结日为每月月底请设为31）"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  39,
+        "Code":  "DFA039",
+        "Header":  "收款方式",
+        "Comment":  "收款方式 1 必要\n1.收款天数\n2.每月收款日"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  40,
+        "Code":  "DFA040",
+        "Header":  "收款天数",
+        "Comment":  "收款天数 N 必要\n结账后_天收款\n不可小于0"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  41,
+        "Code":  "DFA041",
+        "Header":  "每月收款日",
+        "Comment":  "每月收款日 N 必要\n每月_日收款\n输入值只可在1-31之间\n（如果收款日为每月 月底请设为31）"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  42,
+        "Code":  "DFA042",
+        "Header":  "票期方式",
+        "Comment":  "票期方式 1  必要\n1.票期天数\n2.固定兑现日\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  43,
+        "Code":  "DFA043",
+        "Header":  "票期天数",
+        "Comment":  "票期天数 N 必要\n票期:结账后_天到期票\n不可小于0"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  44,
+        "Code":  "DFA044",
+        "Header":  "票期月",
+        "Comment":  "票期月 N 必要\n结账后_月_日到期票\n输入值必须在0-12之间\n(0表示本月)"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  45,
+        "Code":  "DFA045",
+        "Header":  "兑现日",
+        "Comment":  "兑现日 N 必要\n结账后_月_日到期票\n输入值只可在1-31之间\n（如果兑现日为每月月底请设为31）"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  46,
+        "Code":  "DFA046",
+        "Header":  "信用额度",
+        "Comment":  "信用額度 N 必要\n不可小于0"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  47,
+        "Code":  "DFA047",
+        "Header":  "已用额度",
+        "Comment":  "已用額度 N \n程序回写用，不用填入"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  48,
+        "Code":  "DFA048",
+        "Header":  "额度不足",
+        "Comment":  "額度不足 1 必要\n1.不警告\n2.警告\n3.禁止交易"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  49,
+        "Code":  "DFA049",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  50,
+        "Code":  "DFA050",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  51,
+        "Code":  "DFA051",
+        "Header":  "最近交易日",
+        "Comment":  "最近交易日 8\n程序回写用，不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  52,
+        "Code":  "DFA052",
+        "Header":  "备注",
+        "Comment":  "备注 100 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  53,
+        "Code":  "DFA053",
+        "Header":  "付款银行",
+        "Comment":  "付款银行 50 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  54,
+        "Code":  "DFA054",
+        "Header":  "银行账号",
+        "Comment":  "银行账号 50  非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  55,
+        "Code":  "DFA055",
+        "Header":  "快捷码",
+        "Comment":  "快捷码 20 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  56,
+        "Code":  "DFA056",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  57,
+        "Code":  "DFA057",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  58,
+        "Code":  "DFA058",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  59,
+        "Code":  "DFA059",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  60,
+        "Code":  "DFA060",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  61,
+        "Code":  "DFA061",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  62,
+        "Code":  "DFA062",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  63,
+        "Code":  "DFA063",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  64,
+        "Code":  "DFA064",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  65,
+        "Code":  "DFA065",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  66,
+        "Code":  "DFA066",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  67,
+        "Code":  "DFA067",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  68,
+        "Code":  "DFA068",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  69,
+        "Code":  "DFA069",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  70,
+        "Code":  "DFA070",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  71,
+        "Code":  "DFA071",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  72,
+        "Code":  "DFA072",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  73,
+        "Code":  "DFA073",
+        "Header":  "税率",
+        "Comment":  "税率： N 必要\n不可小于0\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  74,
+        "Code":  "DFA100",
+        "Header":  "行业别",
+        "Comment":  "行业别： 10 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  75,
+        "Code":  "DFA101",
+        "Header":  "客户来源",
+        "Comment":  "客户来源： 10 非必要\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  76,
+        "Code":  "DFA102",
+        "Header":  "客户分级",
+        "Comment":  "客户分级： 10 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  77,
+        "Code":  "DFA103",
+        "Header":  "特质",
+        "Comment":  "特质： 20 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  78,
+        "Code":  "DFA104",
+        "Header":  "报价重点",
+        "Comment":  "报价重点： 40 非必要\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  79,
+        "Code":  "DFA105",
+        "Header":  "销售状态",
+        "Comment":  "销售状态 1  必要\n1.还需努力\n2.成交\n3.失败"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  80,
+        "Code":  "DFA106",
+        "Header":  "销售阶段",
+        "Comment":  "销售阶段： 10 非必要\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  81,
+        "Code":  "DFA107",
+        "Header":  "成败关键",
+        "Comment":  "成败关键： 20 非必要\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  82,
+        "Code":  "DFA108",
+        "Header":  "结束日期",
+        "Comment":  "结束日期： 8 非必要\n请以西元年的格式輸入\n例如:20030217"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  83,
+        "Code":  "DFA109",
+        "Header":  "决定人",
+        "Comment":  "决定人： 30 非必要\n\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  84,
+        "Code":  "DFA110",
+        "Header":  "预计成交日",
+        "Comment":  "预计成交日： 8 必要\n请以西元年的格式輸入\n例如:20030217"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  85,
+        "Code":  "DFA111",
+        "Header":  "最近联系日",
+        "Comment":  "最近联系日： 8 必要\n请以西元年的格式輸入\n例如:20030217\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  86,
+        "Code":  "DFA112",
+        "Header":  "下次联系日",
+        "Comment":  "下次联系日： 8 必要\n请以西元年的格式輸入\n例如:20030217\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  87,
+        "Code":  "DFA113",
+        "Header":  "销售活动总时数",
+        "Comment":  "销售活动总时数： N 非必要\n默认 0\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  88,
+        "Code":  "DFA114",
+        "Header":  "报价金额",
+        "Comment":  "报价金额： N 非必要\n不可小于0\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  89,
+        "Code":  "DFA115",
+        "Header":  "业务金额",
+        "Comment":  "业务金额： N 非必要\n不可小于0\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  90,
+        "Code":  "DFA116",
+        "Header":  "经营项目",
+        "Comment":  "经营项目： 255 非必要\n\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  91,
+        "Code":  "DFA117",
+        "Header":  "把握度",
+        "Comment":  "把握度： N 非必要\n不可小于0\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  92,
+        "Code":  "DFA118",
+        "Header":  "下次销售阶段",
+        "Comment":  "下次销售阶段：10 非必要\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  93,
+        "Code":  "DFA119",
+        "Header":  "结算方式",
+        "Comment":  "结算方式：1非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  94,
+        "Code":  "DFA120",
+        "Header":  "收款账号",
+        "Comment":  "收款账号：50非必要\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  95,
+        "Code":  "DFA074",
+        "Header":  "主要销售类型",
+        "Comment":  "主要销售类型 1 必要\n1.一般销售\n2.委托代销"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  96,
+        "Code":  "DFA121",
+        "Header":  "失效",
+        "Comment":  "失效  1 必要\nT:失效\nF:未失效"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  97,
+        "Code":  "DFA122",
+        "Header":  "寄售客户",
+        "Comment":  "寄售客户  1 必要\nT:寄售客户\nF:非寄售客户"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  98,
+        "Code":  "DFA123",
+        "Header":  "寄售仓库",
+        "Comment":  "寄售仓库\nIF 寄售客户=‘T’ 则必须要填\n否则为空\n"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  99,
+        "Code":  "DFA124",
+        "Header":  "QQ",
+        "Comment":  "QQ 30 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  100,
+        "Code":  "DFA125",
+        "Header":  "微信",
+        "Comment":  "微信 30 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  101,
+        "Code":  "DFA126",
+        "Header":  "Skype",
+        "Comment":  "Skype 30 非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  104,
+        "Code":  "DFA905",
+        "Header":  "更改标记",
+        "Comment":  "更改标记 N \n非必要"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  105,
+        "Code":  "DFA960",
+        "Header":  "自定文字1",
+        "Comment":  "自定文字1\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  106,
+        "Code":  "DFA961",
+        "Header":  "自定文字2",
+        "Comment":  "自定文字2\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  107,
+        "Code":  "DFA962",
+        "Header":  "自定文字3",
+        "Comment":  "自定文字3\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  108,
+        "Code":  "DFA963",
+        "Header":  "自定文字4",
+        "Comment":  "自定文字4\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  109,
+        "Code":  "DFA964",
+        "Header":  "自定文字5",
+        "Comment":  "自定文字5\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  110,
+        "Code":  "DFA965",
+        "Header":  "自定文字6",
+        "Comment":  "自定文字6\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  111,
+        "Code":  "DFA980",
+        "Header":  "自定数字1",
+        "Comment":  "自定数字1\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  112,
+        "Code":  "DFA981",
+        "Header":  "自定数字2",
+        "Comment":  "自定数字2\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  113,
+        "Code":  "DFA982",
+        "Header":  "自定数字3",
+        "Comment":  "自定数字3\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  114,
+        "Code":  "DFA983",
+        "Header":  "自定数字4",
+        "Comment":  "自定数字4\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  115,
+        "Code":  "DFA984",
+        "Header":  "自定数字5",
+        "Comment":  "自定数字5\n不须填值"
+    },
+    {
+        "File":  "TPADFA(客户基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  116,
+        "Code":  "DFA985",
+        "Header":  "自定数字6",
+        "Comment":  "自定数字6\n不须填值"
+    },
+    {
+        "File":  "TPADFB(客户商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "DFB001",
+        "Header":  "客户",
+        "Comment":  "客户 10个字符长度 必填字段\n客户+品号+单位+币种 不可重复\n需同时存在于客户信息档(TPADFA)"
+    },
+    {
+        "File":  "TPADFB(客户商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "DFB002",
+        "Header":  "品号",
+        "Comment":  "品号 20个字符长度 必填字段\n客户+品号+单位+币种 不可重复\n需同时存在于商品信息档(TPADEA)"
+    },
+    {
+        "File":  "TPADFB(客户商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "DFB003",
+        "Header":  "单位",
+        "Comment":  "单位 4个字符长度 必填字段\n客户+品号+单位+币种 不可重复\n需同时存在于商品换算单位档(TPADEC)"
+    },
+    {
+        "File":  "TPADFB(客户商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "DFB004",
+        "Header":  "币种",
+        "Comment":  "币种 4个字符长度 必填字段\n客户+品号+单位+币种 不可重复\n需同时存在于币种汇率档(TPABAA)"
+    },
+    {
+        "File":  "TPADFB(客户商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "DFB005",
+        "Header":  "单价",
+        "Comment":  "单价 14,6 非必要"
+    },
+    {
+        "File":  "TPADFB(客户商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "DFB006",
+        "Header":  "更新日期",
+        "Comment":  "更新日期 8 必要\n格式为：20170727\n"
+    },
+    {
+        "File":  "TPADFB(客户商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "DFB014",
+        "Header":  "含税",
+        "Comment":  "含税 1 必要\n格式：T/F"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "DGA001",
+        "Header":  "供应商编号",
+        "Comment":  "供应商编号 10 必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "DGA002",
+        "Header":  "供应商简称",
+        "Comment":  "供应商简称 10 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "DGA006",
+        "Header":  "国外供应商否",
+        "Comment":  "国外供应商否 1 必要\nT:是\nF:否"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "DGA007",
+        "Header":  "采购人",
+        "Comment":  "采购人 8 必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "DGA020",
+        "Header":  "交易币种",
+        "Comment":  "交易币种 4 必要\n需存在币种资料档(tpabba)中"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "DGA024",
+        "Header":  "结账货到",
+        "Comment":  "结账货到 N 必要\n货到后_天结账\n不可小于0"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "DGA025",
+        "Header":  "结账月结日",
+        "Comment":  "结账月结日 N 必要\n结账方式：月结：每月_日前交易\n输入值必须在1-31之间"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "DGA026",
+        "Header":  "月结月",
+        "Comment":  "月結月 N 必要\n结账方式：月结：在下月_月_日结账\n输入值必须在0-12之间\n(0表示本月)"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "DGA027",
+        "Header":  "月结日",
+        "Comment":  "月结日 N 非必要\n结账方式：月结：在下_月_日结账\n输入值只可在1-31之间\n（如果月结日为每月月底请设为31）"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  10,
+        "Code":  "DGA028",
+        "Header":  "付款天",
+        "Comment":  "付款天 N\n结账后＿天付款\n不可小于0"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  11,
+        "Code":  "DGA029",
+        "Header":  "付款日",
+        "Comment":  "付款日 N\n每月_日付款 \n輸入值只可在1-31之间\n(如果付款日为每月月底请设为31)"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  12,
+        "Code":  "DGA030",
+        "Header":  "票期天",
+        "Comment":  "票期天 N\n票期:结账后_天到期票\n不可小于0"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  13,
+        "Code":  "DGA031",
+        "Header":  "票期月",
+        "Comment":  "票期月 N 必要\n结账后_月_日到期票\n輸入值必須在0-12之间(0表示本月)"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  14,
+        "Code":  "DGA032",
+        "Header":  "票期日",
+        "Comment":  "票期日 N\n结账后_月_日到期票\n輸入值必须在1-31之间\n(如果兑现日为每月月底请设为31)"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  15,
+        "Code":  "DGA037",
+        "Header":  "结账方式",
+        "Comment":  "结账方式 1 必要\n1/货到结账\n2/月结"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  16,
+        "Code":  "DGA038",
+        "Header":  "付款方式",
+        "Comment":  "付款方式 1 必要\n1/结账后几日\n2/每月几日"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  17,
+        "Code":  "DGA039",
+        "Header":  "票期方式",
+        "Comment":  "票期方式 1 必要\n1/结账后几天到期票\n2/结账后几个月几日到期票"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  18,
+        "Code":  "DGA052",
+        "Header":  "失效",
+        "Comment":  "失效  1 必要\nT:失效\nF:未失效"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  19,
+        "Code":  "DGA053",
+        "Header":  "委外仓",
+        "Comment":  "委外仓 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  20,
+        "Code":  "DGA003",
+        "Header":  "供应商全称",
+        "Comment":  "供应商全称 72 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  21,
+        "Code":  "DGA004",
+        "Header":  "供应商类型",
+        "Comment":  "供应商类型 10 非必要\n"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  22,
+        "Code":  "DGA005",
+        "Header":  "税号",
+        "Comment":  "税号 20 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  23,
+        "Code":  "DGA008",
+        "Header":  "法人",
+        "Comment":  "法人 30 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  24,
+        "Code":  "DGA009",
+        "Header":  "联系人",
+        "Comment":  "联系人 30 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  25,
+        "Code":  "DGA010",
+        "Header":  "会计",
+        "Comment":  "会计 30 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  26,
+        "Code":  "DGA011",
+        "Header":  "联系电话",
+        "Comment":  "联系电话 30 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  27,
+        "Code":  "DGA012",
+        "Header":  "会计电话",
+        "Comment":  "会计电话 30 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  28,
+        "Code":  "DGA013",
+        "Header":  "传真号码",
+        "Comment":  "传真号码 30 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  29,
+        "Code":  "DGA014",
+        "Header":  "EMAIL",
+        "Comment":  "EMAIL 40 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  30,
+        "Code":  "DGA015",
+        "Header":  "网址",
+        "Comment":  "网址 80 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  31,
+        "Code":  "DGA016",
+        "Header":  "营业邮编",
+        "Comment":  "营业邮编 6 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  32,
+        "Code":  "DGA017",
+        "Header":  "营业地址",
+        "Comment":  "营业地址 80 非必要\n"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  33,
+        "Code":  "DGA018",
+        "Header":  "账单邮编",
+        "Comment":  "账单邮编 6 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  34,
+        "Code":  "DGA019",
+        "Header":  "账单地址",
+        "Comment":  "账单地址 80 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  35,
+        "Code":  "DGA021",
+        "Header":  "保留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  36,
+        "Code":  "DGA022",
+        "Header":  "保留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  37,
+        "Code":  "DGA023",
+        "Header":  "质量评级",
+        "Comment":  "质量评级 1 \n非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  38,
+        "Code":  "DGA033",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  39,
+        "Code":  "DGA034",
+        "Header":  "发票种类",
+        "Comment":  "发票种类 （可空白）\nA.增值税专用发票(缺省)\nB.普通发票\nC.服务发票\nD.农产品收购凭证\nE.海关代征完税凭证\nF.废旧物资收购凭证\nZ.其他"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  40,
+        "Code":  "DGA035",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  41,
+        "Code":  "DGA036",
+        "Header":  "最近交易日",
+        "Comment":  "最近交易日 8\n程序回写用 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  42,
+        "Code":  "DGA040",
+        "Header":  "备注",
+        "Comment":  "备注 100 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  45,
+        "Code":  "DGD002",
+        "Header":  "银行行号",
+        "Comment":  "银行行号 10\n非必要\n"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  46,
+        "Code":  "DVA006",
+        "Header":  "付款银行",
+        "Comment":  "付款银行 50\n非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  47,
+        "Code":  "DGD003",
+        "Header":  "付款账号",
+        "Comment":  "付款银行 50\n非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  48,
+        "Code":  "DGD004",
+        "Header":  "户名",
+        "Comment":  "户名 50\n非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  49,
+        "Code":  "DGA043",
+        "Header":  "快捷码",
+        "Comment":  "快捷码 20 \n非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  50,
+        "Code":  "DGA044",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  51,
+        "Code":  "DGA045",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  52,
+        "Code":  "DGA046",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  53,
+        "Code":  "DGA047",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  54,
+        "Code":  "DGA048",
+        "Header":  "预留字段",
+        "Comment":  "预留字段 不需给值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  55,
+        "Code":  "DGA049",
+        "Header":  "税率",
+        "Comment":  "税率： N 必要\n不可小于0\n"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  56,
+        "Code":  "DGA050",
+        "Header":  "结算方式",
+        "Comment":  "结算方式：1非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  57,
+        "Code":  "DGA051",
+        "Header":  "付款账号",
+        "Comment":  "付款账号：50非必要\n"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  58,
+        "Code":  "DGA054",
+        "Header":  "QQ",
+        "Comment":  "QQ 30 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  59,
+        "Code":  "DGA055",
+        "Header":  "微信",
+        "Comment":  "微信 30 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  60,
+        "Code":  "DGA056",
+        "Header":  "Skype",
+        "Comment":  "Skype 30 非必要"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  61,
+        "Code":  "DGA960",
+        "Header":  "自定文字1",
+        "Comment":  "xiaxue:\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  62,
+        "Code":  "DGA961",
+        "Header":  "自定文字2",
+        "Comment":  "xiaxue:\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  63,
+        "Code":  "DGA962",
+        "Header":  "自定文字3",
+        "Comment":  "自定文字3\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  64,
+        "Code":  "DGA963",
+        "Header":  "自定文字4",
+        "Comment":  "自定文字4\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  65,
+        "Code":  "DGA964",
+        "Header":  "自定文字5",
+        "Comment":  "自定文字5\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  66,
+        "Code":  "DGA965",
+        "Header":  "自定文字6",
+        "Comment":  "自定文字6\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  67,
+        "Code":  "DGA980",
+        "Header":  "自定数字1",
+        "Comment":  "自定数字1\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  68,
+        "Code":  "DGA981",
+        "Header":  "自定数字2",
+        "Comment":  "自定数字2\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  69,
+        "Code":  "DGA982",
+        "Header":  "自定数字3",
+        "Comment":  "自定数字3\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  70,
+        "Code":  "DGA983",
+        "Header":  "自定数字4",
+        "Comment":  "自定数字4\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  71,
+        "Code":  "DGA984",
+        "Header":  "自定数字5",
+        "Comment":  "自定数字5\n不须填值"
+    },
+    {
+        "File":  "TPADGA(供应商基本信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  72,
+        "Code":  "DGA985",
+        "Header":  "自定数字6",
+        "Comment":  "自定数字6\n不须填值"
+    },
+    {
+        "File":  "TPADGB(供应商商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "DGB001",
+        "Header":  "供应商",
+        "Comment":  "供应商 10个字符长度 必填字段\n供应商+品号+单位+币种 不可重复\n需同时存在于供应商信息档(TPADGA)"
+    },
+    {
+        "File":  "TPADGB(供应商商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "DGB002",
+        "Header":  "品号",
+        "Comment":  "品号 20个字符长度 必填字段\n供应商+品号+单位+币种 不可重复\n需同时存在于商品信息档(TPADEA)"
+    },
+    {
+        "File":  "TPADGB(供应商商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "DGB003",
+        "Header":  "单位",
+        "Comment":  "单位 4个字符长度 必填字段\n供应商+品号+单位+币种 不可重复\n需同时存在于商品换算单位档(TPADEC)"
+    },
+    {
+        "File":  "TPADGB(供应商商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "DGB004",
+        "Header":  "币种",
+        "Comment":  "币种 4个字符长度 必填字段\n供应商+品号+单位+币种 不可重复\n需同时存在于币种汇率档(TPABAA)"
+    },
+    {
+        "File":  "TPADGB(供应商商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "DGB005",
+        "Header":  "单价",
+        "Comment":  "单价 14,6 非必要"
+    },
+    {
+        "File":  "TPADGB(供应商商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "DGB006",
+        "Header":  "更新日期",
+        "Comment":  "更新日期 8 必要\n格式为：20170727\n"
+    },
+    {
+        "File":  "TPADGB(供应商商品价格)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "DGB014",
+        "Header":  "含税",
+        "Comment":  "含税 1 必要\n格式：T/F"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "DTA001",
+        "Header":  "(设备编号)",
+        "Comment":  "设备编号 20 必要\n不可重复\n"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "DTA002",
+        "Header":  "(设备简称)",
+        "Comment":  "设备简称 80 非必要"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "DTA003",
+        "Header":  "(备注)",
+        "Comment":  "备注 N 非必要"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "DTA901",
+        "Header":  "(录入者编号)",
+        "Comment":  "录入者编号 N 非必要\n"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "DTA902",
+        "Header":  "(录入时间)",
+        "Comment":  "录入时间 N 非必要\n"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "DTA903",
+        "Header":  "(更改者编号)",
+        "Comment":  "更改者编号 N 非必要\n"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "DTA904",
+        "Header":  "(更改时间)",
+        "Comment":  "更改时间 N 非必要\n"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "DTA905",
+        "Header":  "(更新标记)",
+        "Comment":  "更新标记 N 非必要\n"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "DTA960",
+        "Header":  "(自定文字1)",
+        "Comment":  "自定文字1\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  10,
+        "Code":  "DTA961",
+        "Header":  "(自定文字2)",
+        "Comment":  "自定文字2\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  11,
+        "Code":  "DTA962",
+        "Header":  "(自定文字3)",
+        "Comment":  "自定文字3\n不须填值\n"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  12,
+        "Code":  "DTA963",
+        "Header":  "(自定文字4)",
+        "Comment":  "自定文字4\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  13,
+        "Code":  "DTA964",
+        "Header":  "(自定文字5)",
+        "Comment":  "自定文字5\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  14,
+        "Code":  "DTA965",
+        "Header":  "(自定文字6)",
+        "Comment":  "自定文字6\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  15,
+        "Code":  "DTA980",
+        "Header":  "(自定数字1)",
+        "Comment":  "自定数字1\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  16,
+        "Code":  "DTA981",
+        "Header":  "(自定数字2)",
+        "Comment":  "自定数字2\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  17,
+        "Code":  "DTA982",
+        "Header":  "(自定数字3)",
+        "Comment":  "自定数字3\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  18,
+        "Code":  "DTA983",
+        "Header":  "(自定数字4)",
+        "Comment":  "自定数字4\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  19,
+        "Code":  "DTA984",
+        "Header":  "(自定数字5)",
+        "Comment":  "自定数字5\n不须填值"
+    },
+    {
+        "File":  "TPADTA(设备信息档)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  20,
+        "Code":  "DTA985",
+        "Header":  "(自定数字6)",
+        "Comment":  "自定数字6\n不须填值"
+    },
+    {
+        "File":  "TPADUA(基本单位)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "DUA001",
+        "Header":  "基本单位",
+        "Comment":  "基本单位 4 必要\n如：KG\n"
+    },
+    {
+        "File":  "TPADUA(基本单位)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "DUA002",
+        "Header":  "说明",
+        "Comment":  "说明 60 非必要"
+    },
+    {
+        "File":  "YSFGEB(应收账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "客户编号",
+        "Header":  "",
+        "Comment":  "注:不可空白且必须为客户信息信息档中未失效客户编号"
+    },
+    {
+        "File":  "YSFGEB(应收账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "应收金额",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n注：不可小于0，按原币金额做小数位数取位"
+    },
+    {
+        "File":  "YSFGEB(应收账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "本币应收",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n注：不可小于0，按本币金额做小数位数取位\n"
+    },
+    {
+        "File":  "YSFGEB(应收账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "预收金额",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n注：不可小于0，按原币金额做小数位数取位\n"
+    },
+    {
+        "File":  "YSFGEB(应收账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "本币预收",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n注：不可小于0，按本币金额做小数位数取位\n"
+    },
+    {
+        "File":  "YSFGRB(应付账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "供应商编号",
+        "Header":  "",
+        "Comment":  "注:供应商编号不可空白且必须为供应商信息信息档中未失效供应商编号"
+    },
+    {
+        "File":  "YSFGRB(应付账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "应付金额",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n注：不可小于0，按原币金额做小数位数取位"
+    },
+    {
+        "File":  "YSFGRB(应付账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  3,
+        "Code":  "本币应付",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n注：不可小于0，按本币金额做小数位数取位\n"
+    },
+    {
+        "File":  "YSFGRB(应付账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "预付金额",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n注：不可小于0，按原币金额做小数位数取位\n"
+    },
+    {
+        "File":  "YSFGRB(应付账款开帐)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  5,
+        "Code":  "本币预付",
+        "Header":  "",
+        "Comment":  "必要 numeric(15,6)\n注：不可小于0，按本币金额做小数位数取位\n"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  1,
+        "Code":  "THA001",
+        "Header":  "资产编号",
+        "Comment":  "必填字段：不可空白"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  2,
+        "Code":  "THA002",
+        "Header":  "资产类别",
+        "Comment":  "必填字段：需存在资产类别档\n"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  4,
+        "Code":  "THA004",
+        "Header":  "单号",
+        "Comment":  "如果编码方式为手动编码则不可空白，否则空白不需输入"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  6,
+        "Code":  "THA006",
+        "Header":  "折旧方法",
+        "Comment":  "不可空白，需存在折旧方法档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  7,
+        "Code":  "THA007",
+        "Header":  "计提折旧",
+        "Comment":  "不可空白，只能T或F\nT:表示参与计提折旧\nF:表示不参与折旧"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  8,
+        "Code":  "THA008",
+        "Header":  "入账日期",
+        "Comment":  "不可空白，必须大于等于开始使用日期"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  9,
+        "Code":  "THA009",
+        "Header":  "使用年限",
+        "Comment":  "需换算成月份填入\n如折旧方法为\u002703.工作量法\u0027,则输入0"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  11,
+        "Code":  "THA011",
+        "Header":  "供应商编号",
+        "Comment":  "不可空白"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  15,
+        "Code":  "THA015",
+        "Header":  "类型",
+        "Comment":  "不可空白,只能1或2\n1.表示主件\n2.表示附件"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  16,
+        "Code":  "THA016",
+        "Header":  "主件编号",
+        "Comment":  "当类型为1.主件，则填入当前资产编号，否则填入的资产编号需存在于资产信息档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  17,
+        "Code":  "THA018",
+        "Header":  "保管人",
+        "Comment":  "不可空白，需存在于人员信息档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  18,
+        "Code":  "THA019",
+        "Header":  "多部门使用",
+        "Comment":  "只能为T或F\n当为F时填入使用部门\n当为T时填入使用部门信息档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  19,
+        "Code":  "THA020",
+        "Header":  "使用部门",
+        "Comment":  "多部门使用=\u0027F\u0027时不可空白且需存在于部门信息档；\n多部门使用=\u0027T\u0027时必须空白"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  20,
+        "Code":  "THB001",
+        "Header":  "资产编号",
+        "Comment":  "当多部门使用=\u0027T\u0027时，才可填入。同资产编号(THA001)"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  21,
+        "Code":  "THB002",
+        "Header":  "使用部门",
+        "Comment":  "当多部门使用=\u0027T\u0027时，才可填入。必须存在于部门信息档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  22,
+        "Code":  "THB003",
+        "Header":  "分摊比率",
+        "Comment":  "当多部门使用=\u0027T\u0027时，才可填入。相同资产编号分摊比率汇总必须=1"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  29,
+        "Code":  "THA025",
+        "Header":  "残值率",
+        "Comment":  "输入小数，不可大于1"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  30,
+        "Code":  "THA027",
+        "Header":  "增加方式",
+        "Comment":  "不可空白，需存在于增减方式档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  31,
+        "Code":  "THA029",
+        "Header":  "已计提月份",
+        "Comment":  "不可大于可使用年限\n如折旧方法为\u002703.工作量法\u0027,则输入0"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  32,
+        "Code":  "THA035",
+        "Header":  "资产科目",
+        "Comment":  "需存在会计科目档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  33,
+        "Code":  "THA036",
+        "Header":  "累计折旧科目",
+        "Comment":  "需存在会计科目档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  34,
+        "Code":  "THA037",
+        "Header":  "减值准备科目",
+        "Comment":  "需存在会计科目档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  36,
+        "Code":  "THA042",
+        "Header":  "工作总量",
+        "Comment":  "输入大于等于0的数值\n当折旧方法=\u002703\u0027时才输入，否则填入0"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  37,
+        "Code":  "THA043",
+        "Header":  "已用工作量",
+        "Comment":  "输入大于等于0的数值且小于工作总量\n当折旧方法=\u002703\u0027时才输入，否则填入0"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  40,
+        "Code":  "THA047",
+        "Header":  "开始使用日期",
+        "Comment":  "不可大于 入账日期"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  42,
+        "Code":  "THA049",
+        "Header":  "使用状况",
+        "Comment":  "需存在于使用状况档"
+    },
+    {
+        "File":  "ZCSTHA(固定资产信息)转入易助.xls",
+        "Sheet":  "Sheet1",
+        "Row":  1,
+        "Col":  43,
+        "Code":  "THA051",
+        "Header":  "币别",
+        "Comment":  "需存在于币种信息档，如未启用多币管理，则填入记账本位币"
+    }
+]

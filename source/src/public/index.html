@@ -2575,8 +2575,8 @@ chainRow();
   function collectMapping(){
     return state.mapping.map(c => ({
       code:c.code, sourceIndex:c.sourceIndex, transform:c.transform,
-      defaultValue:c.defaultValue, derivedFrom:c.derivedFrom, required:!!c.required,
-      options:c.options || [], fixed:!!c.fixed, editable:c.editable !== false
+      defaultValue:c.defaultValue, otherwise:c.otherwise || '', derivedFrom:c.derivedFrom, required:!!c.required,
+      requiredIf:c.requiredIf || null, options:c.options || [], fixed:!!c.fixed, editable:c.editable !== false
     }));
   }
   function rememberCurrent(){

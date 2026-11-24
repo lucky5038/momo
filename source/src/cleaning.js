@@ -10,6 +10,8 @@ const { spawn } = require('child_process');
 
 const MAX_UPLOAD = 30 * 1024 * 1024;
 const JOB_KEEP_MS = 7 * 24 * 3600 * 1000;
+// 每个模板独立保存一份批注规则；版本号变化时重新生成，避免旧规则残留。
+const RULES_VERSION = 2;
 
 const PS_SCRIPT = String.raw`param(
   [string]$Action,
@@ -358,9 +360,12 @@ function parseCommentRule(comment) {
     || text.match(/(?:当)?\s*([^\s=＝，,。;；:：]{2,20})\s*[=＝]\s*['‘’"]?([A-Za-z0-9]+)['"‘’]?\s*时/);
   const multiDept = text.match(/多部门使用\s*[=＝]\s*['‘’"]?([TF])['"‘’]?\s*时/i);
   const requiredIf = ifMatch
-    ? { fieldName: cleanText(ifMatch[1]), value: cleanText(ifMatch[2]) }
+    ? { fieldName: cleanText(ifMatch[1]).replace(/^当/, ''), value: cleanText(ifMatch[2]) }
     : (multiDept ? { fieldName: '多部门使用', value: multiDept[1].toUpperCase() } : null);
-  return { required, options, fixed, defaultValue, sameAs: same ? cleanText(same[1]) : '', requiredIf };
+  // “否则填入0”这类规则：条件不满足时应写固定值，而不是报必填。
+  const elseMatch = text.match(/否则\s*(?:填入|填|为|设为)?\s*([A-Za-z0-9+\-]+)/);
+  const otherwise = elseMatch ? elseMatch[1] : '';
+  return { required, options, fixed, defaultValue, sameAs: same ? cleanText(same[1]) : '', requiredIf, otherwise };
 }
 
 function findSynonym(targetName) {
@@ -474,6 +479,21 @@ function inspectService(baseDir, options) {
   const writeProfile = (key, templateName, defaults) => {
     const body = { key, templateName, defaults, updatedAt: new Date().toISOString() };
     fs.writeFileSync(profilePath(key), JSON.stringify(body, null, 2), 'utf8');
+    return body;
+  };
+  // 规则按模板内容 hash 独立保存；不同模板绝不会共用同一份规则。
+  const rulesPath = key => path.join(profilesDir, 'rules-' + key + '.json');
+  const readRules = key => {
+    try {
+      const f = rulesPath(key);
+      if (!fs.existsSync(f)) return null;
+      const body = JSON.parse(fs.readFileSync(f, 'utf8'));
+      return body && body.version === RULES_VERSION ? body : null;
+    } catch (_) { return null; }
+  };
+  const writeRules = (key, templateName, fields) => {
+    const body = { version: RULES_VERSION, key, templateName, fields, updatedAt: new Date().toISOString() };
+    fs.writeFileSync(rulesPath(key), JSON.stringify(body, null, 2), 'utf8');
     return body;
   };
 
@@ -620,6 +640,7 @@ function inspectService(baseDir, options) {
           sourceIndex,
           transform: transformFor(c),
           defaultValue,
+          otherwise: rule.otherwise || '',
           derivedFrom,
           options,
           fixed: !!rule.fixed,
@@ -672,9 +693,18 @@ function inspectService(baseDir, options) {
         // Excel 解析拿到的是临时文件名，界面必须显示用户实际选择的文件名。
         template.fileName = tFile.name;
         source.fileName = sFile.name;
-        // 每条模板字段都带上批注规则，后续 UI/校验共用，不再靠单据类型硬编码。
-        template.columns = (template.columns || []).map(c => ({ ...c, rule: parseCommentRule(c.comment) }));
+        // 每个模板按内容 hash 单独保存规则；不同模板不共享任何规则。
         const key = templateKey(template);
+        let ruleSet = readRules(key);
+        if (!ruleSet) {
+          const fields = {};
+          (template.columns || []).forEach(c => { fields[c.code] = parseCommentRule(c.comment); });
+          ruleSet = writeRules(key, tFile.name, fields);
+        }
+        template.columns = (template.columns || []).map(c => ({
+          ...c,
+          rule: ruleSet.fields[c.code] || parseCommentRule(c.comment)
+        }));
         const storedTemplate = body.templateId
           ? libraryTemplate
           : saveLibraryTemplate(tFile.path, tFile.name, template);
@@ -873,10 +903,16 @@ function inspectService(baseDir, options) {
           const m = byCode.get(c.code) || {};
           let required = m.required != null ? m.required : c.required;
           const requiredIf = m.requiredIf || (c.rule && c.rule.requiredIf);
+          let conditionTrue = true;
           if (requiredIf) {
             const depCode = byNameCode.get(normText(requiredIf.fieldName));
             const depVal = depCode ? String(values[depCode] == null ? '' : values[depCode]).trim() : '';
-            required = depVal === String(requiredIf.value).trim();
+            conditionTrue = depVal === String(requiredIf.value).trim();
+            required = conditionTrue;
+          }
+          if (!conditionTrue && m.otherwise !== undefined && m.otherwise !== '') {
+            if (values[c.code] == null || String(values[c.code]).trim() === '') values[c.code] = String(m.otherwise);
+            return;
           }
           if (!required) return;
           if (values[c.code] == null || String(values[c.code]).trim() === '') {
