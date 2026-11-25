@@ -435,9 +435,27 @@ async function handleDatabases(req, res) {
       pool = await getPool();
     }
 
-    const r = await pool.request().query(
-      "SELECT name, state_desc FROM sys.databases WHERE state_desc = N'ONLINE' AND name NOT IN (N'master',N'tempdb',N'model',N'msdb',N'ReportServer',N'ReportServerTempDB') ORDER BY name"
-    );
+    // 账套列表优先只取 TPASYS 已登记的公司库，隐藏 DEMO/TPAStandard/DSCSYS 等公用库。
+    // 某些旧环境没有 TPASYS 或当前账号无权限，再退回“排除已知公用库”的列表。
+    const baseSql =
+      "SELECT d.name, d.state_desc FROM sys.databases d " +
+      "WHERE d.state_desc = N'ONLINE' AND d.database_id > 4 " +
+      "AND d.name NOT IN (N'master',N'tempdb',N'model',N'msdb',N'ReportServer',N'ReportServerTempDB')";
+    let r;
+    try {
+      r = await pool.request().query(
+        baseSql +
+        " AND EXISTS (SELECT 1 FROM TPASYS.dbo.TPABAA c WHERE c.BAA001 = d.name) ORDER BY d.name"
+      );
+      if (!r.recordset.length) throw new Error('TPASYS 未登记账套');
+      if (process.env.NB_DEBUG) dbg('[databases] filtered by TPASYS registry');
+    } catch (registryErr) {
+      if (process.env.NB_DEBUG) dbg('[databases] registry unavailable: ' + registryErr.message);
+      r = await pool.request().query(
+        baseSql +
+        " AND d.name NOT IN (N'TPASYS',N'TPAStandard',N'DSCSYS',N'DEMO',N'Leader',N'report') ORDER BY d.name"
+      );
+    }
     const usedMaster = !!tmp;
     let actualDb = '';
     if (!usedMaster) { try { const d = await pool.request().query('SELECT DB_NAME() AS db'); actualDb = (d.recordset[0] && d.recordset[0].db) || ''; } catch (_) {} }

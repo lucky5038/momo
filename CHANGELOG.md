@@ -2,6 +2,10 @@
 
 ## 版本演进（最新在前）
 
+### v2.2.100（2026-11-25）
+- 账套列表优先按 `TPASYS.dbo.TPABAA` 的已登记公司过滤，只显示真实公司账套；无 `TPASYS` 权限时退回排除 DEMO/TPAStandard/DSCSYS/Leader/report 等公用库。
+- 不改变已保存当前账套的连接与配置。
+
 ### v2.2.99（2026-11-24）
 - 修复 SQL Server 2008/2008 R2 等旧版本不支持 `THROW` 语法的问题；触发器错误统一改用 `RAISERROR`，其他机器也能建立触发器。
 - 已用旧版 SQL Server 的 `PARSEONLY` 验证触发器语法通过。
