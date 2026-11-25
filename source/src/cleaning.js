@@ -814,7 +814,8 @@ function inspectService(baseDir, options) {
           templateId: key, templateName: storedTemplate.name || tFile.name,
           templateNameRaw: tFile.name, sourceName: sFile.name,
           template, source, suggested, profileKey: key,
-          masterMap: Array.isArray(body.masterMap) ? body.masterMap : null
+          masterMap: Array.isArray(body.masterMap) ? body.masterMap : null,
+          masterMaps: body.masterMaps && typeof body.masterMaps === 'object' ? body.masterMaps : null
         };
         fs.writeFileSync(path.join(jobDir, 'job.json'), JSON.stringify(manifest), 'utf8');
         return {
@@ -907,6 +908,27 @@ function inspectService(baseDir, options) {
         }
         return null;
       };
+      // 主档映射是可选的“名称 → 编码”辅助，不是导入数据的白名单：
+      // 来源是编码、主档没有、或主档未加载时，保留来源原值，交给易助导入时判断。
+      const resolveMasterForField = (raw, master) => {
+        const s = cleanText(raw);
+        if (!s) return null;
+        const maps = job.masterMaps || {};
+        let list = Array.isArray(maps[master.table]) ? maps[master.table] : [];
+        if (!list.length && master.table === 'TPADGA' && Array.isArray(job.masterMap)) list = job.masterMap;
+        if (!list.length) return { value: s, ambiguous: false, missing: false, noMaster: true };
+        const wantName = master.valueField === 'name';
+        const byCode = list.find(x => cleanText(x.code).toUpperCase() === s.toUpperCase());
+        if (byCode) return { value: wantName ? byCode.name : byCode.code, ambiguous: false, missing: false };
+        const byName = list.find(x => normText(x.name) === normText(s));
+        if (byName) return { value: wantName ? byName.name : byName.code, ambiguous: false, missing: false };
+        const part = list.filter(x => normText(x.name).includes(normText(s)) || normText(s).includes(normText(x.name)));
+        if (part.length === 1) {
+          return { value: wantName ? part[0].name : part[0].code, ambiguous: true, missing: false };
+        }
+        // 找不到时保留原值，不生成硬错误；导入时由易助按实际资料档判断。
+        return { value: s, ambiguous: false, missing: true };
+      };
       const colByCode = new Map(cols.map(c => [c.code, c]));
       const suggestedByCode = new Map((job.suggested && job.suggested.columns || []).map(c => [c.code, c]));
       const keySourceIndexes = keyCols
@@ -927,6 +949,7 @@ function inspectService(baseDir, options) {
         // 先处理直接来源与默认值
         cols.forEach(c => {
           const m = byCode.get(c.code) || {};
+          const sm = ((suggestedByCode.get(c.code) || {}).master) || m.master;
           let raw = '';
           if (!m.fixed && m.sourceIndex != null && m.sourceIndex !== '') raw = getSourceValue(src, m.sourceIndex);
           if ((raw == null || String(raw).trim() === '') && m.defaultValue != null) raw = m.defaultValue;
@@ -940,6 +963,20 @@ function inspectService(baseDir, options) {
             values[c.code] = '';
           } else if (tr.empty) {
             values[c.code] = '';
+          } else if (sm) {
+            const resolved = resolveMasterForField(tr.value, sm);
+            values[c.code] = resolved ? resolved.value : tr.value;
+            if (resolved && resolved.missing) {
+              warnings.push({
+                row: rowNo, code: c.code, name: c.name, severity: 'warning',
+                message: '资料档「' + (sm.label || sm.table) + '」未找到「' + tr.value + '」，保留原值，导入时由易助校验'
+              });
+            } else if (resolved && resolved.ambiguous) {
+              warnings.push({
+                row: rowNo, code: c.code, name: c.name, severity: 'warning',
+                message: '「' + tr.value + '」按名称近似匹配为「' + resolved.value + '」，已标黄，请人工确认'
+              });
+            }
           } else if (c.code === 'DEA010' || /^(主供应商|主供货商|供应商)$/.test(normText(c.name || ''))) {
             const master = resolveMaster(tr.value);
             if (!master) {

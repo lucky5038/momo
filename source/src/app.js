@@ -1923,11 +1923,22 @@ async function masterOptions(table) {
     .filter(x => x.code);
 }
 
+async function allMasterMaps() {
+  const out = {};
+  for (const table of Object.keys(MASTER_TABLES)) {
+    try { out[table] = await masterOptions(table); }
+    catch (_) { out[table] = []; }
+  }
+  return out;
+}
+
 async function handleCleaningInspect(req, res) {
   try {
     const body = JSON.parse((await readBody(req)) || '{}');
-    // 供应商在 ERP 存厂商代码，清洗时只读加载 TPADGA 资料档用于名称→代码转换。
-    if (body.masterMap == null) body.masterMap = await supplierMasterMap();
+    // 资料档只用于“中文名称 → 系统编码”的可选转换；来源本身是编码或资料档没有的名称，
+    // 保留原值，不能把导入数据当成必须已存在的主档记录。
+    if (!body.masterMaps) body.masterMaps = await allMasterMaps();
+    if (body.masterMap == null) body.masterMap = body.masterMaps.TPADGA || await supplierMasterMap();
     const r = await cleaningService.inspect(body);
     // 模板批注/字段名指向系统资料档时，读取当前账套的真实代码+名称，供前端做下拉。
     const tables = [...new Set((r.suggested && r.suggested.columns || [])
@@ -1935,7 +1946,7 @@ async function handleCleaningInspect(req, res) {
     r.masterOptions = {};
     for (const table of tables) {
       try {
-        const opts = await masterOptions(table);
+        const opts = (body.masterMaps && body.masterMaps[table]) || await masterOptions(table);
         r.masterOptions[table] = opts;
         (r.suggested.columns || []).forEach(c => {
           if (c.master && c.master.table === table && !(c.options && c.options.length)) {

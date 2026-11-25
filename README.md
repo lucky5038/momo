@@ -1,7 +1,7 @@
 # N-B助手
 
 本目录为 C 盘迁移出的工作目录；C 盘原目录已于 2026-11-19 清理。
-当前版本为 **N-B助手 2.2.100（账套过滤 + SQL Server 2008 触发器兼容）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.100/`。按用户要求，从 2.2.87 起同时保留当前版和上一版的可双击发布包。不再保留开发版目录。
+当前版本为 **N-B助手 2.2.101（主档可选映射 + 账套过滤 + SQL Server 2008 触发器兼容）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.101/`。按用户要求，从 2.2.87 起同时保留当前版和上一版的可双击发布包。不再保留开发版目录。
 
 ## 目录说明
 
@@ -12,8 +12,8 @@
 | `source/public_inline.js` | 由 `src/public/index.html` 生成，改界面后需重新生成 |
 | `dist-electron/` | 最后一次构建产物（便携版、Setup、blockmap） |
 | `releases/current/` | 固定启动器 `N-B助手.exe` + `config.js`；桌面快捷方式只指向这里，升级不丢配置 |
-| `releases/2.2.100/` | 当前正式发布包：便携版、安装包、blockmap |
-| `releases/2.2.99/` | 上一版正式发布包，保留用于快速回退 |
+| `releases/2.2.101/` | 当前正式发布包：便携版、安装包、blockmap |
+| `releases/2.2.100/` | 上一版正式发布包，保留用于快速回退 |
 | `docs/` | 开发历程、工具作用与研发说明 |
 | `baseline/` | 原始 release exe 备份，仅供对照，不参与开发 |
 | `tools/eb/` | 本地打包工具链（electron-builder 24 + @electron/rebuild 3.2.10） |
@@ -30,10 +30,10 @@
 ```
 
 3. 构建并验证：运行 `build-electron.ps1`，在 `dist-electron/` 生成：
-   - `N-B助手 2.2.100.exe`（便携版，双击即用）
-   - `N-B助手 Setup 2.2.100.exe`（安装包，带安装向导，可选安装路径）
+   - `N-B助手 2.2.101.exe`（便携版，双击即用）
+   - `N-B助手 Setup 2.2.101.exe`（安装包，带安装向导，可选安装路径）
    构建完成后直接运行便携版验证；不再保留开发版/win-unpacked。
-4. 更新 `releases/2.2.100/` 为当前构建产物，同时保留 `releases/2.2.99/` 作为上一版回退包。
+4. 更新 `releases/2.2.101/` 为当前构建产物，同时保留 `releases/2.2.100/` 作为上一版回退包。
 5. 构建脚本自动把新 exe 覆盖到 `releases/current/N-B助手.exe`；桌面快捷方式固定指向该文件，升级不需要重新配置。
 
 ## 回归测试
@@ -77,4 +77,5 @@ pwsh -File tools\audit-links.ps1   # 只读全链路审计（需要 sqlcmd）
 - 安装时会删除安装目录里旧版本残留的 `config.js` / `first_open.flag`。
 - 首次打开会弹一次「科技不是高高在上，而是服务于人民」，用 `%APPDATA%\N-B助手\first_open.flag` 标记，之后不再弹。
 - 卸载时会一并删除 `%APPDATA%\N-B助手`（包括保存的连接配置），保证下次安装是全新状态。
+
 
