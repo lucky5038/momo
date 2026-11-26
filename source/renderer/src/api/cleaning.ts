@@ -107,7 +107,7 @@ export const TRANSFORMS: { value: string; label: string }[] = [
   { value: 'ratio', label: '比例（1:1 → 1）' },
 ]
 
-export const MAX_UPLOAD = 30 * 1024 * 1024
+const MAX_UPLOAD = 30 * 1024 * 1024
 
 /** File → base64（去掉 dataURL 前缀），旧界面 readFile 的同款实现 */
 export function fileToBase64(file: File): Promise<string> {

@@ -2,17 +2,21 @@
 /** 首次使用向导（对齐旧界面 onboardWelcomeModal + setupScreen）。
  *  只有后端 GET /api/onboarding 返回 needsSetup=true（本机还没配过数据库）时才出现，
  *  老用户升级不会被打扰。 */
-import { reactive, ref } from 'vue'
+import { nextTick, reactive, ref, watch } from 'vue'
 import { api } from '../api/client'
 import { errorMessage } from '../lib/error'
-
-const emit = defineEmits<{ (e: 'done'): void }>()
 
 const step = ref<'welcome' | 'form'>('welcome')
 const form = reactive({ server: '127.0.0.1', user: 'sa', password: '', database: '' })
 const databases = ref<string[]>([])
 const loading = ref(false)
 const error = ref('')
+const firstInput = ref<HTMLInputElement | null>(null)
+
+// 进入表单这一步就把焦点放到服务器输入框：否则键盘/读屏用户不知道该从哪开始
+watch(step, (v) => {
+  if (v === 'form') void nextTick(() => firstInput.value?.focus())
+})
 
 async function loadDatabases() {
   error.value = ''
@@ -62,7 +66,6 @@ async function finish() {
       /* 凭据写不进不影响进入软件 */
     }
     await api.finishOnboarding()
-    emit('done')
     // 配置变了，整体重启渲染层最省事（旧界面同样 location.reload）
     location.reload()
   } catch (e) {
@@ -99,7 +102,7 @@ async function finish() {
         <div class="grid">
           <label class="field">
             <span class="lbl">服务器</span>
-            <input v-model="form.server" class="mono" placeholder="如 127.0.0.1" autocomplete="off" />
+            <input ref="firstInput" v-model="form.server" class="mono" placeholder="如 127.0.0.1" autocomplete="off" />
           </label>
           <label class="field">
             <span class="lbl">账号</span>
@@ -109,7 +112,7 @@ async function finish() {
             <span class="lbl">密码</span>
             <input v-model="form.password" class="mono" type="password" autocomplete="off" />
           </label>
-          <div class="field wide">
+          <label class="field wide">
             <span class="lbl">账套</span>
             <div class="db-row">
               <select v-model="form.database" :disabled="loading || !databases.length">
@@ -120,7 +123,7 @@ async function finish() {
                 {{ loading ? '读取中…' : '读取账套' }}
               </button>
             </div>
-          </div>
+          </label>
         </div>
         <p v-if="error" class="err">{{ error }}</p>
         <div class="actions">

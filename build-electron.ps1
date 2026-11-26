@@ -21,6 +21,19 @@ if (Test-Path $Regen) {
   if ($LASTEXITCODE -ne 0) { throw "生成 public_inline.js 失败，exit=$LASTEXITCODE" }
 }
 
+# 构建前先编前端：electron-builder 会把 renderer/dist 打进 asar，忘编就会发旧界面
+$ViteBin = Join-Path $Source "renderer\node_modules\vite\bin\vite.js"
+if (Test-Path $ViteBin) {
+  Push-Location (Join-Path $Source "renderer")
+  try {
+    & $Node $ViteBin build
+    if ($LASTEXITCODE -ne 0) { throw "前端构建失败，exit=$LASTEXITCODE" }
+  } finally {
+    Pop-Location
+  }
+} else {
+  Write-Warning "未找到 $ViteBin，跳过前端构建（打包进去的可能是旧 dist）"
+}
 # electron-builder 工具链（随开发目录自带，位于 tools\eb）
 $EbCli = Join-Path $Dev "tools\eb\node_modules\electron-builder\cli.js"
 if (-not $EbCli) {

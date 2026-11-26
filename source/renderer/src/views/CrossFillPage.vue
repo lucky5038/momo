@@ -158,8 +158,9 @@ async function onExecute() {
         </select>
         <p v-if="metaState === 'error'" class="sub err">{{ metaError }}</p>
 
-        <label class="lbl">目标列（要写入哪一列）</label>
+        <label id="cf-tgt-label" class="lbl">目标列（要写入哪一列）</label>
         <ColumnCombo
+          label-id="cf-tgt-label"
           :model-value="tgtCol"
           :options="tgtCols"
           @update:model-value="store.setTgtCol"
@@ -192,8 +193,9 @@ async function onExecute() {
         </select>
         <p v-if="docId && !srcOptions.length" class="sub">当前单据没有可选来源档</p>
 
-        <label class="lbl">来源值列（取哪一列的值，可搜索切换）</label>
+        <label id="cf-val-label" class="lbl">来源值列（取哪一列的值，可搜索切换）</label>
         <ColumnCombo
+          label-id="cf-val-label"
           :model-value="srcValCol"
           :options="valCols"
           @update:model-value="store.setSrcValCol"
@@ -267,7 +269,7 @@ async function onExecute() {
       <p class="sub">
         备份：<span class="path">{{ result.backupPath || '—' }}</span>
       </p>
-      <template v-if="result.triggerResult?.name">
+      <template v-if="result.triggerResult">
         <p v-if="result.triggerResult.error" class="sub err">
           触发器创建失败：{{ result.triggerResult.error }}
         </p>
@@ -277,7 +279,7 @@ async function onExecute() {
             （冲突 {{ result.triggerResult.conflict.join('、') }}）
           </template>
         </p>
-        <p v-else class="sub ok">触发器已创建：{{ result.triggerResult.name }}</p>
+        <p v-else-if="result.triggerResult.name" class="sub ok">触发器已创建：{{ result.triggerResult.name }}</p>
       </template>
       <p v-if="result.triggerResult?.skipped && result.triggerResult?.allowForce" class="sub">
         勾选「强制覆盖」可忽略此冲突并强制创建。
@@ -371,7 +373,6 @@ select:disabled {
   color: var(--ink-3);
 }
 
-.sub
 .clear-row {
   display: flex;
   align-items: center;

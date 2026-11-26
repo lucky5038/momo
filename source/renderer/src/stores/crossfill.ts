@@ -72,19 +72,24 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     () => docId.value === TRIGGER_BLOCKED_DOC && TRIGGER_BLOCKED_SRCS.includes(srcId.value),
   )
 
+  /** 列名比较：组合框可自由输入，大小写不该影响按钮可用性（后端列名不区分大小写） */
+  function sameCol(a: string, b: string) {
+    return a.trim().toUpperCase() === b.trim().toUpperCase()
+  }
+
   const canPreview = computed(() => {
     const col = tgtCol.value.trim()
     const valCol = srcValCol.value.trim()
     if (!docId.value || !col || !srcId.value || !valCol) return false
-    // 组合框可自由输入，拼错的列名会一路拼进 SQL 报 500，这里先拦住
-    if (!tgtCols.value.some((c) => c.col === col)) return false
-    if (!valCols.value.some((c) => c.col === valCol)) return false
+    // 拼错的列名会一路拼进 SQL 报 500，这里先拦住
+    if (!tgtCols.value.some((c) => sameCol(c.col, col))) return false
+    if (!valCols.value.some((c) => sameCol(c.col, valCol))) return false
     return true
   })
   /** 旧界面 valSub 里的「默认关联 X」 */
   const defaultValCol = computed(() => curSrc.value?.key?.[0] || '')
   const clearEnabled = computed(
-    () => !!docId.value && !!tgtCol.value.trim() && tgtCols.value.some((c) => c.col === tgtCol.value.trim()),
+    () => !!docId.value && !!tgtCol.value.trim() && tgtCols.value.some((c) => sameCol(c.col, tgtCol.value)),
   )
 
   function buildRequest(confirm: boolean): RunRequest {
@@ -127,16 +132,16 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     metaState.value = 'loading'
     metaError.value = ''
     try {
-      // 数据库可能比界面晚就绪（旧版同样重试 6 次 × 2 秒），否则用户会以为工具坏了
+      // 启动时的真探活已经承担「数据库晚就绪」的重试（6 次），这里换单据只需短暂重试
       let lastError: unknown = null
       let data: Meta | null = null
-      for (let i = 0; i < 6 && seq === metaSeq; i++) {
+      for (let i = 0; i < 3 && seq === metaSeq; i++) {
         try {
           data = await fetchMeta()
           break
         } catch (e) {
           lastError = e
-          if (i < 5) await new Promise((r) => setTimeout(r, 2000))
+          if (i < 2) await new Promise((r) => setTimeout(r, 2000))
         }
       }
       if (seq !== metaSeq) return
@@ -282,11 +287,14 @@ export const useCrossFillStore = defineStore('crossfill', () => {
   /** 清除目标字段：整表整列，两段式（先问行数再确认） */
   async function clearTgtCol(): Promise<ClearResponse | null> {
     if (!clearEnabled.value || busy.value) return null
+    // 与预览/执行同一把锁：清列期间用户切单据/来源，旧请求的结果不能再写回界面
+    const seq = ++runSeq
     const col = tgtCol.value.trim()
     const body = { docId: docId.value, tgtCol: col, confirm: false }
     clearing.value = true
     try {
       const probe = await clearColumn(body)
+      if (seq !== runSeq) return null
       const count = probe.count ?? 0
       if (!count) {
         clearRunState()
@@ -295,7 +303,9 @@ export const useCrossFillStore = defineStore('crossfill', () => {
       }
       const who = `${curDoc.value?.name ?? docId.value} · ${col}`
       if (!window.confirm(`确认清除 ${who} 的全部 ${count} 个非空值？\n清除前自动整库备份。`)) return null
+      if (seq !== runSeq) return null
       const done = await clearColumn({ ...body, confirm: true })
+      if (seq !== runSeq) return null
       const backup = done.backupPath ? `，备份：${done.backupPath}` : ''
       status.set('ok', `已清除 ${done.affected ?? count} 行${backup}`)
       toast(`已清除 ${done.affected ?? count} 行`, 'ok')
@@ -306,18 +316,14 @@ export const useCrossFillStore = defineStore('crossfill', () => {
       status.fail(e, '清除失败：')
       return null
     } finally {
-      clearing.value = false
+      if (seq === runSeq) clearing.value = false
     }
   }
 
   return {
-    meta,
     metaState,
     metaError,
-    backupDir,
     docs,
-    srcs,
-    currentDb,
     docId,
     tgtCol,
     srcId,
@@ -326,7 +332,6 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     createTrigger,
     mergeDisplay,
     curDoc,
-    curSrc,
     tgtCols,
     srcOptions,
     valCols,
@@ -343,7 +348,6 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     messageKind: status.kind,
     loadMeta,
     invalidate,
-    resetForm,
     setDoc,
     setSrc,
     setTgtCol,

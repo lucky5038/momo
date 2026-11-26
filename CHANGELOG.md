@@ -2,6 +2,29 @@
 
 ## 版本演进（最新在前）
 
+### v2.9.6（2026-11-27）
+- 现象：渲染层 28 个文件里存在"确认框被吞会静默取消""清除没有序号守卫""触发器结果面板永远不显示""读账套静默回退到已保存配置"等隐患；仓库里还留着一次性脚本、调试产物和一份乱码的 `.gitignore`。
+- 原因：v2.4–v2.9 迭代快，页面各自实现工具函数与样式；打包链路补了 `renderer/dist` 后没人保证构建产物一定先于打包生成。
+- 改法（渲染层）：
+  - 清除目标字段加请求序号守卫（`stores/crossfill.ts` 的 `clearTgtCol`），切单据/切来源后旧请求不再落库。
+  - 触发器结果面板改为按 `error / skipped / name` 三分支渲染（原来 `v-if` 卡在 `name`，跳过与失败永远不显示）。
+  - 读账套回退 GET 时即使静默也提示"按已保存的配置读取，当前输入未生效"。
+  - `probe()` 默认重试 2 次并加序号守卫；`App.vue` 只在 `checkConnection()` 成功后才 `probe()`，不再用"尚未选择账套"覆盖真实错误。
+  - 清洗页删掉永不成立的三处 `readSeq` 守卫，重选同一份源文件也能触发；预览/生成失败清掉旧产物路径；8 处错误提示统一走 `errorMessage`（带后端 hint）。
+  - 触发器页 `refresh/reloadQuiet` 合并成一份实现；补 `.dis` 样式；`.sub` 字号统一。
+  - 删除已迁移页面的死字段 `stage`（`ModuleDef`/路由 meta/占位页），侧栏与路由只保留真实信息。
+  - 可访问性：目标列/来源值列补 `id` + `ColumnCombo` 传 `label-id`；首次向导账套字段改 `label` 包裹、进入表单自动聚焦服务器输入框；删死 `emit('done')`。
+  - 契约类型补全：`RunResponse` 增 `updateSql/updateSqls`，`ClearResponse` 增 `doc/table/column`；删无人读的 `hasPassword`、收敛 `MAX_UPLOAD` 导出。
+  - 目标列/清除按钮的列名匹配改大小写不敏感（`sameCol`），手输小写不再把按钮变灰。
+- 改法（仓库）：
+  - `git rm` 4 个一次性 CDP 脚本（含会自动确认并真写库的 `nb-cdp-crossfill-exec.mjs`），保留 8 个可复用脚本。
+  - 删临时日志与调试产物：`source/renderer/*.log`、`dist-electron` 里的运行残留、`logs/audit-svc`（5.2MB）、`logs/trigger-parse-*.sql`、`docs/template-rule-audit-2.2.96.json`、空 `releases/*/cleaning` 目录。
+  - `.gitignore` 原来是双重编码乱码，按 UTF-8 重写，并补 `dist/`、`*.tmp`、`*~`、`tools/*.csv`。
+  - `build-electron.ps1` 在打 electron-builder 之前先跑 `vite build`（存在即构建，失败即中止，缺失只告警），避免发出"装着新后端、跑着旧界面"的包。
+  - `README.md` 版本行更新为 2.9.5/基线 2.2.101，补 `source/renderer/` 说明与「界面自动化（CDP）」小节。
+  - `tools/nb-cdp-smoke.mjs` 截图前 `Page.bringToFront` 并加 8 秒兜底（窗口最小化时 `captureScreenshot` 会挂死）。
+- 验证：`vue-tsc --noEmit` 0；`vite build` 825ms（js 164.65KB / css 24.96KB / icon 11.46KB）；`nb-cdp-smoke.mjs` 六路由 6/6、`errors: []`、`bodyOverflow:false`；后端 `source/src/app.js` 与旧 `public/index.html` 零改动，基线仍 2.2.101，未打包。
+- 未做：向导是否先 test-conn 再保存、页面级 `.btn/.status` 是否收回 `base.css`、docs 里四份同源批注数据与过期说明是否删除。
 ### v2.9.5（2026-11-27）
 - 撤回 v2.9.4 的多链路前台入口：用户要求「前台不显示链路，只保留后台自动判断」，因此删除「取值链路」下拉、预览区「本次链路」文案，以及对应 store/api/CSS。
 - 同步撤回后端改动：`D:\MOMO开发\source\src\app.js` 已 `git checkout e2145d2`（v2.9.3 版本），`chainPathIndex` 入参、`chainPaths` 出参、`chainPathLabels()`、`usedChainPaths` 全部移除，`git diff e2145d2 -- source/src/app.js` 为空（与 v2.9.3 逐字节一致）。

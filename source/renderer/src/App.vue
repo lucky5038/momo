@@ -20,7 +20,7 @@ onMounted(async () => {
   }
   if (needsSetup.value) return
   // 先出界面（读本地配置很快），再后台真探活一次：数据库不通时顶栏会变红并给出原因
-  void store.checkConnection().then(() => store.probe())
+  void store.checkConnection().then((ok) => { if (ok) void store.probe() })
 })
 </script>
 

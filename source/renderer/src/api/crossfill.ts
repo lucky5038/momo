@@ -46,7 +46,6 @@ export interface Meta {
   currentDb?: string
   server?: string
   user?: string
-  hasPassword?: boolean
 }
 
 export interface RunRequest {
@@ -109,6 +108,9 @@ export interface RunResponse {
   backupPath?: string
   backupOk?: boolean
   removedOldBackups?: number
+  /** 后端在成功响应里回传本次执行的 SQL，便于排查 */
+  updateSql?: string
+  updateSqls?: string[]
   sampleAfter?: { docNo?: string; filled?: string }[]
   triggerResult?: TriggerResult
 }
@@ -116,6 +118,10 @@ export interface RunResponse {
 export interface ClearResponse {
   ok?: boolean
   preview?: boolean
+  /** 预览阶段回传的单据名、子表名与列名（旧界面用来提示"清哪个表的哪一列"） */
+  doc?: string
+  table?: string
+  column?: string
   count?: number
   affected?: number
   message?: string

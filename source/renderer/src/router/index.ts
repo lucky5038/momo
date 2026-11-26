@@ -23,7 +23,7 @@ const routes: RouteRecordRaw[] = [
     path: m.path,
     name: m.key,
     component: PAGES[m.key] ?? ModulePlaceholder,
-    meta: { key: m.key, title: m.title, desc: m.desc, icon: m.icon, stage: m.stage },
+    meta: { key: m.key, title: m.title, desc: m.desc, icon: m.icon },
   })),
   { path: '/:pathMatch(.*)*', redirect: '/run' },
 ]

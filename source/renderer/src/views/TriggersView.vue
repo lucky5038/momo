@@ -36,9 +36,10 @@ function markBusy(name: string, on: boolean) {
   busyRows.value = next
 }
 
-async function refresh() {
+/** 读列表的唯一实现：quiet=true 时吞掉错误（写操作已成功，刷新失败不该显示成"操作失败"） */
+async function loadRows(quiet: boolean) {
   const seq = ++refreshSeq
-  loading.value = true
+  if (!quiet) loading.value = true
   try {
     const data = await listTriggers()
     if (seq !== refreshSeq) return
@@ -48,25 +49,19 @@ async function refresh() {
   } catch (e) {
     if (seq !== refreshSeq) return
     // 保留上一次的列表：清空会让用户以为"确实没有触发器"
-    status.fail(e)
+    if (!quiet) status.fail(e)
   } finally {
-    if (seq === refreshSeq) loading.value = false
+    if (seq === refreshSeq && !quiet) loading.value = false
   }
 }
 
-/** 先读列表再提示，避免 refresh() 把刚写的成功提示清掉；
- *  这里失败也不抛：写操作已经成功，刷新失败不该显示成"操作失败" */
+async function refresh() {
+  await loadRows(false)
+}
+
+/** 先读列表再提示，避免 refresh() 把刚写的成功提示清掉 */
 async function reloadQuiet() {
-  const seq = ++refreshSeq
-  try {
-    const data = await listTriggers()
-    if (seq !== refreshSeq) return
-    rows.value = data.triggers || []
-    database.value = data.database || ''
-    server.value = data.server || ''
-  } catch {
-    /* 保留旧列表与成功提示 */
-  }
+  await loadRows(true)
 }
 
 async function onToggle(row: TriggerRow) {

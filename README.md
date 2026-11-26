@@ -1,7 +1,7 @@
 # N-B助手
 
 本目录为 C 盘迁移出的工作目录；C 盘原目录已于 2026-11-19 清理。
-当前版本为 **N-B助手 2.2.101（主档可选映射 + 账套过滤 + SQL Server 2008 触发器兼容）**；构建产物在 `dist-electron/`，正式包在 `releases/2.2.101/`。按用户要求，从 2.2.87 起同时保留当前版和上一版的可双击发布包。不再保留开发版目录。
+当前开发版本为 **2.9.5**（渲染层已迁移到 Vue3 + Vite + TypeScript，后端接口与旧界面逻辑保持一致）；构建产物在 `dist-electron/`，**可发版基线仍为 `releases/2.2.101/`**。按用户要求，从 2.2.87 起同时保留当前版和上一版的可双击发布包。不再保留开发版目录。
 
 ## 目录说明
 
@@ -10,6 +10,8 @@
 | `source/` | 开发源码：`src/app.js` 后端、`src/main.electron.js` 主进程、`src/public/index.html` 界面 |
 | `source/node_modules/` | 运行依赖（mssql 等），随 asar 一起提取 |
 | `source/public_inline.js` | 由 `src/public/index.html` 生成，改界面后需重新生成 |
+| `source/renderer/` | 新前端工程（Vue3 + Vite + TypeScript + Pinia），源码在 `src/` |
+| `source/renderer/dist/` | 新前端构建产物，打包时随 asar 一起进 exe |
 | `dist-electron/` | 最后一次构建产物（便携版、Setup、blockmap） |
 | `releases/current/` | 固定启动器 `N-B助手.exe` + `config.js`；桌面快捷方式只指向这里，升级不丢配置 |
 | `releases/2.2.101/` | 当前正式发布包：便携版、安装包、blockmap |
@@ -36,6 +38,14 @@
 4. 更新 `releases/2.2.101/` 为当前构建产物，同时保留 `releases/2.2.100/` 作为上一版回退包。
 5. 构建脚本自动把新 exe 覆盖到 `releases/current/N-B助手.exe`；桌面快捷方式固定指向该文件，升级不需要重新配置。
 
+## 新前端（renderer）
+
+- 技术栈：Vue 3 + Vite 6 + TypeScript + Pinia + Vue Router（hash 路由，避免与后端路由冲突）。
+- 开发：`pwsh -File tools\dev-renderer.ps1`（Vite 5173 + Electron 调试端口 9222），改代码即时热更新。
+- 单独构建：`cd source\renderer` 后执行 `..\..\tools\node\bin\node.exe node_modules\vite\bin\vite.js build`。
+- 打包：`build-electron.ps1` 已内置前端构建；运行时 `src/app.js` 优先静态服务 `renderer/dist`，缺失时回退旧 `public_inline.js`。
+- 版本号需同步两处：`source/renderer/src/config/app.ts` 的 `APP_VERSION` 与 `source/package.json` 的 `version`。
+
 ## 回归测试
 
 ```powershell
@@ -44,6 +54,18 @@
 .\tools\node\bin\node.exe tools\test-chain-category.js   # 类别关联回归
 .\tools\node\bin\node.exe tools\test-chain-merge.js      # 合并显示回归
 pwsh -File tools\audit-links.ps1   # 只读全链路审计（需要 sqlcmd）
+```
+
+### 界面自动化（CDP）
+
+先跑 `pwsh -File tools\dev-renderer.ps1` 起 Vite(5173) 与 Electron(调试端口 9222)，再执行：
+
+```powershell
+node tools\nb-cdp-smoke.mjs      # 六路由冒烟：切页 + 收集控制台错误
+node tools\nb-cdp-routes.mjs     # 路由/标题/侧栏高亮一致性
+node tools\nb-cdp-nav.mjs /run   # 单路由核对 + 截图（参数为 hash）
+node tools\nb-cdp-typo.mjs       # 字号/字重/字距 token 回归
+node tools\nb-cdp-eval.mjs "<js>" # 通用求值器，其余脚本的地基
 ```
 
 ## 配置存哪里

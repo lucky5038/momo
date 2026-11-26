@@ -12,7 +12,7 @@ const items = useToasts()
       class="toast"
       :class="t.kind"
       type="button"
-      :title="'点击关闭'"
+      title="点击关闭"
       @click="dismissToast(t.id)"
     >
       {{ t.text }}

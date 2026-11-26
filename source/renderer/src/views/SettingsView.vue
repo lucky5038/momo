@@ -22,7 +22,6 @@ const form = reactive({
 const databases = ref<string[]>([])
 const backupDir = ref('')
 const showPass = ref(false)
-const loading = ref(true)
 /** creds.json 原始内容：_last 用于回填密码，prefs[server] 用于回填该服务器上次用的账套 */
 const credsCache = ref<CredsPayload['data']>(undefined)
 /** 服务器历史：沿用旧版的 localStorage key，老用户的历史记录不会丢 */
@@ -79,7 +78,6 @@ function prefDb(server: string): string {
 }
 
 async function load() {
-  loading.value = true
   try {
     const cfg = await api.config()
     form.server = cfg.server || ''
@@ -103,10 +101,16 @@ async function load() {
   } catch (e) {
     status.fail(e)
   } finally {
-    loading.value = false
   }
 }
 
+/** 账套选中优先级：保留当前 > 该服务器上次用的账套(prefs) > 第一个（与旧版 onServerChanged 一致） */
+function pickDb(prev: string, list: string[], server: string) {
+  if (prev && list.includes(prev)) return prev
+  const pref = prefDb(server)
+  if (pref && list.includes(pref)) return pref
+  return list[0] || ''
+}
 /** 读取该服务器的账套列表。保留当前选择 > 该服务器上次用的账套(prefs) > 第一个（旧版 onServerChanged 同优先级） */
 async function loadDatabases(quiet = false) {
   if (!form.server && !form.user) return
@@ -115,21 +119,22 @@ async function loadDatabases(quiet = false) {
   dbLoading.value = true
   try {
     let data
+    let usedSaved = false
     try {
       data = await api.databases({ server: form.server, user: form.user, password: form.password })
-    } catch (e) {
-      // 旧版：POST 失败回退 GET（用已保存配置那台服务器），并说明用的是保存的配置
+    } catch {
+      // 旧版：POST 失败回退 GET（用已保存配置那台服务器），必须让用户知道列表不是当前输入的结果
       data = await api.databasesGet()
-      if (!quiet) status.set('warn', '按已保存的配置读取账套（当前输入未生效）')
-      void e
+      usedSaved = true
     }
     const list = (data.databases || []).map((d) => d.name)
     databases.value = list
-    const pick = prev && list.includes(prev) ? prev : list.includes(prefDb(server)) ? prefDb(server) : list[0] || ''
+    const pick = pickDb(prev, list, server)
     form.database = pick
-    if (!quiet) {
+    if (!quiet || usedSaved) {
       const kept = prev && list.includes(prev) ? `，保留当前账套 ${pick}` : pick ? `，已选中 ${pick}` : ''
-      status.set('ok', `${data.server || server} · 共 ${list.length} 个账套${kept}`)
+      const warn = usedSaved ? '（按已保存的配置读取，当前输入未生效）' : ''
+      status.set(quiet ? 'warn' : 'ok', `${data.server || server} · 共 ${list.length} 个账套${kept}${warn}`)
     }
   } catch (e) {
     // 读不到列表时至少保留当前账套，别让下拉只剩占位（旧版曾出现「账套不可用」的观感）
@@ -291,12 +296,12 @@ onMounted(load)
           <input
             v-model="form.server"
             class="mono"
-            list="cf-srv-hist"
+            list="srv-hist"
             placeholder="如 127.0.0.1"
             autocomplete="off"
             @input="onServerInput" @change="onServerChange"
           />
-          <datalist id="cf-srv-hist">
+          <datalist id="srv-hist">
             <option v-for="s in serverHistory" :key="s" :value="s" />
           </datalist>
         </label>
@@ -488,7 +493,7 @@ select:focus {
 
 .sub {
   margin: 0;
-  font-size: var(--fs-kicker);
+  font-size: var(--fs-sub);
   color: var(--ink-3);
 }
 

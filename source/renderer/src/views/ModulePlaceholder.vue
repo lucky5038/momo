@@ -8,7 +8,6 @@ const route = useRoute()
 const title = computed(() => String(route.meta.title ?? ''))
 const desc = computed(() => String(route.meta.desc ?? ''))
 const icon = computed(() => String(route.meta.icon ?? ''))
-const stage = computed(() => String(route.meta.stage ?? ''))
 const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.planned ?? null)
 </script>
 
@@ -22,7 +21,6 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
         <p class="desc">{{ desc }}</p>
       </div>
       <span v-if="planned" class="badge">{{ planned.badge }}</span>
-      <span v-else class="stage">{{ stage }}</span>
     </div>
 
     <template v-if="planned">
@@ -94,7 +92,6 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
   color: var(--ink-3);
 }
 
-.stage,
 .badge {
   flex: none;
   font-size: var(--fs-kicker);
@@ -103,11 +100,6 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
   white-space: nowrap;
 }
 
-.stage {
-  color: var(--seal);
-  background: var(--seal-wash);
-  border: 1px solid var(--seal-line);
-}
 
 .badge {
   color: var(--ink-2);

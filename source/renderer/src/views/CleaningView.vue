@@ -12,6 +12,7 @@ import {
   type CleanMappingColumn,
   type CleanTemplateItem,
 } from '../api/cleaning'
+import { errorMessage } from '../lib/error'
 import { toast } from '../lib/toast'
 
 const templates = ref<CleanTemplateItem[]>([])
@@ -119,7 +120,7 @@ async function loadTemplates(selected?: string) {
     ok = true
   } catch (e) {
     // 读不到就保留原列表与已选模板，别让用户以为模板没了
-    setStatus(`模板列表读取失败：${(e as Error).message}`, 'err')
+    setStatus(`模板列表读取失败：${errorMessage(e)}`, 'err')
   }
   if (selected) templateId.value = selected
   if (ok && templateId.value && !templates.value.some((t) => t.id === templateId.value)) templateId.value = ''
@@ -155,7 +156,7 @@ async function importTemplate() {
     setStatus(`模板已保存：${r.name || f.name}`)
     toast(`模板已保存：${r.name || f.name}`, 'ok')
   } catch (e) {
-    setStatus(`模板保存失败：${(e as Error).message}`, 'err')
+    setStatus(`模板保存失败：${errorMessage(e)}`, 'err')
   } finally {
     importing.value = false
   }
@@ -180,23 +181,23 @@ async function removeTemplate() {
     await loadTemplates()
     setStatus('模板已删除。')
   } catch (e) {
-    setStatus(`删除模板失败：${(e as Error).message}`, 'err')
+    setStatus(`删除模板失败：${errorMessage(e)}`, 'err')
   }
 }
 
 function onSourceFile(e: Event) {
-  const f = (e.target as HTMLInputElement).files?.[0]
+  const el = e.target as HTMLInputElement
+  const f = el.files?.[0]
+  // 清空 value，否则再选同一个文件不会触发 change（模板文件同理）
+  el.value = ''
   if (!f) return
   sourceFile.value = f
   resetJob()
   setStatus('')
 }
 
-let readSeq = 0
-
 async function read() {
   if (working.value) return
-  const seq = ++readSeq
   const s = sourceFile.value
   if (!s || (!templateFile.value && !templateId.value)) {
     setStatus('请先选择模板和来源数据', 'err')
@@ -215,8 +216,6 @@ async function read() {
     else payload.templateId = templateId.value
 
     const r = await cleaningApi.inspect(payload)
-    // 期间用户换了模板/来源：旧结果直接丢弃，避免"选的是 B、数据来自 A"
-    if (seq !== readSeq) return
     jobId.value = r.jobId
     info.value = r
     mapping.value = (r.suggested?.columns || []).map((c) => ({ ...c }))
@@ -225,10 +224,9 @@ async function read() {
     }
     setStatus('读取完成，请检查字段规则，再点【预览】。')
   } catch (e) {
-    if (seq !== readSeq) return
-    setStatus(`读取失败：${(e as Error).message}`, 'err')
+    setStatus(`读取失败：${errorMessage(e)}`, 'err')
   } finally {
-    if (seq === readSeq) reading.value = false
+    reading.value = false
   }
 }
 
@@ -310,11 +308,14 @@ async function preview() {
         await window.nb.openCleaningFile(xlsPath.value)
         setStatus('预览文件已打开，请人工确认后点【生成】。')
       } catch (e) {
-        setStatus(`预览文件已生成；自动打开失败：${(e as Error).message}`, 'err')
+        setStatus(`预览文件已生成；自动打开失败：${errorMessage(e)}`, 'err')
       }
     }
   } catch (e) {
-    setStatus(`预览失败：${(e as Error).message}`, 'err')
+    // 旧产物不能继续挂着，否则会被当成本次结果
+    xlsPath.value = ''
+    xlsIsPreview.value = false
+    setStatus(`预览失败：${errorMessage(e)}`, 'err')
   } finally {
     previewing.value = false
   }
@@ -339,7 +340,9 @@ async function generate() {
     setStatus(`生成完成：${out.stats?.outputRows || 0} 行。`)
     toast(`生成完成：${out.stats?.outputRows || 0} 行`, 'ok')
   } catch (e) {
-    setStatus(`生成失败：${(e as Error).message}`, 'err')
+    xlsPath.value = ''
+    xlsIsPreview.value = false
+    setStatus(`生成失败：${errorMessage(e)}`, 'err')
   } finally {
     generating.value = false
   }
@@ -355,7 +358,7 @@ async function saveAs() {
     if (r?.ok) setStatus(`已另存为：${r.path}`)
     else if (r?.canceled) setStatus('已取消另存为。')
   } catch (e) {
-    setStatus(`另存为失败：${(e as Error).message}`, 'err')
+    setStatus(`另存为失败：${errorMessage(e)}`, 'err')
   }
 }
 
@@ -363,7 +366,7 @@ async function reveal() {
   try {
     await cleaningApi.reveal(xlsPath.value)
   } catch (e) {
-    setStatus((e as Error).message, 'err')
+    setStatus(errorMessage(e), 'err')
   }
 }
 
@@ -584,6 +587,11 @@ onMounted(() => loadTemplates())
 </template>
 
 <style scoped>
+.dis {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .page {
   padding: 12px 0 26px;
   display: flex;

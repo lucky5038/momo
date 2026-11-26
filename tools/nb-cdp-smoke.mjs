@@ -71,9 +71,19 @@ for (const [label, path] of routes) {
   report.push({ label, path, ...info, newErrors: errors.slice(before) })
 }
 
-const shot = await send('Page.captureScreenshot', { format: 'png' })
+// 窗口被最小化时 captureScreenshot 会一直等不到帧，先 bringToFront 并给个兜底
+await send('Page.bringToFront')
+let shot = null
+try {
+  shot = await Promise.race([
+    send('Page.captureScreenshot', { format: 'png' }),
+    new Promise((r) => setTimeout(() => r(null), 8000)),
+  ])
+} catch {
+  shot = null
+}
 const fs = await import('node:fs')
-fs.writeFileSync(shotPath, Buffer.from(shot.data, 'base64'))
+if (shot?.data) fs.writeFileSync(shotPath, Buffer.from(shot.data, 'base64'))
 
 console.log(JSON.stringify({ report, errors, screenshot: shotPath }, null, 2))
 ws.close()

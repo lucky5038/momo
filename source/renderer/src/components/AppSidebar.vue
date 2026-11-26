@@ -108,7 +108,8 @@ const mainModules = MODULES.filter((m) => !m.planned)
 
 .nav-item {
   display: flex;
-  align-items: center;gap: 9px;
+  align-items: center;
+  gap: 9px;
   padding: 9px 10px;
   border-radius: var(--radius);
   color: var(--ink-2);
@@ -169,8 +170,4 @@ const mainModules = MODULES.filter((m) => !m.planned)
   line-height: 1.4;
 }
 
-.ver-note {
-  font-size: var(--fs-kicker);
-  color: var(--ink-3);
-}
 </style>

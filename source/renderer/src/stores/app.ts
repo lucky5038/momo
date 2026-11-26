@@ -14,6 +14,8 @@ export const useAppStore = defineStore('app', () => {
 
   /** 连接代次：切账套/重新连接后自增，依赖字典的页面据此失效重载（旧界面靠 init() 手工重拉） */
   const generation = ref(0)
+  /** probe 并发守卫：重连与设置页测试可能同时触发，后到的结果才作数（非响应式，无需渲染） */
+  let probeSeq = 0
 
   const connLabel = computed(() => {
     switch (conn.value) {
@@ -61,7 +63,8 @@ export const useAppStore = defineStore('app', () => {
 
   /** 真探活：/api/meta 能返回 docs 才算数据库可用（旧界面 loadConnBanner 同策略）。
    *  retry 次 × 2 秒：数据库往往比窗口晚就绪，一次失败就报错会让人以为工具坏了。 */
-  async function probe(retry = 0) {
+  async function probe(retry = 2) {
+    const seq = ++probeSeq
     if (!database.value) {
       conn.value = 'error'
       connError.value = '尚未选择账套，请到「系统设置」连接数据库'
@@ -74,6 +77,7 @@ export const useAppStore = defineStore('app', () => {
       try {
         const meta = (await api.meta({})) as { docs?: unknown[]; currentDb?: string; server?: string }
         if (!meta || !Array.isArray(meta.docs)) throw new Error('数据库未返回字典')
+        if (seq !== probeSeq) return
         if (meta.currentDb) database.value = meta.currentDb
         if (meta.server) server.value = meta.server
         conn.value = 'ready'
@@ -81,8 +85,10 @@ export const useAppStore = defineStore('app', () => {
       } catch (e) {
         lastError = e
         if (i < retry) await new Promise((r) => setTimeout(r, 2000))
+        if (seq !== probeSeq) return
       }
     }
+    if (seq !== probeSeq) return
     conn.value = 'error'
     connError.value = errorMessage(lastError)
   }

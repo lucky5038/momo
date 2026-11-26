@@ -6,11 +6,12 @@ tools/eb/node_modules/
 # 构建产物
 dist-electron/
 releases/
+dist/
 
 # 基线 exe / 旧版本归档
 baseline/
 
-# 运行时状态与日志
+# 运行状态与日志
 *.log
 port.txt
 first_open.flag
@@ -18,6 +19,8 @@ momo_backup_picked.flag
 chain_registry.json
 invoice_source_map.json
 *.bak
+*.tmp
+*~
 
 # 本地快照
 snapshots/
@@ -28,3 +31,4 @@ tools/electron31/
 pilot/
 logs/
 source/cleaning/
+tools/*.csv
