@@ -56,7 +56,6 @@ const connLabel = computed(() => {
   padding: 0 150px 0 22px;
   /* 与 titleBarOverlay 的底色完全一致，避免右上角出现色块 */
   background: var(--paper);
-  border-bottom: 1px solid var(--line);
   -webkit-app-region: drag;
 }
 

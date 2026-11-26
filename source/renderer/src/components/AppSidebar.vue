@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import { MODULES, APP_VERSION } from '../config/app'
+import appIcon from '../assets/app-icon.png'
 
 const route = useRoute()
 const isActive = (path: string) => route.path === path
@@ -9,7 +10,7 @@ const isActive = (path: string) => route.path === path
 <template>
   <aside class="sidebar">
     <div class="brand">
-      <span class="seal-mark">N</span>
+      <img class="app-icon" :src="appIcon" alt="N-B助手" />
       <div class="brand-text">
         <strong>N-B助手</strong>
         <small>让ERP在中国普遍成功</small>
@@ -52,22 +53,15 @@ const isActive = (path: string) => route.path === path
   height: 52px;
   padding: 0 16px;
   background: var(--paper);
-  border-bottom: 1px solid var(--line);
   -webkit-app-region: drag;
 }
 
-.seal-mark {
-  display: grid;
-  place-items: center;
+.app-icon {
   width: 30px;
   height: 30px;
-  border-radius: 4px;
-  background: var(--seal);
-  color: #fffaf0;
-  font-family: var(--font-title);
-  font-size: 17px;
-  font-weight: 700;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: inset 0 0 0 1px rgba(28, 27, 25, 0.08);
 }
 
 .brand-text {

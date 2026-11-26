@@ -21,14 +21,27 @@ onMounted(() => {
         <RouterView />
       </main>
     </div>
+    <!-- 标题栏下的一条横线：整条画在 overlay 区域之外，不然右侧系统按钮那一截会被盖掉 -->
+    <div class="titlebar-rule" />
   </div>
 </template>
 
 <style scoped>
 .shell {
+  position: relative;
   display: grid;
   grid-template-columns: 212px minmax(0, 1fr);
   height: 100%;
+}
+
+.titlebar-rule {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+  pointer-events: none;
 }
 
 .main {
