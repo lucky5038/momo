@@ -24,6 +24,7 @@ snapshots/
 
 # 本机测试/工具产物
 tools/node/
+tools/electron31/
 pilot/
 logs/
 source/cleaning/

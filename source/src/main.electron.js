@@ -10,6 +10,9 @@ const path = require('path');
 // 启动参数：N-B助手.exe --preview
 const isPreview = process.argv.includes('--preview');
 const isDev = !isPreview && (process.env.NB_DEV === '1' || process.argv.includes('--dev'));
+// 前端工程化（Vue/Vite）开发地址：设置 NB_RENDERER_URL 后，开发版窗口直接加载 Vite 开发服务器；
+// 未设置时保持原有行为（加载内置后端页面），不影响正式版与旧界面。
+const rendererUrl = (isDev && String(process.env.NB_RENDERER_URL || '').trim()) || '';
 if (isPreview) {
   try {
     const previewDir = path.join(app.getPath('temp'), 'NBPreviewRun');
@@ -210,18 +213,24 @@ function createWindow() {
     });
   }
 
-  // 加载本地 http 后端提供的界面（端口以 port.txt 为准，冲突时自动递增）
-  // 等待 app.js 写入 port.txt 后再加载（首次加载失败自动重试一次）
-  const loadWithRetry = (attempts) => {
-    const port = getActualPort();
-    mainWindow.loadURL('http://127.0.0.1:' + port + '/', (err) => {
-      if (err && attempts > 0) {
-        console.log('[Electron] 加载失败，2秒后重试：', err.message);
-        setTimeout(() => loadWithRetry(attempts - 1), 2000);
-      }
-    });
-  };
-  setTimeout(() => loadWithRetry(3), 300); // 给 app.js 一点时间写 port.txt
+  if (rendererUrl) {
+    // 开发版：直接加载前端工程（Vite dev server）。不设置该变量即回退到旧的内置后端页面。
+    console.log('[Electron] 开发版加载前端工程地址: ' + rendererUrl);
+    mainWindow.loadURL(rendererUrl);
+  } else {
+    // 加载本地 http 后端提供的界面（端口以 port.txt 为准，冲突时自动递增）
+    // 等待 app.js 写入 port.txt 后再加载（首次加载失败自动重试一次）
+    const loadWithRetry = (attempts) => {
+      const port = getActualPort();
+      mainWindow.loadURL('http://127.0.0.1:' + port + '/', (err) => {
+        if (err && attempts > 0) {
+          console.log('[Electron] 加载失败，2秒后重试：', err.message);
+          setTimeout(() => loadWithRetry(attempts - 1), 2000);
+        }
+      });
+    };
+    setTimeout(() => loadWithRetry(3), 300); // 给 app.js 一点时间写 port.txt
+  }
 
   // 仅允许 127.0.0.1:8787，其他外链交给系统浏览器
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

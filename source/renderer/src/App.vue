@@ -16,20 +16,28 @@ const backend = '待接入（现有后端 app.js 在 127.0.0.1:8787）'
   </main>
 </template>
 
+<style>
+html,
+body {
+  margin: 0;
+  background: #0b1220;
+}
+</style>
+
 <style scoped>
 .wrap {
   font-family: "Microsoft YaHei", system-ui, sans-serif;
   max-width: 720px;
   margin: 80px auto;
   padding: 0 24px;
-  color: #1f2937;
+  color: #e5e7eb;
 }
 h1 {
   font-size: 28px;
   margin-bottom: 8px;
 }
 .sub {
-  color: #6b7280;
+  color: #94a3b8;
   margin-bottom: 24px;
 }
 ul {
@@ -38,9 +46,9 @@ ul {
 .tip {
   margin-top: 24px;
   padding: 12px 16px;
-  background: #f3f4f6;
+  background: rgba(255,255,255,0.06);
   border-radius: 8px;
-  color: #6b7280;
+  color: #94a3b8;
   font-size: 13px;
 }
 </style>
