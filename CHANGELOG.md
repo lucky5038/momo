@@ -2,6 +2,12 @@
 
 ## 版本演进（最新在前）
 
+### v2.9.4（2026-11-26）
+- 多链路（跨表带值）可见可选：现象是「JSKJDB 进 采购单」这类组合实际有 2 条取值链路（直连、或经 QMSMFB→JSKJCB 转），旧界面和新界面都只显示一句「自动链式: 经 …」，用户既看不出走了哪条，也无法在多条链路时指定。原因：旧界面的「来源档②（链式）」从 2.2.3 基线起就被硬关闭（`currentSrc2()` 恒返回 null），多链路一直由后端 `resolvedChainPaths()` 自动合并，界面完全没有出口。改法：后端 `handleRun` 接受可选 `chainPathIndex`（不传即维持原「自动合并」行为，逐字节兼容旧版），预览响应新增 `chainPaths` 回报本次实际用的链路；前端在高级选项里加「取值链路」下拉（自动/指定某条），预览区显示「本次链路：A → B → C」。
+- 后端改动范围：仅 `D:\MOMO开发\source\src\app.js` 的 `handleRun`（新增 `chainPathIndex` 入参与 `chainPaths` 出参、`chainPathLabels()` 辅助函数、`usedChainPaths` 变量）；其余 31 个路由、旧界面 `public/index.html`、`main.electron.js` 均未改。
+- 链路来源：`GET /api/chains/paths?from=&to=`（旧版同款接口，注册表 version 27、565 个单据）。实测：JSKJDB→DCSHDB 2 条、JSKJDB→TPADEA 4 条、DCSHDB→TPADEA 2 条、JSKLOA→TPADEA 0 条。
+- 验证：`node --check app.js` 通过；后端直调 `POST /api/run` 三种情况分别回 2 条 / 直连 / 经转链；前端 CDP 实跑同样三种选择，预览区文案与下拉一致；`vue-tsc --noEmit` 0；`vite build` 成功（js 166.42KB / css 25.24KB）。
+- 说明：本版未打包，可用发版基线仍为 2.2.101。
 ### v2.9.3（2026-11-26）
 - 修「账套切换会写错库」（严重）：现象是切完账套回到跨表带值，单据/字段字典还是旧账套，确认框也提示旧账套名。原因：账套字典的失效订阅写在页面 `watch` 里，切走页面就销毁，而 store 里的字典是全局的。改法：`stores/app.ts` 增加 `generation`（每次切库/重连自增），`stores/crossfill.ts` 记录 `metaGeneration`，跨表带值页进入时比对版本号，不一致就重拉字典。
 - 修「预览中状态下按钮永久禁用」（严重）：`invalidate()` 递增 `runSeq` 后，在飞请求的 `finally` 因序号不匹配不再复位 `previewing/executing`，`busy` 永远为真。改法：`invalidate()` 里显式复位三个忙标志。

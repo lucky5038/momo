@@ -59,6 +59,8 @@ export interface RunRequest {
   confirm: boolean
   force: boolean
   chain: null
+  /** 多链路时指定走第几条（不传/负数 = 后端自动合并全部路径，与旧版一致） */
+  chainPathIndex?: number
   createTrigger: boolean
   forceCreateTrigger: boolean
   mergeDisplay: boolean
@@ -83,6 +85,8 @@ export interface PreviewResponse {
   joins?: unknown[]
   channelNote?: string | null
   chainNote?: string | null
+  /** 本次实际参与构造的链路（后端 v2.9.4 起回传） */
+  chainPaths?: string[]
   typeWarning?: string | null
   chainWarning?: string | null
   mergeNote?: string | null
@@ -132,6 +136,7 @@ export function isCustomColumn(col: string): boolean {
 }
 
 export const fetchMeta = () => api.meta<Meta>()
+export const fetchChainPaths = (from: string, to: string) => api.chainsPaths(from, to)
 export const runFill = <T extends PreviewResponse | RunResponse>(body: RunRequest) => api.run<T>(body as unknown as Record<string, unknown>)
 export const clearColumn = (body: { docId: string; tgtCol: string; confirm: boolean }) =>
   api.clearColumn<ClearResponse>(body as unknown as Record<string, unknown>)

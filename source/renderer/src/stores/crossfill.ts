@@ -8,7 +8,8 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
-import { clearColumn, fetchMeta, runFill, isCustomColumn } from '../api/crossfill'
+import { clearColumn, fetchChainPaths, fetchMeta, runFill, isCustomColumn } from '../api/crossfill'
+import type { ChainPathEdge } from '../api/client'
 import type { ClearResponse, Meta, PreviewResponse, RunRequest, RunResponse } from '../api/crossfill'
 import { useStatus } from '../composables/useStatus'
 import { errorMessage } from '../lib/error'
@@ -42,6 +43,12 @@ export const useCrossFillStore = defineStore('crossfill', () => {
   const clearing = ref(false)
   const busy = computed(() => previewing.value || executing.value || clearing.value)
   const result = ref<RunResponse | null>(null)
+
+  /** 多链路：当前单据→来源档的全部自动路径；-1 表示交给后端自动合并（旧版行为） */
+  const chainPaths = ref<ChainPathEdge[][]>([])
+  const chainPathIndex = ref(-1)
+  const chainLoading = ref(false)
+  let chainSeq = 0
 
   /** 请求序号：切单据/切账套后旧响应回来直接丢弃，避免覆盖新状态 */
   let metaSeq = 0
@@ -83,6 +90,25 @@ export const useCrossFillStore = defineStore('crossfill', () => {
   })
   /** 旧界面 valSub 里的「默认关联 X」 */
   const defaultValCol = computed(() => curSrc.value?.key?.[0] || '')
+
+  /** 链路标签：A → B → C（与后端 chainPathLabels 同一拼法，保证前后端文案一致） */
+  const chainLabels = computed(() =>
+    chainPaths.value.map((path) => {
+      const nodes: string[] = []
+      for (const edge of path) {
+        if (!nodes.length) nodes.push(edge.from)
+        nodes.push(edge.to)
+      }
+      return nodes.join(' → ')
+    }),
+  )
+  const hasMultiChain = computed(() => chainLabels.value.length > 1)
+  const chainHint = computed(() => {
+    if (chainLoading.value) return '正在识别取值链路...'
+    if (!chainLabels.value.length) return ''
+    if (chainLabels.value.length === 1) return '只有一条取值链路，自动使用。'
+    return `识别到 ${chainLabels.value.length} 条链路，默认全部合并；也可指定其中一条。`
+  })
   const clearEnabled = computed(
     () => !!docId.value && !!tgtCol.value.trim() && tgtCols.value.some((c) => c.col === tgtCol.value.trim()),
   )
@@ -98,6 +124,7 @@ export const useCrossFillStore = defineStore('crossfill', () => {
       confirm,
       force: force.value,
       chain: null,
+      ...(chainPathIndex.value >= 0 ? { chainPathIndex: chainPathIndex.value } : {}),
       createTrigger: createTrigger.value,
       forceCreateTrigger: false,
       mergeDisplay: mergeDisplay.value,
@@ -178,6 +205,8 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     force.value = false
     createTrigger.value = false
     mergeDisplay.value = false
+    chainPaths.value = []
+    chainPathIndex.value = -1
     clearRunState()
     status.reset()
   }
@@ -187,6 +216,8 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     tgtCol.value = ''
     srcId.value = ''
     srcValCol.value = ''
+    chainPaths.value = []
+    chainPathIndex.value = -1
     // 旧版换单据不清「建立触发器」：勾选状态跟着用户走，只有变为不支持时才取消（见 setSrc）
     clearRunState()
     status.reset()
@@ -195,10 +226,41 @@ export const useCrossFillStore = defineStore('crossfill', () => {
   function setSrc(id: string) {
     srcId.value = id
     srcValCol.value = ''
+    chainPathIndex.value = -1
     clearRunState()
     status.reset()
     // 付款单 + 采购/委托来源不支持建触发器，选完来源再判，避免死分支
     if (triggerBlocked.value) createTrigger.value = false
+    void loadChainPaths()
+  }
+
+  /** 多链路探测：单据与来源档都选定后才查，失败不影响主流程（只丢链路选择） */
+  async function loadChainPaths() {
+    const from = docId.value
+    const to = srcId.value
+    chainSeq += 1
+    const seq = chainSeq
+    chainPaths.value = []
+    chainPathIndex.value = -1
+    if (!from || !to || from === to) return
+    chainLoading.value = true
+    try {
+      const resp = await fetchChainPaths(from, to)
+      if (seq !== chainSeq) return
+      chainPaths.value = Array.isArray(resp.paths) ? resp.paths : []
+    } catch {
+      if (seq !== chainSeq) return
+      chainPaths.value = []
+    } finally {
+      if (seq === chainSeq) chainLoading.value = false
+    }
+  }
+
+  /** 指定走第几条链路（-1 = 自动合并），换路径等于换查询，必须清预览 */
+  function setChainPath(index: number) {
+    chainPathIndex.value = Number.isInteger(index) && index >= 0 && index < chainPaths.value.length ? index : -1
+    clearRunState()
+    status.reset()
   }
 
   /** 目标列由下拉直接写 store 时要清预览，否则表格还是上一列的样本 */
@@ -334,6 +396,14 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     canPreview,
     clearEnabled,
     defaultValCol,
+    chainPaths,
+    chainLabels,
+    chainPathIndex,
+    chainLoading,
+    hasMultiChain,
+    chainHint,
+    setChainPath,
+    loadChainPaths,
     preview,
     previewing,
     executing,
