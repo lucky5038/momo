@@ -98,6 +98,16 @@ export interface RunPayload {
   [key: string]: unknown
 }
 
+export interface CredRecord {
+  user: string
+  pass: string
+}
+
+export interface CredsPayload {
+  ok?: boolean
+  data?: Record<string, CredRecord | undefined> & { _last?: CredRecord }
+}
+
 export const api = {
   // 连接与配置
   config: () => request<DbConfig>('/api/config'),
@@ -110,6 +120,11 @@ export const api = {
   /** 不传 dir：后端弹原生目录选择框 */
   setBackupDir: (dir?: string) =>
     post<{ ok?: boolean; canceled?: boolean; backupDir?: string; error?: string }>('/api/backup-dir', dir ? { dir } : {}),
+
+  // 凭据记忆（旧版「保存配置」同时写 creds.json，重启才不会被旧凭据覆盖）
+  creds: () => request<CredsPayload>('/api/creds'),
+  saveCreds: (body: Record<string, CredRecord>) => post<{ ok?: boolean }>('/api/creds/save', body),
+  dropCred: (server?: string) => post<{ ok?: boolean; dropped?: string }>('/api/creds/drop', server ? { key: server } : {}),
 
   // 元数据与字典（泛型由调用方给强类型，避免页面里 `as unknown as`）
   meta: <T = MetaPayload>(body?: unknown) => post<T>('/api/meta', body),
