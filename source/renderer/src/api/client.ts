@@ -120,22 +120,6 @@ export interface CredsPayload {
   }
 }
 
-/** 多链路：/api/chains/paths 返回的一条路径 = 若干段 {from,to} 边 */
-export interface ChainPathEdge {
-  from: string
-  to: string
-  code?: string
-  internal?: boolean
-}
-
-export interface ChainPathsResponse {
-  ok?: boolean
-  from?: string
-  to?: string
-  count?: number
-  paths?: ChainPathEdge[][]
-}
-
 /** 后端 onboardingState()（app.js:1024-1090 附近）：判断本机是否还没配过数据库 */
 export interface OnboardingState {
   ok?: boolean
@@ -173,12 +157,6 @@ export const api = {
   // 首次使用向导
   onboarding: () => request<OnboardingState>('/api/onboarding'),
   finishOnboarding: () => post<OnboardingState>('/api/onboarding'),
-
-  /** 多链路字典：列出从 from 到 to 的所有自动路径（旧版同样有这个接口，只是界面没展示） */
-  chainsPaths: (from: string, to: string) =>
-    request<ChainPathsResponse>(
-      `/api/chains/paths?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-    ),
 
   // 主流程
   run: <T = Record<string, unknown>>(body: RunPayload) => post<T>('/api/run', body),

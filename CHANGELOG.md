@@ -2,6 +2,15 @@
 
 ## 版本演进（最新在前）
 
+### v2.9.5（2026-11-27）
+- 撤回 v2.9.4 的多链路前台入口：用户要求「前台不显示链路，只保留后台自动判断」，因此删除「取值链路」下拉、预览区「本次链路」文案，以及对应 store/api/CSS。
+- 同步撤回后端改动：`D:\MOMO开发\source\src\app.js` 已 `git checkout e2145d2`（v2.9.3 版本），`chainPathIndex` 入参、`chainPaths` 出参、`chainPathLabels()`、`usedChainPaths` 全部移除，`git diff e2145d2 -- source/src/app.js` 为空（与 v2.9.3 逐字节一致）。
+- 与旧版 2.2.101 的一致性证据：
+  - 请求体：旧 `index.html:1557` 的 `curReq()` 产出 `{docId,tgtCol,srcId,srcValCol,partyKey:1,mode:'fill',force,chain:null,createTrigger,forceCreateTrigger:false,mergeDisplay,triggerTimeMode:'none',mappings:[]}`，执行时额外 `b.confirm=true`（`index.html:1605`）；新版 `stores/crossfill.ts` 的 `buildRequest()` 字段与取值完全相同，预览传 `confirm:false`、执行传 `confirm:true`。
+  - 链路判断：两端都固定 `chain:null`，由后端 `resolvedChainPaths()` + `sqlgen.buildChainSQL/buildChainMultiSQL` 自动决定（多条自动合并、`JSKLOA→TPADEA` 走硬编码 `AUTO_CHAIN` 补仓库维度），前台不参与。
+  - 前端链路元素：CDP 实测 `.chain-row` 与 `#cf-chain` 均不存在，高级选项只剩「强制覆盖 / 建立触发器 / 合并显示」三项，与旧版一致。
+- 验证：`vue-tsc --noEmit` 0；`vite build` 成功（js 164.61KB / css 25.11KB）；按旧版请求体直调 `POST /api/run` 正常返回，响应中已无 `chainPaths` 字段。
+- 说明：本版未打包；可用发版基线仍为 2.2.101。
 ### v2.9.4（2026-11-26）
 - 多链路（跨表带值）可见可选：现象是「JSKJDB 进 采购单」这类组合实际有 2 条取值链路（直连、或经 QMSMFB→JSKJCB 转），旧界面和新界面都只显示一句「自动链式: 经 …」，用户既看不出走了哪条，也无法在多条链路时指定。原因：旧界面的「来源档②（链式）」从 2.2.3 基线起就被硬关闭（`currentSrc2()` 恒返回 null），多链路一直由后端 `resolvedChainPaths()` 自动合并，界面完全没有出口。改法：后端 `handleRun` 接受可选 `chainPathIndex`（不传即维持原「自动合并」行为，逐字节兼容旧版），预览响应新增 `chainPaths` 回报本次实际用的链路；前端在高级选项里加「取值链路」下拉（自动/指定某条），预览区显示「本次链路：A → B → C」。
 - 后端改动范围：仅 `D:\MOMO开发\source\src\app.js` 的 `handleRun`（新增 `chainPathIndex` 入参与 `chainPaths` 出参、`chainPathLabels()` 辅助函数、`usedChainPaths` 变量）；其余 31 个路由、旧界面 `public/index.html`、`main.electron.js` 均未改。

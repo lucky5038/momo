@@ -334,18 +334,6 @@ async function handleChainPaths(req, res) {
   }
 }
 
-/** 把链路数组压成 "A → B → C" 形式，给前端展示用 */
-function chainPathLabels(paths) {
-  const list = Array.isArray(paths) ? paths : [];
-  return list.map((path) => {
-    const edges = Array.isArray(path) ? path : [];
-    if (!edges.length) return '';
-    const parts = [edges[0].from || ''];
-    for (const e of edges) parts.push(e.to || '');
-    return parts.filter(Boolean).join(' → ');
-  }).filter(Boolean);
-}
-
 function sendJSON(res, code, obj) { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(obj)); }
 function readBody(req) { return new Promise((res, rej) => { let d = ''; req.on('data', c => d += c); req.on('end', () => res(d)); req.on('error', rej); }); }
 
@@ -1003,10 +991,8 @@ async function handleClearColumn(req, res) {
 }
 
 async function handleRun(req, res) {
-  /** 本次实际参与构造的链路路径（供前端展示/复核；旧界面没有这个回传） */
-  let usedChainPaths = [];
   const b = JSON.parse(await readBody(req));
-  const { docId, tgtCol, srcId, srcValCol, partyKey, mode, confirm, force, chain, createTrigger, triggerTimeMode, mergeDisplay, chainPathIndex } = b;
+  const { docId, tgtCol, srcId, srcValCol, partyKey, mode, confirm, force, chain, createTrigger, triggerTimeMode, mergeDisplay } = b;
   if (tgtCol && !isCustomColumn(tgtCol)) {
     return sendJSON(res, 400, { error: '系统默认字段不支持带值，请选择目标单据的自定义字段（960–995）' });
   }
@@ -1073,12 +1059,6 @@ async function handleRun(req, res) {
       } catch (autoErr) {
         dbg('[autoChain] lookup failed: ' + autoErr.message);
       }
-      // 前端可指定走第几条链路（多链路场景自动可能选错；不传则保持原有"自动/合并"行为）
-      const pickedIdx = Number.isInteger(chainPathIndex) ? chainPathIndex : -1;
-      if (pickedIdx >= 0 && pickedIdx < autoPaths.length) {
-        autoPaths = [autoPaths[pickedIdx]];
-      }
-      usedChainPaths = autoPaths;
       const internalPath = autoPaths.length > 0 && autoPaths.every(path => path.length && path.every(edge => edge.internal));
       // 单跳适配边（重工单/委外变更等）方向与默认“单号键”不同，必须优先走注册表，
       // 否则会按来源单号错连，出现“有映射但预览 0 行”。
@@ -1202,7 +1182,7 @@ async function handleRun(req, res) {
       };
       sample = sample.map(row => ({ ...row, '应带': mergeText(row['现值'], row['应带'], '   ') }));
     }
-    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, chainPaths: chainPathLabels(usedChainPaths), channelNote: built.channelNote || '', chainNote: built.chainNote || '', typeWarning: built.typeWarning || undefined, chainWarning: built.chainWarning || undefined, mergeNote: mergeDisplay ? (built.isHeaderMerge ? '合并显示：表头聚合来源值后追加到旧值' : '合并显示：保留旧值，追加本次值（重复值跳过）') : undefined, previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: mergeDisplay ? '合并显示（保留旧值+本次值）' : (force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)')) });
+    return sendJSON(res, 200, { preview: true, mappingCount: builtResults.length, totalRows, partyNote: built.partyNote, joins: built.joins, channelNote: built.channelNote || '', chainNote: built.chainNote || '', typeWarning: built.typeWarning || undefined, chainWarning: built.chainWarning || undefined, mergeNote: mergeDisplay ? (built.isHeaderMerge ? '合并显示：表头聚合来源值后追加到旧值' : '合并显示：保留旧值，追加本次值（重复值跳过）') : undefined, previewSql: built.previewSql, updateSql: built.updateSql, updateSqls: built.updateSqls, sample, note: mergeDisplay ? '合并显示（保留旧值+本次值）' : (force ? '强制覆盖(实时最新)' : (mode === 'fix' ? '纠正错值' : '只填空(幂等)')) });
   }
 
   const cfg = CUR_CONFIG || CONFIG.db;

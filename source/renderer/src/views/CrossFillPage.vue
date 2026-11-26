@@ -30,11 +30,6 @@ const {
   executing,
   busy,
   defaultValCol,
-  chainLabels,
-  chainPathIndex,
-  chainLoading,
-  hasMultiChain,
-  chainHint,
   result,
   message,
   messageKind,
@@ -100,10 +95,6 @@ const banners = computed(() => {
   // 类型不匹配 / 链条提示属于风险项，用告警色；其余是说明
   if (p.typeWarning) list.push({ kind: 'warn', text: p.typeWarning })
   if (p.chainWarning) list.push({ kind: 'warn', text: p.chainWarning })
-  // 本次实际走的链路：多链路时让用户看清用了哪条，而不是"莫名其妙多带了值"
-  if (p.chainPaths && p.chainPaths.length) {
-    list.push({ kind: 'note', text: `本次链路：${p.chainPaths.join('；')}` })
-  }
   if (p.mergeNote) list.push({ kind: 'note', text: p.mergeNote })
   if (p.partyNote) list.push({ kind: 'note', text: p.partyNote })
   if (p.note) list.push({ kind: 'note', text: p.note })
@@ -223,19 +214,6 @@ async function onExecute() {
         </label>
         <label class="chk"><input v-model="mergeDisplay" type="checkbox" @change="store.clearRunState()" /> 合并显示</label>
         <span v-if="triggerBlocked" class="sub">付款单身汇总依赖付款冲账档，保存后用「执行」更新</span>
-      </div>
-      <div v-if="srcId && (chainLoading || chainLabels.length)" class="chain-row">
-        <label class="lbl" for="cf-chain">取值链路</label>
-        <select
-          id="cf-chain"
-          :value="String(chainPathIndex)"
-          :disabled="busy || !hasMultiChain"
-          @change="store.setChainPath(Number(($event.target as HTMLSelectElement).value))"
-        >
-          <option value="-1">{{ hasMultiChain ? '自动（默认，合并全部链路）' : '自动（当前只有一条链路）' }}</option>
-          <option v-for="(label, i) in chainLabels" :key="label" :value="String(i)">{{ label }}</option>
-        </select>
-        <span class="sub">{{ chainHint }}</span>
       </div>
     </div>
 
@@ -427,25 +405,6 @@ select:disabled {
   font-size: var(--fs-sub);
   color: var(--ink-2);
   cursor: pointer;
-}
-
-/* 取值链路：多链路才需要选，单条时只显示"自动" */
-.chain-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--line-soft);
-}
-
-.chain-row .lbl {
-  margin: 0;
-}
-
-.chain-row select {
-  max-width: 460px;
 }
 
 .chk input {
