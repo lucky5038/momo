@@ -2,6 +2,14 @@
 
 ## 版本演进（最新在前）
 
+### v2.8.1（2026-11-26）
+- 字号刻度统一：新增 `--fs-page-title/--fs-section/--fs-body/--fs-sub/--fs-kicker` 五档 token，同一角色在四个已迁移页面只用一档。
+- 现象：同一屏里 kicker 出现 11px/12px、说明文字出现 11.5/12.5/13/14px、小节标题字距 0/1px 混用，看起来像"字体没统一"。
+- 原因：各页面 CSS 各自硬编码字号与字距，`--font-title` 还指向宋体。
+- 改法：`--font-title` 指向 `--font-body`；kicker 统一 11.5px/600/1.2px/墨灰（原朱砂改墨灰）；小节标题统一 15px/600/字距 normal、编号改墨灰；说明文字统一 12.5px/400/墨灰；页标题 20px/700/字距 normal。
+- 覆盖文件：`paper.css`、`ModulePlaceholder.vue`、`TriggersView.vue`、`SettingsView.vue`、`CrossFillPage.vue`、`CleaningView.vue`。
+- 验证：CDP 取 computed style，三页 `.kicker 11.5/600/1.2px`、`h2 20/700/normal`、`.sub/.desc 12.5/400`、`.step 15/600/normal` 全部一致；`vue-tsc` 0；`vite build` 695ms。
+- 说明：旧界面与后端零改动，未打包，可用发版基线仍为 2.2.101。
 ### v2.8.0（2026-11-26）
 - 字体统一：去掉标题的宋体，全应用（含 h1/h2/h3、kicker、正文）统一微软雅黑，避免中英混排字重不一致。
 - 数据清洗：选完客户数据后按钮直接显示文件名（旁边只留大小），不再显示「选择客户数据」。

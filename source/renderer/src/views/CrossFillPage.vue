@@ -245,14 +245,14 @@ async function onExecute() {
 }
 
 .step {
-  font-family: var(--font-title);
-  font-size: 15px;
-  letter-spacing: 1px;
+  font-size: var(--fs-section);
+  font-weight: 600;
+  letter-spacing: normal;
   margin-bottom: 4px;
 }
 
 .step b {
-  color: var(--seal);
+  color: var(--ink-3);
   margin-right: 6px;
 }
 

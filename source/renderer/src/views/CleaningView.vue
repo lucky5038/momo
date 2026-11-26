@@ -549,9 +549,9 @@ onMounted(() => loadTemplates())
 }
 
 .kicker {
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  color: var(--seal);
+  font-size: var(--fs-kicker);
+  letter-spacing: 1.2px;
+  color: var(--ink-3);
   font-weight: 600;
 }
 
@@ -740,8 +740,8 @@ input:disabled {
 }
 
 .block-head strong {
-  font-family: var(--font-title);
-  font-size: 15px;
+  font-size: var(--fs-section);
+  font-weight: 600;
 }
 
 .map-wrap {

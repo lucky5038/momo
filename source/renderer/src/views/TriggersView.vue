@@ -194,13 +194,13 @@ onMounted(refresh)
 
 .step {
   margin: 0 0 4px;
-  font-family: var(--font-title);
-  font-size: 15px;
-  letter-spacing: 1px;
+  font-size: var(--fs-section);
+  font-weight: 600;
+  letter-spacing: normal;
 }
 
 .step b {
-  color: var(--seal);
+  color: var(--ink-3);
   margin-right: 6px;
 }
 
@@ -211,7 +211,7 @@ onMounted(refresh)
 
 .sub {
   margin: 0 0 10px;
-  font-size: 11.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-3);
 }
 
@@ -251,7 +251,7 @@ onMounted(refresh)
 .desc {
   display: block;
   margin-top: 2px;
-  font-size: 11.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-3);
 }
 
@@ -274,7 +274,7 @@ onMounted(refresh)
   display: inline-block;
   padding: 1px 8px;
   border-radius: 10px;
-  font-size: 11.5px;
+  font-size: var(--fs-kicker);
 }
 
 .badge.on {
@@ -289,7 +289,7 @@ onMounted(refresh)
 
 .btn {
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-2);
   background: var(--paper);
   border: 1px solid var(--line);

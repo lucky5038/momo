@@ -76,26 +76,28 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
 }
 
 .kicker {
-  font-size: 12px;
-  letter-spacing: 0.5px;
+  font-size: var(--fs-kicker);
+  font-weight: 600;
+  letter-spacing: 1.2px;
   color: var(--ink-3);
   margin-bottom: 4px;
 }
 
 .text h2 {
-  font-size: 20px;
-  letter-spacing: 0.5px;
+  font-size: var(--fs-page-title);
+  letter-spacing: normal;
 }
 
 .desc {
   margin: 6px 0 0;
-  color: var(--ink-2);
+  font-size: var(--fs-sub);
+  color: var(--ink-3);
 }
 
 .stage,
 .badge {
   flex: none;
-  font-size: 12px;
+  font-size: var(--fs-kicker);
   border-radius: 999px;
   padding: 2px 10px;
   white-space: nowrap;
@@ -134,8 +136,8 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
 }
 
 .sub {
-  color: var(--ink-2);
-  font-size: 13px;
+  color: var(--ink-3);
+  font-size: var(--fs-sub);
 }
 
 .points {
@@ -153,19 +155,20 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
 
 .point b {
   display: block;
-  font-size: 13.5px;
+  font-size: var(--fs-body);
+  font-weight: 600;
   margin-bottom: 4px;
 }
 
 .point span {
-  color: var(--ink-2);
-  font-size: 13px;
+  color: var(--ink-3);
+  font-size: var(--fs-sub);
 }
 
 .note {
   margin: 0;
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: var(--fs-sub);
 }
 
 .body {
@@ -175,7 +178,7 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
 .hint {
   margin: 0 0 8px;
   color: var(--ink-3);
-  font-size: 13px;
+  font-size: var(--fs-sub);
 }
 
 .hint:last-child {
