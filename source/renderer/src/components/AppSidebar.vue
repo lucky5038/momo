@@ -49,8 +49,9 @@ const isActive = (path: string) => route.path === path
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 18px 16px 16px;
+  padding: 12px 16px 14px;
   border-bottom: 1px solid var(--line-soft);
+  -webkit-app-region: drag;
 }
 
 .seal-mark {

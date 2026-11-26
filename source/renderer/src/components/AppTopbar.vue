@@ -52,10 +52,12 @@ const connLabel = computed(() => {
   justify-content: space-between;
   gap: 16px;
   height: 52px;
-  padding: 0 22px;
+  /* 右侧留出系统最小化/最大化/关闭按钮的位置（自绘标题栏） */
+  padding: 0 150px 0 22px;
   background: rgba(255, 253, 247, 0.86);
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(4px);
+  -webkit-app-region: drag;
 }
 
 .left h1 {
@@ -67,6 +69,7 @@ const connLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 14px;
+  -webkit-app-region: no-drag;
 }
 
 .conn {

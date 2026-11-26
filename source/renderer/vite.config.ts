@@ -9,6 +9,10 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    // 编辑器/工具的原子写会生成 .xxx.tmpdir 临时目录，chokidar 去 watch 会报 EBUSY 直接把 Vite 打死
+    watch: {
+      ignored: ['**/node_modules/**', '**/dist/**', '**/.*.tmpdir/**'],
+    },
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8787',

@@ -2,6 +2,12 @@
 
 ## 版本演进（最新在前）
 
+### v2.4.3（2026-11-26）
+- 窗口标题栏自绘（仅在开发版窗口生效）：`src/main.electron.js` 改用 `titleBarStyle: hidden` + `titleBarOverlay`（底色 #F7F3EA、符号墨色），彻底消除系统深色标题栏与纸墨页面的色差；页面顶部留出拖拽区（侧栏品牌块 + 顶栏），右侧让出系统最小化/最大化/关闭按钮。
+- 跨表带值页面瘦身：去掉「单据摘要」与「主表 → 取」两行技术信息（前台不需要），摘要改为单据下拉的悬停提示；单据字典加载失败时仍显示错误原因。
+- `vite.config.ts` 忽略 `**/.*.tmpdir/**`：编辑器原子写产生的临时目录被 chokidar 监视时报 EBUSY，会把 Vite 直接打死。
+- 说明：仍只影响开发版窗口，旧界面与后端零改动，未生成安装包；可用发版基线仍为 2.2.101。
+
 ### v2.4.2（2026-11-26）
 - 跨表带值页面 Vue 化（P2 第一步）：`source/renderer/src/views/CrossFillPage.vue` 落地 01 目标 / 02 来源 / 高级选项 / 预览结果 / 执行结果，字段、禁用条件、提示文案对齐旧界面 `#tab-sync`。
 - 新增 `src/api/crossfill.ts`（meta / run / clear-column 强类型契约）、`src/stores/crossfill.ts`（表单与预览状态，切单据/来源即清空旧结果）、`src/components/ColumnCombo.vue`（可搜索列下拉）、`tools/nb-cdp-crossfill.mjs`（CDP 自动跑一遍选单据→选列→预览）。

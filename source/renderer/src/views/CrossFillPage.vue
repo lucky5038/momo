@@ -94,19 +94,11 @@ async function onExecute() {
         <div class="step"><b>01</b> 目标</div>
 
         <label class="lbl">目标单据（主表）</label>
-        <select v-model="docId" :disabled="!docs.length" @change="onDocChange">
+        <select v-model="docId" :disabled="!docs.length" :title="docSub" @change="onDocChange">
           <option value="">—— 请选择单据 ——</option>
           <option v-for="d in docs" :key="d.id" :value="d.id">{{ d.name }}</option>
         </select>
-        <p class="sub">{{ docSub }}</p>
-
-        <div class="maintbl">
-          <span class="k">主表</span>
-          <span class="v">{{ curDoc ? `${curDoc.main}.${curDoc.mainKeyCol}` : '—' }}</span>
-          <span class="arrow">→</span>
-          <span class="k">取</span>
-          <span class="v">{{ curDoc ? `${curDoc.sub}.${curDoc.keyCol}` : '—' }}</span>
-        </div>
+        <p v-if="metaState === 'error'" class="sub err">{{ metaError }}</p>
 
         <label class="lbl">目标列（要写入哪一列）</label>
         <ColumnCombo
@@ -297,30 +289,6 @@ select:disabled {
   color: var(--ink-3);
 }
 
-.maintbl {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 12px;
-  padding: 8px 10px;
-  background: var(--wash);
-  border-radius: var(--radius);
-  color: var(--ink-2);
-}
-
-.maintbl .k {
-  color: var(--ink-3);
-}
-
-.maintbl .v {
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.maintbl .arrow {
-  color: var(--seal);
-}
-
 .clear-row {
   display: flex;
   align-items: center;
@@ -408,6 +376,10 @@ select:disabled {
 }
 
 .status.err {
+  color: var(--seal);
+}
+
+.err {
   color: var(--seal);
 }
 

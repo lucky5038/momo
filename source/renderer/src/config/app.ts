@@ -1,6 +1,6 @@
 /** 应用级常量与模块清单（侧栏与路由共用，避免两处维护）
  * 顺序沿用旧界面侧栏：跨表带值 → 触发器管理 → 系统设置 → 一句话带值 → 数据清洗 → 数据体检 */
-export const APP_VERSION = '2.4.0'
+export const APP_VERSION = '2.4.3'
 
 export interface ModuleDef {
   key: string
