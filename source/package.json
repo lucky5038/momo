@@ -1,7 +1,7 @@
 {
   "name": "nb-assistant",
   "productName": "N-B助手",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "ERP 跨表带值 / 数据清洗 / 触发器管理 桌面应用版",
   "main": "src/main.electron.js",
   "type": "commonjs",

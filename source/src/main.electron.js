@@ -2,7 +2,7 @@
 // 启动内置 HTTP 后端 (app.js) + 创建无边框应用窗口指向它
 'use strict';
 
-const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog, nativeTheme } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -185,12 +185,17 @@ if (!gotSingleInstanceLock) {
 }
 
 function createWindow() {
+  // 开发版加载的是浅色「纸墨」前端：窗口标题栏跟随浅色，避免深色系统主题下黑框配米白页的割裂
+  if (rendererUrl) {
+    try { nativeTheme.themeSource = 'light'; } catch (e) { /* 忽略：旧 Electron 无此能力 */ }
+  }
+
   mainWindow = new BrowserWindow({
     width: 1320,
     height: 880,
     minWidth: 960,
     minHeight: 640,
-    backgroundColor: '#0b1220',
+    backgroundColor: rendererUrl ? '#f7f3ea' : '#0b1220',
     title: 'N-B助手 · 让ERP在中国普遍成功',
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     autoHideMenuBar: true,

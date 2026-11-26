@@ -90,7 +90,7 @@ const connLabel = computed(() => {
 }
 
 .conn.ok {
-  color: var(--ok);
+  color: var(--ink-2);
 }
 
 .conn.error .dot {
@@ -99,7 +99,7 @@ const connLabel = computed(() => {
 }
 
 .conn.error {
-  color: var(--seal);
+  color: var(--ink-2);
 }
 
 .conn.checking .dot {

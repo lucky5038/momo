@@ -2,6 +2,12 @@
 
 ## 版本演进（最新在前）
 
+### v2.4.1（2026-11-26）
+- 颜色统一（P0 修正）：开发版窗口标题栏跟随浅色主题（
+ativeTheme.themeSource = 'light'，仅在 NB_RENDERER_URL 生效，正式版不变），窗口底色同步改为纸色 #F7F3EA，消除深色标题栏与米白页面的割裂感。
+- 顶栏状态文字统一为墨色（绿色/朱砂只保留在状态圆点上），侧栏 emoji 图标统一压成墨色（ilter: grayscale(1) opacity(.72)）。
+- 说明：仍为外壳阶段，旧界面与后端零改动，未生成安装包；可用发版基线仍为 2.2.101。
+
 ### v2.4.0（2026-11-26）
 - 前端外壳与主题（重建 P0）：`source/renderer/` 新增单主题「纸墨」（`src/styles/paper.css`：宣纸底 #F7F3EA、墨字 #1C1B19、朱砂 #A8322D），侧栏 + 顶栏外壳就位，6 个模块路由（`#/run`、`#/triggers`、`#/settings`、`#/chat`、`#/cleaning`、`#/diagnose`）可点击切换，顶栏显示后端配置状态与当前账套。
 - 新增 `src/api/client.ts`（后端接口统一封装）、`src/stores/app.ts`（连接状态）、`src/config/app.ts`（模块清单，侧栏与路由共用）、`src/views/ModulePlaceholder.vue`（各模块占位页，功能仍由旧界面提供）。

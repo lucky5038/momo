@@ -96,8 +96,7 @@ const isActive = (path: string) => route.path === path
 
 .nav-item {
   display: flex;
-  align-items: center;
-  gap: 9px;
+  align-items: center;gap: 9px;
   padding: 9px 10px;
   border-radius: var(--radius);
   color: var(--ink-2);
@@ -121,6 +120,8 @@ const isActive = (path: string) => route.path === path
   font-size: 15px;
   width: 18px;
   text-align: center;
+  /* emoji 自带彩色，统一压成墨色，避免和纸墨底打架 */
+  filter: grayscale(1) opacity(0.72);
 }
 
 .nav-title {
