@@ -2,6 +2,13 @@
 
 ## 版本演进（最新在前）
 
+### v2.8.0（2026-11-26）
+- 字体统一：去掉标题的宋体，全应用（含 h1/h2/h3、kicker、正文）统一微软雅黑，避免中英混排字重不一致。
+- 数据清洗：选完客户数据后按钮直接显示文件名（旁边只留大小），不再显示「选择客户数据」。
+- 生产加载链路（为打包做准备，本次未打包）：`app.js` 优先静态服务 `renderer/dist`（按扩展名给 MIME、防目录穿越、未知路径回落 `index.html` 以兼容 hash 路由），没有 dist 时仍回落旧内联界面；`electron-builder.yml` 的 files 增加 `renderer/dist/**/*`。
+- `main.electron.js` 用 `useNewUI` 判断（开发态有 `NB_RENDERER_URL` 或打包内含 `renderer/dist`）来决定浅色标题栏与窗口底色，避免只认开发地址、导致正式态又出现深色标题栏黑条。
+- 验证：`NB_DEV=1` 且不设 `NB_RENDERER_URL` 启动（等价打包后的加载路径）→ 窗口加载新界面、标题栏为纸色；`/` 与 `/assets/index-*.js|css` 均 200。
+- 说明：旧界面与后端接口零改动，未生成安装包；可用发版基线仍为 2.2.101。
 ### v2.7.1（2026-11-26）
 - 修复开发版看不到已保存清洗模板：`main.electron.js` 改为「外部已指定 `NB_CLEANING_TEMPLATES_DIR` 就尊重它，否则仍用本实例 userData」，正式版行为不变。
 - `tools/dev-renderer.ps1` 启动前把模板库指向正式数据目录 `%APPDATA%\N-B助手\cleaning\templates`，开发版与正式版共用同一套模板（现有 19 个模板全部可见）。

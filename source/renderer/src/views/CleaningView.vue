@@ -380,10 +380,10 @@ onMounted(() => loadTemplates())
         <div class="lbl">02 来源数据</div>
         <div class="src-row">
           <label class="btn sm">
-            选择客户数据
+            {{ sourceFile ? sourceFile.name : '选择客户数据' }}
             <input type="file" accept=".xls,.xlsx,.xlsm" hidden @change="onSourceFile" />
           </label>
-          <span class="sub">{{ sourceFile ? `${sourceFile.name} · ${fileSize(sourceFile)}` : '(.xls / .xlsx)' }}</span>
+          <span class="sub">{{ sourceFile ? fileSize(sourceFile) : '(.xls / .xlsx)' }}</span>
         </div>
         <div class="file-actions">
           <button class="btn primary" type="button" :disabled="reading" @click="read">

@@ -12,6 +12,7 @@ files:
   - public_inline.js
   - build/icon.png
   - src/**/*
+  - renderer/dist/**/*
 
 win:
   icon: build/icon.ico

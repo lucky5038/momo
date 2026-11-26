@@ -13,6 +13,10 @@ const isDev = !isPreview && (process.env.NB_DEV === '1' || process.argv.includes
 // 前端工程化（Vue/Vite）开发地址：设置 NB_RENDERER_URL 后，开发版窗口直接加载 Vite 开发服务器；
 // 未设置时保持原有行为（加载内置后端页面），不影响正式版与旧界面。
 const rendererUrl = (isDev && String(process.env.NB_RENDERER_URL || '').trim()) || '';
+// 在跑新的 Vue 渲染层吗？开发态看 NB_RENDERER_URL，正式态看有没有打包进 renderer/dist。
+// 用它决定标题栏自绘与浅色底：旧界面仍是深色，不能被改成浅色。
+const rendererDistIndex = path.join(__dirname, '..', 'renderer', 'dist', 'index.html');
+const useNewUI = Boolean(rendererUrl) || (() => { try { return fs.existsSync(rendererDistIndex); } catch (e) { return false; } })();
 if (isPreview) {
   try {
     const previewDir = path.join(app.getPath('temp'), 'NBPreviewRun');
@@ -186,7 +190,7 @@ if (!gotSingleInstanceLock) {
 
 function createWindow() {
   // 开发版加载的是浅色「纸墨」前端：窗口标题栏跟随浅色，避免深色系统主题下黑框配米白页的割裂
-  if (rendererUrl) {
+  if (useNewUI) {
     try { nativeTheme.themeSource = 'light'; } catch (e) { /* 忽略：旧 Electron 无此能力 */ }
   }
 
@@ -195,10 +199,10 @@ function createWindow() {
     height: 880,
     minWidth: 960,
     minHeight: 640,
-    backgroundColor: rendererUrl ? '#f7f3ea' : '#0b1220',
+    backgroundColor: useNewUI ? '#f7f3ea' : '#0b1220',
     // 开发版加载纸墨浅色前端：标题栏交给页面自绘（保留系统的最小化/最大化/关闭按钮），
     // 不然 Windows 深色主题会给一条黑标题栏，和米白页面永远是两种颜色
-    ...(rendererUrl ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#f7f3ea', symbolColor: '#1c1b19', height: 52 } } : {}),
+    ...(useNewUI ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#f7f3ea', symbolColor: '#1c1b19', height: 52 } } : {}),
     title: 'N-B助手 · 让ERP在中国普遍成功',
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     autoHideMenuBar: true,

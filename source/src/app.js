@@ -2084,6 +2084,44 @@ const router = {
   '/api/creds/drop': handleDropCred
 };
 
+// ====== 渲染层静态资源（Vue 构建产物）======
+// 存在 renderer/dist 时优先用它；不存在（老包/未构建）时回落到内联旧界面。
+const RENDERER_DIST = path.join(__dirname, '..', 'renderer', 'dist');
+const RENDERER_MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.map': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
+};
+
+function serveRenderer(res, pathname) {
+  try {
+    const indexFile = path.join(RENDERER_DIST, 'index.html');
+    if (!fs.existsSync(indexFile)) return false;
+    const rel = decodeURIComponent(pathname).replace(/^\/+/, '');
+    let file = path.resolve(RENDERER_DIST, rel);
+    if (!file.startsWith(path.resolve(RENDERER_DIST))) return false;
+    if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = indexFile;
+    const ext = path.extname(file).toLowerCase();
+    const buf = fs.readFileSync(file);
+    res.writeHead(200, {
+      'Content-Type': RENDERER_MIME[ext] || 'application/octet-stream',
+      'Cache-Control': 'no-cache',
+    });
+    res.end(buf);
+    return true;
+  } catch (e) {
+    dbg('[renderer] serve failed: ' + e.message);
+    return false;
+  }
+}
 // ====== HTTP 服务 ======
 let server = null;
 
@@ -2102,6 +2140,7 @@ function handleRequest(req, res) {
     })();
     return;
   }
+  if (serveRenderer(res, u.pathname)) return;
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
   try {
     // 优先用内联页面（exe 打包模式，无外部文件依赖）
