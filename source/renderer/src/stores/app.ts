@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { api } from '../api/client'
 import { errorMessage } from '../lib/error'
 
-export type ConnState = 'unknown' | 'checking' | 'ok' | 'error'
+export type ConnState = 'unknown' | 'checking' | 'configured' | 'ready' | 'error'
 
 export const useAppStore = defineStore('app', () => {
   const conn = ref<ConnState>('unknown')
@@ -17,8 +17,10 @@ export const useAppStore = defineStore('app', () => {
 
   const connLabel = computed(() => {
     switch (conn.value) {
-      case 'ok':
+      case 'ready':
         return '已就绪'
+      case 'configured':
+        return '已配置'
       case 'error':
         return '异常'
       case 'checking':
@@ -53,7 +55,7 @@ export const useAppStore = defineStore('app', () => {
       connError.value = '尚未选择账套'
       return
     }
-    conn.value = 'ok'
+    conn.value = 'configured'
   }
 
   /** 真探活：/api/meta 能返回 docs 才算数据库可用（旧界面 loadConnBanner 同策略） */
@@ -65,7 +67,7 @@ export const useAppStore = defineStore('app', () => {
       if (!meta || !Array.isArray(meta.docs)) throw new Error('数据库未返回字典')
       if (meta.currentDb) database.value = meta.currentDb
       if (meta.server) server.value = meta.server
-      conn.value = 'ok'
+      conn.value = 'ready'
     } catch (e) {
       conn.value = 'error'
       connError.value = errorMessage(e)

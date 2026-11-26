@@ -1,6 +1,6 @@
 /** 应用级常量与模块清单（侧栏与路由共用，避免两处维护）
  * 顺序：跨表带值 → 触发器管理 → 一句话带值 → 数据清洗 → 数据体检 → 系统设置（配置类放最后） */
-export const APP_VERSION = '2.9.0'
+export const APP_VERSION = '2.9.1'
 
 /** 旧版界面里「规划中」的模块：只有说明文案，没有接口与逻辑 */
 export interface PlannedDef {

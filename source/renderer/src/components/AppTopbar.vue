@@ -75,18 +75,27 @@ const connHint = computed(() => store.connError || store.connLabel)
   background: var(--ink-3);
 }
 
-.conn.ok .dot {
+.conn.ready .dot {
   background: var(--ok);
-  box-shadow: 0 0 0 3px rgba(63, 122, 94, 0.14);
+  box-shadow: 0 0 0 3px var(--ok-wash);
 }
 
-.conn.ok {
+.conn.ready {
+  color: var(--ink-2);
+}
+
+/* 只读了配置、还没真连数据库：用琥珀色，避免「已配置」被误读成「已连通」 */
+.conn.configured .dot {
+  background: var(--warn);
+}
+
+.conn.configured {
   color: var(--ink-2);
 }
 
 .conn.error .dot {
   background: var(--err);
-  box-shadow: 0 0 0 3px rgba(168, 50, 45, 0.12);
+  box-shadow: 0 0 0 3px var(--seal-wash);
 }
 
 .conn.error {

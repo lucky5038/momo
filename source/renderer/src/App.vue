@@ -7,7 +7,8 @@ import { useAppStore } from './stores/app'
 const store = useAppStore()
 
 onMounted(() => {
-  void store.checkConnection()
+  // 先出界面（读本地配置很快），再后台真探活一次：数据库不通时顶栏会变红并给出原因
+  void store.checkConnection().then(() => store.probe())
 })
 </script>
 
