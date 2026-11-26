@@ -8,14 +8,11 @@ const send = (method, params = {}) => new Promise((res) => { const mid = ++id; p
 ws.addEventListener('message', (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { const res = pending.get(m.id); pending.delete(m.id); res(m.result) } })
 await new Promise((r) => ws.addEventListener('open', r))
 const ev = async (expr) => (await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }))?.result?.value
+await ev(`(() => { const el = [...document.querySelectorAll('.nav-item')].find((n) => n.textContent.includes('数据清洗')); el && el.click(); return location.hash })()`)
+await new Promise((r) => setTimeout(r, 1800))
+const info = await ev(`(() => { const sel = document.querySelector('.file select'); return { opts: [...sel.options].map((o) => o.textContent.trim()), count: sel.options.length } })()`)
+console.log(JSON.stringify(info, null, 2))
 const fs = await import('node:fs')
-const out = {}
-for (const [label, text] of [['chat', '一句话带值'], ['diagnose', '数据体检']]) {
-  await ev(`(() => { const el = [...document.querySelectorAll('.nav-item')].find((n) => n.textContent.includes('${text}')); el && el.click(); return location.hash })()`)
-  await new Promise((r) => setTimeout(r, 1000))
-  out[label] = await ev(`(() => ({ hash: location.hash, kicker: document.querySelector('.kicker')?.textContent, badge: document.querySelector('.badge')?.textContent, points: [...document.querySelectorAll('.point b')].map((b) => b.textContent) }))()`)
-  const shot = await send('Page.captureScreenshot', { format: 'png' })
-  fs.writeFileSync('C:\\Users\\DX03\\AppData\\Local\\Temp\\nb-planned-' + label + '.png', Buffer.from(shot.data, 'base64'))
-}
-console.log(JSON.stringify(out, null, 2))
+const shot = await send('Page.captureScreenshot', { format: 'png' })
+fs.writeFileSync('C:\\Users\\DX03\\AppData\\Local\\Temp\\nb-tpl-list.png', Buffer.from(shot.data, 'base64'))
 ws.close()

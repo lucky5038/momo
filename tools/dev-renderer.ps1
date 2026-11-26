@@ -8,6 +8,8 @@ $Node     = Join-Path $Root "tools\node\bin\node.exe"
 $Vite     = Join-Path $Root "source\renderer\node_modules\vite\bin\vite.js"
 $Electron = Join-Path $Root "tools\electron31\electron.exe"
 $App      = Join-Path $Root "source"
+# 模板库跟随正式版数据目录，避免开发版看不到已保存的清洗模板
+$env:NB_CLEANING_TEMPLATES_DIR = Join-Path $env:APPDATA "N-B助手\cleaning\templates"
 $OutLog   = Join-Path $env:TEMP "nb-dev-renderer.out.log"
 $ErrLog   = Join-Path $env:TEMP "nb-dev-renderer.err.log"
 $ViteLog  = Join-Path $env:TEMP "nb-dev-vite.out.log"
