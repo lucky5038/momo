@@ -5,6 +5,9 @@ import appIcon from '../assets/app-icon.png'
 
 const route = useRoute()
 const isActive = (path: string) => route.path === path
+// 旧界面侧栏分「工作台 / 规划中」两组，规划中的模块排在后面
+const plannedModules = MODULES.filter((m) => !!m.planned)
+const mainModules = MODULES.filter((m) => !m.planned)
 </script>
 
 <template>
@@ -18,8 +21,20 @@ const isActive = (path: string) => route.path === path
     </div>
 
     <nav class="nav">
+      <div class="nav-group">工作台</div>
       <RouterLink
-        v-for="m in MODULES"
+        v-for="m in mainModules"
+        :key="m.key"
+        :to="m.path"
+        class="nav-item"
+        :class="{ active: isActive(m.path) }"
+      >
+        <span class="nav-icon">{{ m.icon }}</span>
+        <span class="nav-title">{{ m.title }}</span>
+      </RouterLink>
+      <div v-if="plannedModules.length" class="nav-group">规划中</div>
+      <RouterLink
+        v-for="m in plannedModules"
         :key="m.key"
         :to="m.path"
         class="nav-item"
@@ -32,7 +47,7 @@ const isActive = (path: string) => route.path === path
 
     <div class="foot">
       <span class="ver">v{{ APP_VERSION }}</span>
-      <span class="ver-note">渲染层重构中</span>
+      <span class="tip">目标先选，来源后选；执行前自动备份。</span>
     </div>
   </aside>
 </template>
@@ -128,8 +143,8 @@ const isActive = (path: string) => route.path === path
 
 .foot {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   padding: 10px 16px 14px;
   border-top: 1px solid var(--line-soft);
 }
@@ -138,6 +153,20 @@ const isActive = (path: string) => route.path === path
   font-size: var(--fs-xs);
   color: var(--ink-2);
   font-family: Consolas, monospace;
+}
+
+.nav-group {
+  margin: 10px 0 4px;
+  padding: 0 18px;
+  font-size: var(--fs-kicker);
+  letter-spacing: 1.2px;
+  color: var(--ink-3);
+}
+
+.tip {
+  font-size: var(--fs-kicker);
+  color: var(--ink-3);
+  line-height: 1.4;
 }
 
 .ver-note {

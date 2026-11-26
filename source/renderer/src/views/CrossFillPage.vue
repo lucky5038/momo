@@ -29,6 +29,7 @@ const {
   previewing,
   executing,
   busy,
+  defaultValCol,
   result,
   message,
   messageKind,
@@ -49,6 +50,16 @@ watch(
   },
 )
 
+/** 旧界面把 info=true 的单据放进「信息档」分组，这里保持同样的分组方式 */
+const docGroups = computed(() => ({
+  normal: docs.value.filter((d) => !d.info),
+  info: docs.value.filter((d) => d.info),
+}))
+const srcGroups = computed(() => ({
+  normal: srcOptions.value.filter((s) => !s.info),
+  info: srcOptions.value.filter((s) => s.info),
+}))
+
 const docSub = computed(() => {
   if (metaState.value === 'loading') return '正在加载单据字典，请稍候...'
   if (metaState.value === 'error') return metaError.value
@@ -65,8 +76,10 @@ const tgtSub = computed(() => {
 })
 
 const valSub = computed(() => {
-  if (!srcId.value) return '请先选择来源档'
-  return `共 ${valCols.value.length} 个可选值列`
+  if (!docId.value) return '请先选择单据'
+  if (!srcId.value) return srcOptions.value.length ? '请先选择来源档' : '当前单据没有可选来源档'
+  const hint = defaultValCol.value ? `（默认关联 ${defaultValCol.value}）` : ''
+  return `共 ${valCols.value.length} 个可选值列${hint}`
 })
 
 const previewTitle = computed(() => {
@@ -88,9 +101,12 @@ const banners = computed(() => {
   return list
 })
 
-/** 空结果也要解释清楚，否则用户会以为工具坏了（旧界面同样提醒 0 值） */
+/** 空结果也要解释清楚，否则用户会以为工具坏了（旧界面按合并显示分两套文案） */
 const emptyHint = computed(() => {
   if (!preview.value) return ''
+  if (mergeDisplay.value) {
+    return '源值为空、或来源档与目标单据没有匹配的行。合并显示只追加不覆盖，可先确认来源档与值列。'
+  }
   return force.value
     ? '源值为空、或来源档与目标单据没有匹配的行。'
     : '源值为空、或该列已经有值（数值 0 也算已有值）。需要覆盖已有值请勾选「强制覆盖」。'
@@ -133,7 +149,12 @@ async function onExecute() {
         <label class="lbl" for="cf-doc">目标单据（主表）</label>
         <select id="cf-doc" v-model="docId" :disabled="!docs.length" :title="docSub" @change="onDocChange">
           <option value="">—— 请选择单据 ——</option>
-          <option v-for="d in docs" :key="d.id" :value="d.id">{{ d.name }}</option>
+          <optgroup v-if="docGroups.normal.length" label="业务单据">
+            <option v-for="d in docGroups.normal" :key="d.id" :value="d.id">{{ d.name }}</option>
+          </optgroup>
+          <optgroup v-if="docGroups.info.length" label="信息档">
+            <option v-for="d in docGroups.info" :key="d.id" :value="d.id">{{ d.name }}</option>
+          </optgroup>
         </select>
         <p v-if="metaState === 'error'" class="sub err">{{ metaError }}</p>
 
@@ -162,8 +183,14 @@ async function onExecute() {
         <label class="lbl" for="cf-src">来源档（自动排除已选单据）</label>
         <select id="cf-src" v-model="srcId" :disabled="!docId" @change="onSrcChange">
           <option value="">—— 请选择来源档 ——</option>
-          <option v-for="s in srcOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
+          <optgroup v-if="srcGroups.normal.length" label="业务单据">
+            <option v-for="s in srcGroups.normal" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </optgroup>
+          <optgroup v-if="srcGroups.info.length" label="信息档">
+            <option v-for="s in srcGroups.info" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </optgroup>
         </select>
+        <p v-if="docId && !srcOptions.length" class="sub">当前单据没有可选来源档</p>
 
         <label class="lbl">来源值列（取哪一列的值，可搜索切换）</label>
         <ColumnCombo
@@ -181,11 +208,11 @@ async function onExecute() {
     <div class="paper-card adv">
       <div class="adv-title">高级选项</div>
       <div class="adv-body">
-        <label class="chk"><input v-model="force" type="checkbox" /> 强制覆盖</label>
+        <label class="chk"><input v-model="force" type="checkbox" @change="store.clearRunState()" /> 强制覆盖</label>
         <label class="chk">
-          <input v-model="createTrigger" type="checkbox" :disabled="triggerBlocked" /> 建立触发器
+          <input v-model="createTrigger" type="checkbox" :disabled="triggerBlocked" @change="store.clearRunState()" /> 建立触发器
         </label>
-        <label class="chk"><input v-model="mergeDisplay" type="checkbox" /> 合并显示</label>
+        <label class="chk"><input v-model="mergeDisplay" type="checkbox" @change="store.clearRunState()" /> 合并显示</label>
         <span v-if="triggerBlocked" class="sub">付款单身汇总依赖付款冲账档，保存后用「执行」更新</span>
       </div>
     </div>
@@ -195,7 +222,7 @@ async function onExecute() {
     <div class="actionbar">
       <span class="sub">执行前自动备份；强制覆盖 / 触发器 / 合并在高级选项里。</span>
       <div class="btns">
-        <button class="btn" type="button" :disabled="previewing || executing" @click="store.previewNow()">
+        <button class="btn" type="button" :disabled="busy" @click="store.previewNow()">
           {{ previewing ? '预览中...' : '预览' }}
         </button>
         <button class="btn primary" type="button" :disabled="busy || !canPreview" @click="onExecute">
@@ -222,10 +249,10 @@ async function onExecute() {
         </thead>
         <tbody>
           <tr v-for="(row, i) in preview.sample" :key="(row['单号'] || '') + '#' + (row['序号'] || i)">
-            <td>{{ row['单号'] ?? '' }}</td>
-            <td>{{ row['序号'] ?? '' }}</td>
-            <td>{{ row['现值'] ?? '' }}</td>
-            <td>{{ row['应带'] ?? '' }}</td>
+            <td>{{ row['单号'] ?? '—' }}</td>
+            <td>{{ row['序号'] ?? '—' }}</td>
+            <td>{{ row['现值'] ?? '—' }}</td>
+            <td>{{ row['应带'] ?? '—' }}</td>
           </tr>
         </tbody>
       </table>
@@ -234,24 +261,37 @@ async function onExecute() {
 
     <div v-if="result" class="paper-card block">
       <div class="block-head">
-        <strong>执行结果</strong>
+        <strong>已写入数据库</strong>
         <span class="sub">受影响 {{ result.affected ?? 0 }} 行</span>
       </div>
       <p class="sub">
         备份：<span class="path">{{ result.backupPath || '—' }}</span>
-        <template v-if="result.backupOk === false"> （备份失败）</template>
       </p>
-      <p v-if="result.triggerResult?.name" class="sub">
-        触发器：{{ result.triggerResult.name }}
-        <template v-if="result.triggerResult.skipped">（已跳过：冲突 {{ (result.triggerResult.conflict || []).join('、') }}）</template>
-        <template v-else-if="result.triggerResult.error">（失败：{{ result.triggerResult.error }}）</template>
+      <template v-if="result.triggerResult?.name">
+        <p v-if="result.triggerResult.error" class="sub err">
+          触发器创建失败：{{ result.triggerResult.error }}
+        </p>
+        <p v-else-if="result.triggerResult.skipped" class="sub">
+          触发器未创建：目标表上已有写入该列的触发器
+          <template v-if="result.triggerResult.conflict && result.triggerResult.conflict.length">
+            （冲突 {{ result.triggerResult.conflict.join('、') }}）
+          </template>
+        </p>
+        <p v-else class="sub ok">触发器已创建：{{ result.triggerResult.name }}</p>
+      </template>
+      <p v-if="result.triggerResult?.skipped && result.triggerResult?.allowForce" class="sub">
+        勾选「强制覆盖」可忽略此冲突并强制创建。
       </p>
-      <ul v-if="result.sampleAfter && result.sampleAfter.length" class="after">
-        <li v-for="(s, i) in result.sampleAfter" :key="(s.docNo || '') + '#' + i">
-          <span>{{ s.docNo ?? '' }}</span>
-          <span class="filled">{{ s.filled ?? '' }}</span>
-        </li>
-      </ul>
+      <p v-if="result.triggerResult?.conflictNote" class="sub">{{ result.triggerResult.conflictNote }}</p>
+      <template v-if="result.sampleAfter && result.sampleAfter.length">
+        <p class="sub">执行后抽样（前 {{ result.sampleAfter.length }} 行）：</p>
+        <ul class="after">
+          <li v-for="(s, i) in result.sampleAfter" :key="(s.docNo || '') + '#' + i">
+            <span>{{ s.docNo ?? '' }}</span>
+            <span class="filled">{{ s.filled ?? '' }}</span>
+          </li>
+        </ul>
+      </template>
       <p class="hint">前台易助需关闭该单后重新查询才会显示新值。</p>
     </div>
   </section>
@@ -331,14 +371,7 @@ select:disabled {
   color: var(--ink-3);
 }
 
-.sub.warn {
-  color: var(--warn);
-}
-
-.sub.note {
-  color: var(--ink-3);
-}
-
+.sub
 .clear-row {
   display: flex;
   align-items: center;
@@ -346,43 +379,6 @@ select:disabled {
   margin-top: 10px;
 }
 
-.btn {
-  font-family: inherit;
-  font-size: var(--fs-sub);
-  color: var(--ink-2);
-  background: var(--paper-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 6px 14px;
-  cursor: pointer;
-  transition: border-color 0.12s ease, color 0.12s ease;
-}
-
-.btn:hover:not(:disabled) {
-  border-color: var(--seal);
-  color: var(--seal);
-}
-
-.btn:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-
-.btn.primary {
-  background: var(--seal);
-  border-color: var(--seal);
-  color: var(--paper-2);
-}
-
-.btn.primary:hover:not(:disabled) {
-  background: var(--seal-deep);
-  color: var(--paper-2);
-}
-
-.btn.danger {
-  color: var(--seal);
-  border-color: var(--seal-wash);
-}
 
 .adv {
   padding: 10px 16px;
@@ -415,19 +411,6 @@ select:disabled {
   accent-color: var(--seal);
 }
 
-.status {
-  margin: 0;
-  font-size: var(--fs-sub);
-  min-height: 18px;
-}
-
-.status.ok {
-  color: var(--ok);
-}
-
-.status.err {
-  color: var(--seal);
-}
 
 .err {
   color: var(--seal);
@@ -477,9 +460,6 @@ select:disabled {
   font-weight: 500;
 }
 
-.warn {
-  color: var(--warn);
-}
 
 .path {
   color: var(--ink-2);

@@ -101,11 +101,34 @@ export interface RunPayload {
 export interface CredRecord {
   user: string
   pass: string
+  /** 该服务器上次用的账套：后端 /api/save-config 会写进 prefs[server].db */
+  db?: string
+}
+
+export interface CredPrefs {
+  user?: string
+  pass?: string
+  db?: string
 }
 
 export interface CredsPayload {
   ok?: boolean
-  data?: Record<string, CredRecord | undefined> & { _last?: CredRecord }
+  data?: Record<string, CredRecord | undefined> & {
+    _last?: CredRecord
+    _lastServer?: string
+    prefs?: Record<string, CredPrefs>
+  }
+}
+
+/** 后端 onboardingState()（app.js:1024-1090 附近）：判断本机是否还没配过数据库 */
+export interface OnboardingState {
+  ok?: boolean
+  configured?: boolean
+  onboardingDone?: boolean
+  needsSetup?: boolean
+  existingInstall?: boolean
+  newInstall?: boolean
+  freshInstall?: boolean
 }
 
 export const api = {
@@ -114,8 +137,10 @@ export const api = {
   saveConfig: (body: Partial<DbConfig>) => post<{ ok?: boolean }>('/api/save-config', body),
   /** dryRun=true 只探活，不写配置、不切主连接池 */
   testConn: (body: Partial<DbConfig> & { dryRun?: boolean }) =>
-    post<{ ok?: boolean; error?: string; hint?: string; autoApplied?: boolean }>('/api/test-conn', body),
+    post<{ ok?: boolean; error?: string; hint?: string; autoApplied?: boolean; note?: string }>('/api/test-conn', body),
   databases: (body?: Partial<DbConfig>) => post<DbListPayload>('/api/databases', body),
+  /** GET 分支：不传参数、只列当前配置那台服务器的账套（旧版 initDbConn 用它兜底） */
+  databasesGet: () => request<DbListPayload>('/api/databases'),
   switchDb: (database: string) => post<{ ok?: boolean; database?: string; server?: string }>('/api/switch-db', { database }),
   /** 不传 dir：后端弹原生目录选择框 */
   setBackupDir: (dir?: string) =>
@@ -124,10 +149,14 @@ export const api = {
   // 凭据记忆（旧版「保存配置」同时写 creds.json，重启才不会被旧凭据覆盖）
   creds: () => request<CredsPayload>('/api/creds'),
   saveCreds: (body: Record<string, CredRecord>) => post<{ ok?: boolean }>('/api/creds/save', body),
-  dropCred: (server?: string) => post<{ ok?: boolean; dropped?: string }>('/api/creds/drop', server ? { key: server } : {}),
+
 
   // 元数据与字典（泛型由调用方给强类型，避免页面里 `as unknown as`）
   meta: <T = MetaPayload>(body?: unknown) => post<T>('/api/meta', body),
+
+  // 首次使用向导
+  onboarding: () => request<OnboardingState>('/api/onboarding'),
+  finishOnboarding: () => post<OnboardingState>('/api/onboarding'),
 
   // 主流程
   run: <T = Record<string, unknown>>(body: RunPayload) => post<T>('/api/run', body),

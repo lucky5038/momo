@@ -12,6 +12,7 @@ import { clearColumn, fetchMeta, runFill, isCustomColumn } from '../api/crossfil
 import type { ClearResponse, Meta, PreviewResponse, RunRequest, RunResponse } from '../api/crossfill'
 import { useStatus } from '../composables/useStatus'
 import { errorMessage } from '../lib/error'
+import { toast } from '../lib/toast'
 
 /** 付款单不能用这两个来源建档触发器（旧界面同样硬编码）。 */
 const TRIGGER_BLOCKED_DOC = 'YSFGQB'
@@ -71,7 +72,17 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     () => docId.value === TRIGGER_BLOCKED_DOC && TRIGGER_BLOCKED_SRCS.includes(srcId.value),
   )
 
-  const canPreview = computed(() => !!(docId.value && tgtCol.value.trim() && srcId.value && srcValCol.value.trim()))
+  const canPreview = computed(() => {
+    const col = tgtCol.value.trim()
+    const valCol = srcValCol.value.trim()
+    if (!docId.value || !col || !srcId.value || !valCol) return false
+    // 组合框可自由输入，拼错的列名会一路拼进 SQL 报 500，这里先拦住
+    if (!tgtCols.value.some((c) => c.col === col)) return false
+    if (!valCols.value.some((c) => c.col === valCol)) return false
+    return true
+  })
+  /** 旧界面 valSub 里的「默认关联 X」 */
+  const defaultValCol = computed(() => curSrc.value?.key?.[0] || '')
   const clearEnabled = computed(
     () => !!docId.value && !!tgtCol.value.trim() && tgtCols.value.some((c) => c.col === tgtCol.value.trim()),
   )
@@ -116,9 +127,23 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     metaState.value = 'loading'
     metaError.value = ''
     try {
-      const [m, cfg] = await Promise.all([fetchMeta(), api.config().catch(() => null)])
+      // 数据库可能比界面晚就绪（旧版同样重试 6 次 × 2 秒），否则用户会以为工具坏了
+      let lastError: unknown = null
+      let data: Meta | null = null
+      for (let i = 0; i < 6 && seq === metaSeq; i++) {
+        try {
+          data = await fetchMeta()
+          break
+        } catch (e) {
+          lastError = e
+          if (i < 5) await new Promise((r) => setTimeout(r, 2000))
+        }
+      }
       if (seq !== metaSeq) return
-      meta.value = m
+      if (!data) throw lastError
+      const cfg = await api.config().catch(() => null)
+      if (seq !== metaSeq) return
+      meta.value = data
       backupDir.value = cfg?.backupDir || ''
       metaState.value = 'ready'
       resetForm()
@@ -133,6 +158,11 @@ export const useCrossFillStore = defineStore('crossfill', () => {
   function invalidate() {
     metaSeq++
     runSeq++
+    // 在飞的请求被作废后，finally 里 `seq === runSeq` 不再成立，必须在这里显式复位，
+    // 否则 busy 永远为真、整页按钮全禁用，只能刷新页面
+    previewing.value = false
+    executing.value = false
+    clearing.value = false
     meta.value = null
     metaState.value = 'idle'
     metaError.value = ''
@@ -144,7 +174,10 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     tgtCol.value = ''
     srcId.value = ''
     srcValCol.value = ''
+    // 强制覆盖/合并显示是写库破坏性选项，不跨单据继承
+    force.value = false
     createTrigger.value = false
+    mergeDisplay.value = false
     clearRunState()
     status.reset()
   }
@@ -154,7 +187,7 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     tgtCol.value = ''
     srcId.value = ''
     srcValCol.value = ''
-    createTrigger.value = false
+    // 旧版换单据不清「建立触发器」：勾选状态跟着用户走，只有变为不支持时才取消（见 setSrc）
     clearRunState()
     status.reset()
   }
@@ -219,6 +252,9 @@ export const useCrossFillStore = defineStore('crossfill', () => {
       status.set('err', '配置已经变化，请重新预览后再执行。')
       return false
     }
+    // 备份目录可能刚在设置页改过，确认框里的路径必须现读（旧版同样每次现读 /api/config）
+    const cfg = await api.config().catch(() => null)
+    if (cfg?.backupDir) backupDir.value = cfg.backupDir
     const db = currentDb.value || '当前账套'
     const backupText = backupDir.value ? `备份目录 ${backupDir.value}` : '备份目录同设置页'
     if (!window.confirm(`确认执行写库？\n账套：${db}\n执行前自动整库备份（${backupText}）。`)) return false
@@ -232,6 +268,7 @@ export const useCrossFillStore = defineStore('crossfill', () => {
       result.value = resp
       clearPreview()
       status.set('ok', `已写入数据库，受影响 ${resp.affected ?? 0} 行`)
+      toast(`执行完成：更新 ${resp.affected ?? 0} 行`, 'ok')
       return true
     } catch (e) {
       if (seq !== runSeq) return false
@@ -252,6 +289,7 @@ export const useCrossFillStore = defineStore('crossfill', () => {
       const probe = await clearColumn(body)
       const count = probe.count ?? 0
       if (!count) {
+        clearRunState()
         status.set('ok', '该列没有可清除的值')
         return probe
       }
@@ -260,7 +298,9 @@ export const useCrossFillStore = defineStore('crossfill', () => {
       const done = await clearColumn({ ...body, confirm: true })
       const backup = done.backupPath ? `，备份：${done.backupPath}` : ''
       status.set('ok', `已清除 ${done.affected ?? count} 行${backup}`)
-      clearPreview()
+      toast(`已清除 ${done.affected ?? count} 行`, 'ok')
+      // 清除是又一轮写库，上一次的执行结果不能再留着
+      clearRunState()
       return done
     } catch (e) {
       status.fail(e, '清除失败：')
@@ -293,6 +333,7 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     triggerBlocked,
     canPreview,
     clearEnabled,
+    defaultValCol,
     preview,
     previewing,
     executing,
@@ -307,6 +348,7 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     setSrc,
     setTgtCol,
     setSrcValCol,
+    clearRunState,
     previewNow,
     executeNow,
     clearTgtCol,

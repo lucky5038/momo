@@ -31,6 +31,8 @@
   --seal-line: rgba(168, 50, 45, 0.18);
   --shadow-sm: inset 0 0 0 1px rgba(28, 27, 25, 0.08);
   --shadow-pop: 0 8px 24px rgba(28, 27, 25, 0.12);
+  --scroll-thumb: #cdc4b0;
+  --scroll-thumb-hover: #b8ae98;
 
   /* 形状与字体 */
   --radius: 6px;

@@ -12,6 +12,7 @@ import {
   type CleanMappingColumn,
   type CleanTemplateItem,
 } from '../api/cleaning'
+import { toast } from '../lib/toast'
 
 const templates = ref<CleanTemplateItem[]>([])
 const templateId = ref('')
@@ -29,7 +30,7 @@ const xlsIsPreview = ref(false)
 const previewOk = ref(false)
 
 const statusText = ref('')
-const statusKind = ref<'ok' | 'err' | ''>('')
+const statusKind = ref<'ok' | 'err' | 'warn' | ''>('')
 const reading = ref(false)
 const previewing = ref(false)
 const generating = ref(false)
@@ -38,9 +39,10 @@ const deleteArmed = ref(false)
 /** 删除确认的 5 秒回退计时器：切模板/卸载时必须清掉，否则会把新状态的确认按钮悄悄变回去 */
 let deleteTimer = 0
 
-const shownIssues = computed(() =>
-  issues.value.filter((x) => x.severity === 'error' || x.severity === 'warning').slice(0, 40),
-)
+const allIssues = computed(() => issues.value.filter((x) => x.severity === 'error' || x.severity === 'warning'))
+const shownIssues = computed(() => allIssues.value.slice(0, 40))
+/** 列表只显示前 40 条，但必须告诉用户还有多少 */
+const hiddenIssues = computed(() => Math.max(0, allIssues.value.length - shownIssues.value.length))
 const badCodes = computed(() => {
   const set = new Set<string>()
   issues.value
@@ -76,9 +78,10 @@ const ruleNote = computed(() => {
   const fixed = list.filter((c) => c.fixed || c.derivedFrom).length
   const options = list.filter((c) => !c.fixed && !c.derivedFrom && (c.options?.length ?? 0) > 0).length
   const mapped = list.filter((c) => c.sourceIndex != null).length
-  return `必填 ${required} · 固定 ${fixed} · 下拉 ${options} · 已匹配 ${mapped}`
+  const cols = info.value?.template?.columns?.length ?? list.length
+  return `模板 ${cols} 列 · 必填 ${required} · 固定 ${fixed} · 下拉 ${options} · 已匹配 ${mapped}`
 })
-function setStatus(msg: string, kind: 'ok' | 'err' | '' = '') {
+function setStatus(msg: string, kind: 'ok' | 'err' | 'warn' | '' = '') {
   statusText.value = msg
   statusKind.value = kind
 }
@@ -109,14 +112,17 @@ function resetJob() {
 }
 
 async function loadTemplates(selected?: string) {
+  let ok = false
   try {
     const r = await cleaningApi.templates()
     templates.value = r.templates || []
-  } catch {
-    templates.value = []
+    ok = true
+  } catch (e) {
+    // 读不到就保留原列表与已选模板，别让用户以为模板没了
+    setStatus(`模板列表读取失败：${(e as Error).message}`, 'err')
   }
   if (selected) templateId.value = selected
-  if (templateId.value && !templates.value.some((t) => t.id === templateId.value)) templateId.value = ''
+  if (ok && templateId.value && !templates.value.some((t) => t.id === templateId.value)) templateId.value = ''
 }
 
 function onTemplatePick() {
@@ -125,13 +131,16 @@ function onTemplatePick() {
   setStatus('')
 }
 
-function onTemplateFile(e: Event) {
-  const f = (e.target as HTMLInputElement).files?.[0]
+async function onTemplateFile(e: Event) {
+  const el = e.target as HTMLInputElement
+  const f = el.files?.[0]
   if (!f) return
   templateFile.value = f
   templateId.value = ''
   resetJob()
-  setStatus('')
+  // 旧界面选完文件就直接导入；拆成两步会让人以为已经保存好了
+  await importTemplate()
+  el.value = ''
 }
 
 async function importTemplate() {
@@ -144,6 +153,7 @@ async function importTemplate() {
     templateFile.value = null
     await loadTemplates(r.id)
     setStatus(`模板已保存：${r.name || f.name}`)
+    toast(`模板已保存：${r.name || f.name}`, 'ok')
   } catch (e) {
     setStatus(`模板保存失败：${(e as Error).message}`, 'err')
   } finally {
@@ -182,8 +192,11 @@ function onSourceFile(e: Event) {
   setStatus('')
 }
 
+let readSeq = 0
+
 async function read() {
   if (working.value) return
+  const seq = ++readSeq
   const s = sourceFile.value
   if (!s || (!templateFile.value && !templateId.value)) {
     setStatus('请先选择模板和来源数据', 'err')
@@ -202,6 +215,8 @@ async function read() {
     else payload.templateId = templateId.value
 
     const r = await cleaningApi.inspect(payload)
+    // 期间用户换了模板/来源：旧结果直接丢弃，避免"选的是 B、数据来自 A"
+    if (seq !== readSeq) return
     jobId.value = r.jobId
     info.value = r
     mapping.value = (r.suggested?.columns || []).map((c) => ({ ...c }))
@@ -210,9 +225,10 @@ async function read() {
     }
     setStatus('读取完成，请检查字段规则，再点【预览】。')
   } catch (e) {
+    if (seq !== readSeq) return
     setStatus(`读取失败：${(e as Error).message}`, 'err')
   } finally {
-    reading.value = false
+    if (seq === readSeq) reading.value = false
   }
 }
 
@@ -250,8 +266,10 @@ function onCellChange(col: CleanMappingColumn, field: 'sourceIndex' | 'transform
     col.transform = value
   } else {
     col.defaultValue = value
-    // 枚举字段选了具体值视为“覆盖来源”，否则来源列与模板枚举冲突的行改不回来
-    if (value !== '' && col.sourceIndex != null) col.sourceIndex = null
+    // 只有「从枚举下拉里选了具体值」才算覆盖来源；文本兜底默认值（来源为空时使用）不能清掉来源列，
+    // 否则整列会从"取来源值"悄悄变成"全用默认值"（与页面说明和后端兜底语义相反）
+    const isEnumPick = (col.options || []).some((o) => o.value === value)
+    if (isEnumPick && col.sourceIndex != null) col.sourceIndex = null
     rememberSoon()
   }
 }
@@ -277,6 +295,8 @@ async function preview() {
     const pre = await validate()
     if (!pre) return
     if (Number(pre.stats?.errors || 0) > 0) {
+      // 上一次生成的产物不能继续挂着，否则容易被当成本次结果
+      xlsPath.value = ''
       setStatus(`发现 ${pre.stats.errors} 个硬错误，请补默认值或调整来源列后重新预览。`, 'err')
       return
     }
@@ -317,6 +337,7 @@ async function generate() {
     xlsPath.value = out.xlsPath || ''
     xlsIsPreview.value = false
     setStatus(`生成完成：${out.stats?.outputRows || 0} 行。`)
+    toast(`生成完成：${out.stats?.outputRows || 0} 行`, 'ok')
   } catch (e) {
     setStatus(`生成失败：${(e as Error).message}`, 'err')
   } finally {
@@ -380,19 +401,16 @@ onMounted(() => loadTemplates())
     <div class="file-grid">
       <div class="paper-card file">
         <div class="lbl">01 目标模板</div>
-        <select v-model="templateId" :disabled="importing" @change="onTemplatePick">
+        <select v-model="templateId" :disabled="working" @change="onTemplatePick">
           <option value="">—— 请选择已保存模板 ——</option>
           <option v-for="t in templates" :key="t.id" :value="t.id">{{ t.name || t.fileName || '未命名模板' }}</option>
         </select>
         <div class="file-actions">
-          <label class="btn sm">
-            选择模板文件
-            <input type="file" accept=".xls,.xlsx,.xlsm" hidden @change="onTemplateFile" />
-          </label>
-          <button class="btn sm" type="button" :disabled="!templateFile || working" @click="importTemplate">
+          <label class="btn sm" :class="{ dis: working }">
             {{ importing ? '保存中...' : '导入模板文件' }}
-          </button>
-          <button class="btn sm danger" type="button" :disabled="!templateId" @click="removeTemplate">
+            <input class="sr-only" type="file" accept=".xls,.xlsx,.xlsm" :disabled="working" @change="onTemplateFile" />
+          </label>
+          <button class="btn sm danger" type="button" :disabled="!templateId || working" @click="removeTemplate">
             {{ deleteArmed ? '确认删除' : '删除模板' }}
           </button>
         </div>
@@ -402,9 +420,9 @@ onMounted(() => loadTemplates())
       <div class="paper-card file">
         <div class="lbl">02 来源数据</div>
         <div class="src-row">
-          <label class="btn sm">
+          <label class="btn sm" :class="{ dis: working }">
             {{ sourceFile ? sourceFile.name : '选择客户数据' }}
-            <input type="file" accept=".xls,.xlsx,.xlsm" hidden @change="onSourceFile" />
+            <input class="sr-only" type="file" accept=".xls,.xlsx,.xlsm" :disabled="working" @change="onSourceFile" />
           </label>
           <span class="sub">{{ sourceFile ? fileSize(sourceFile) : '(.xls / .xlsx)' }}</span>
         </div>
@@ -427,7 +445,7 @@ onMounted(() => loadTemplates())
       <span class="sub">黄色单元格表示按简称匹配，需人工确认；来源列选错会报错并定位。</span>
     </div>
 
-    <p v-if="statusText" class="status" :class="statusKind">{{ statusText }}</p>
+    <p v-if="statusText" class="status" :class="statusKind" role="status" aria-live="polite">{{ statusText }}</p>
 
     <div v-if="summary" class="paper-card summary">
       已识别 <b>{{ summary.profile }}</b> 模板<template v-if="summary.template">「{{ summary.template }}」</template>（{{ summary.cols }} 列）和
@@ -526,23 +544,29 @@ onMounted(() => loadTemplates())
       <span class="err">问题 <b>{{ stats.errors || 0 }}</b></span>
     </div>
 
-    <div v-if="issues.length" class="paper-card block">
+    <div v-if="stats" class="paper-card block">
       <div class="block-head">
         <strong>校验问题</strong>
-        <span class="sub">双击问题行可定位到下方对应字段</span>
+        <span class="sub">点问题行可定位到下方对应字段</span>
       </div>
-      <div v-if="!shownIssues.length" class="issue info"><span class="sev">通过</span><span>没有硬错误或警告。</span></div>
-      <div
-        v-for="x in shownIssues"
-        :key="`${x.severity}-${x.code || ''}-${x.row || 0}-${x.message}`"
-        class="issue"
-        :class="x.severity"
-        @dblclick="locate(x)"
-      >
-        <span class="sev">{{ x.severity === 'error' ? '错误' : '提示' }}</span>
-        <span class="msg">{{ x.message }}</span>
-        <span class="loc">{{ x.code || '' }}{{ x.row ? ` · 行${x.row}` : '' }}</span>
-      </div>
+      <div v-if="!allIssues.length" class="issue info"><span class="sev">通过</span><span>没有硬错误或警告。</span></div>
+      <template v-else>
+        <div
+          v-for="x in shownIssues"
+          :key="`${x.severity}-${x.code || ''}-${x.row || 0}-${x.message}`"
+          class="issue"
+          :class="x.severity"
+          role="button"
+          tabindex="0"
+          @click="locate(x)"
+          @keydown.enter.prevent="locate(x)"
+        >
+          <span class="sev">{{ x.severity === 'error' ? '错误' : '提示' }}</span>
+          <span class="msg">{{ x.message }}</span>
+          <span class="loc">{{ x.code || '' }}{{ x.row ? ` · 行${x.row}` : '' }}</span>
+        </div>
+        <p v-if="hiddenIssues" class="sub">共 {{ allIssues.length }} 条，仅显示前 {{ shownIssues.length }} 条。</p>
+      </template>
     </div>
 
     <div v-if="xlsPath" class="paper-card block">

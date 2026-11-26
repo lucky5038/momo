@@ -2,6 +2,24 @@
 
 ## 版本演进（最新在前）
 
+### v2.9.3（2026-11-26）
+- 修「账套切换会写错库」（严重）：现象是切完账套回到跨表带值，单据/字段字典还是旧账套，确认框也提示旧账套名。原因：账套字典的失效订阅写在页面 `watch` 里，切走页面就销毁，而 store 里的字典是全局的。改法：`stores/app.ts` 增加 `generation`（每次切库/重连自增），`stores/crossfill.ts` 记录 `metaGeneration`，跨表带值页进入时比对版本号，不一致就重拉字典。
+- 修「预览中状态下按钮永久禁用」（严重）：`invalidate()` 递增 `runSeq` 后，在飞请求的 `finally` 因序号不匹配不再复位 `previewing/executing`，`busy` 永远为真。改法：`invalidate()` 里显式复位三个忙标志。
+- 修「文本型默认值会清空来源列」（严重）：`onCellChange` 的 `defaultValue` 分支无条件执行 `sourceIndex = null`，用户填兜底默认值时会把已配好的来源列静默清成「不映射」。改法：仅在 `col.options` 里选中具体枚举值时才清来源列。
+- 修「测试连接谎报已落盘」：后端在「探活成功但应用失败」时返回 200 + `autoApplied:false` + `note`，前端仍提示「已应用并落盘」。改法：判 `autoApplied`，false 时用警告样式并带出 `note`。
+- 修「保存配置抹掉上次账套」：`saveCreds` 只写 `{user,pass}` 覆盖整个 key，把 `saveConfig` 刚写入的 `prefs[server].db` 抹掉。改法：`saveCreds` 一并带 `db`。
+- 修「改备份目录后确认框仍是旧路径」：改目录后同步 `stores/app.ts`，跨表带值与触发器删除确认框统一取 `app.backupDir`。
+- 修「切账套失败下拉不回退」：失败后还原为切换前的账套，避免误导后把错误账套写进 `config.js`。
+- 修「服务器输入后首次点保存无反应」：`onServerChange` 曾占用 `busy` 把保存按钮一起禁掉；拆出 `onServerInput`（只回填凭据，不打网络），读账套用独立 `dbLoading`。
+- 修「刷新失败被写成操作失败」：触发器列表刷新改为内部 try/catch，写操作成功提示不被刷新失败覆盖；刷新失败也不再清空列表伪装成「没有触发器」。
+- 修「清除整列期间还能点预览」：预览按钮与 store 入口统一用 `busy`。
+- 修「高级选项改了预览不失效」：三个复选框（强制覆盖/建立触发器/合并显示）变更即 `clearRunState()`；换单据也不再无条件清「建立触发器」。
+- 修「自由输入拼错列名打到后端 500」：`canPreview` 增加「列必须存在于当前单据的自定义列」校验。
+- 补回旧界面行为（对齐 2.2.101，共 13 项）：来源档分「业务单据/信息档」optgroup；「当前单据没有可选来源档」提示；`valSub` 带「（默认关联 X）」；预览空值显示 `—`；预览 0 行文案按是否勾选合并显示区分；执行结果恢复触发器四分支（失败/跳过+冲突/已创建/需强制）与「执行后抽样」；清除成功清空结果区；测试连接前置校验与写凭据；全局 toast（`src/lib/toast.ts` + `ToastHost.vue`）；清洗模板「选完即导入」一步完成；连接失败在内容区顶部横幅可见（不再是只挂 title）；侧栏分「工作台/规划中」两组并恢复「目标先选，来源后选；执行前自动备份」提示。
+- 补「首次使用向导」（旧界面 onboarding 的等价物）：`SetupWizard.vue` + `GET/POST /api/onboarding`；服务器无配置时整屏引导，两步走完写 `config.js`+`creds.json` 再进主界面。用空 userData 的 `--preview` 实例实测：`needsSetup:true` → 向导显示 → 「读取账套」可用 → 点「保存并进入软件」才落盘。
+- 技术债清理：四份重复的 `.btn/.status` 样式收进 `base.css`；滚动条颜色进 `paper.css` token；`font-size:<px>` 与硬编码 hex 颜色全量 token 化（`views/components/styles/App.vue` 均 0 条）；`useStatus` 统一四页状态提示（含 `warn`）；`stores/app.ts` 去掉死字段；`api/client.ts` 删掉 6 个无调用方方法。
+- 验证：`vue-tsc --noEmit` 0；`vite build` 成功（js 164.61KB / css 25.11KB）；CDP 冒烟 6 路由无异常；预览实例实测向导两条路径。
+- 说明：后端 `src/app.js`、`src/main.electron.js` 与旧界面 `src/public/index.html` 本轮零改动；可用发版基线仍为 2.2.101，未打包。
 ### v2.9.2（2026-11-26）
 - 修「切账套后不自动重连」：现象是切完账套顶栏仍是「已配置」琥珀点，必须手点「重新连接」。原因是切库只更新了后端连接池，前端只读了本地配置。改法：切库成功后自动 `probe()` 真探活（`/api/meta`），绿点落定并提示「已切换到账套 X，已重新连接」。
 - 修「账套下拉只剩占位」：读取账套列表失败时（数据库临时不可达），下拉至少保留当前账套并给出失败原因，不再看起来像「账套工具坏了」。

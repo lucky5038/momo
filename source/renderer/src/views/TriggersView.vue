@@ -3,6 +3,7 @@
  *  系统触发器只读；删除前后端自动整库备份，所以前端只做一次确认。 */
 import { computed, onMounted, ref } from 'vue'
 import { useStatus } from '../composables/useStatus'
+import { toast } from '../lib/toast'
 import { useAppStore } from '../stores/app'
 import { listTriggers, toggleTrigger, dropTrigger, type TriggerRow } from '../api/triggers'
 
@@ -46,21 +47,26 @@ async function refresh() {
     server.value = data.server || ''
   } catch (e) {
     if (seq !== refreshSeq) return
-    rows.value = []
+    // 保留上一次的列表：清空会让用户以为"确实没有触发器"
     status.fail(e)
   } finally {
     if (seq === refreshSeq) loading.value = false
   }
 }
 
-/** 先读列表再提示，避免 refresh() 把刚写的成功提示清掉 */
+/** 先读列表再提示，避免 refresh() 把刚写的成功提示清掉；
+ *  这里失败也不抛：写操作已经成功，刷新失败不该显示成"操作失败" */
 async function reloadQuiet() {
   const seq = ++refreshSeq
-  const data = await listTriggers()
-  if (seq !== refreshSeq) return
-  rows.value = data.triggers || []
-  database.value = data.database || ''
-  server.value = data.server || ''
+  try {
+    const data = await listTriggers()
+    if (seq !== refreshSeq) return
+    rows.value = data.triggers || []
+    database.value = data.database || ''
+    server.value = data.server || ''
+  } catch {
+    /* 保留旧列表与成功提示 */
+  }
 }
 
 async function onToggle(row: TriggerRow) {
@@ -70,6 +76,7 @@ async function onToggle(row: TriggerRow) {
     const r = await toggleTrigger(row.name, row.disabled)
     const done = `已${r.enabled ? '启用' : '停用'} ${row.name}`
     status.set('ok', done)
+    toast(done, 'ok')
     await reloadQuiet()
     // reloadQuiet 不写状态，成功提示得以保留
   } catch (e) {
@@ -89,6 +96,7 @@ async function onDrop(row: TriggerRow) {
   try {
     const r = await dropTrigger(row.name)
     status.set('ok', `已删除 ${row.name}（备份 ${r.backupPath}）`)
+    toast(`已删除 ${row.name}`, 'ok')
     await reloadQuiet()
   } catch (e) {
     status.fail(e)
