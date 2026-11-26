@@ -166,7 +166,6 @@ onMounted(refresh)
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 1080px;
 }
 
 .bar {

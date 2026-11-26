@@ -224,7 +224,6 @@ onMounted(load)
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 880px;
 }
 
 .card {
@@ -248,7 +247,7 @@ onMounted(load)
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px 14px;
 }
 
