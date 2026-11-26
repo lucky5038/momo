@@ -63,6 +63,14 @@ export interface DbConfig {
 
 export interface DbInfo {
   name: string
+  state?: string
+}
+
+export interface DbListPayload {
+  ok?: boolean
+  databases: DbInfo[]
+  server?: string
+  currentDb?: string
 }
 
 export interface MetaPayload {
@@ -79,9 +87,12 @@ export const api = {
   config: () => request<DbConfig>('/api/config'),
   saveConfig: (body: Partial<DbConfig>) => post<{ ok?: boolean }>('/api/save-config', body),
   testConn: (body: Partial<DbConfig>) => post<{ ok?: boolean; error?: string }>('/api/test-conn', body),
-  databases: (body?: Partial<DbConfig>) => post<DbInfo[]>('/api/databases', body),
-  switchDb: (database: string) => post<{ ok?: boolean }>('/api/switch-db', { database }),
-  backupDir: () => request<{ dir?: string }>('/api/backup-dir'),
+  databases: (body?: Partial<DbConfig>) => post<DbListPayload>('/api/databases', body),
+  switchDb: (database: string) => post<{ ok?: boolean; database?: string; server?: string }>('/api/switch-db', { database }),
+  backupDir: () => request<{ ok?: boolean; backupDir?: string }>('/api/backup-dir'),
+  /** 不传 dir：后端弹原生目录选择框 */
+  setBackupDir: (dir?: string) =>
+    post<{ ok?: boolean; canceled?: boolean; backupDir?: string; error?: string }>('/api/backup-dir', dir ? { dir } : {}),
 
   // 首次引导
   firstOpen: () => request<Record<string, unknown>>('/api/first-open'),
