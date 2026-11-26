@@ -51,31 +51,24 @@ const srcColumnLabel = computed(() => {
   const name = String(info.value?.source?.fileName || '客户数据').replace(/\.(xls|xlsx|xlsm)$/i, '')
   return name
 })
-const templateHint = computed(() => {
-  if (templateFile.value) return `${templateFile.value.name} · ${fileSize(templateFile.value)}（点「导入模板文件」保存到模板库）`
-  const picked = templates.value.find((t) => t.id === templateId.value)
-  if (picked) return `已选模板：${picked.name || picked.fileName || '未命名模板'}`
-  return '模板保存一次，下次直接选'
-})
-const ruleNote = computed(() => {
-  const cols = mapping.value
-  const mapped = cols.filter((c) => c.sourceIndex != null).length
-  const req = cols.filter((c) => c.required).length
-  const fixed = cols.filter((c) => c.fixed).length
-  const enums = cols.filter((c) => (c.options || []).length).length
-  return `模板 ${cols.length} 列 · 必填 ${req} · 固定 ${fixed} · 下拉 ${enums} · 已匹配 ${mapped}`
-})
 const summary = computed(() => {
-  const i = info.value
-  if (!i) return null
+  const it = info.value
+  if (!it) return null
   return {
-    profile: i.suggested?.profile || '通用',
-    cols: i.template?.columns?.length || 0,
-    rows: i.source?.rowCount || 0,
-    remembered: Number(i.suggested?.rememberedCount || 0),
+    profile: it.suggested?.profile || '—',
+    cols: it.template?.columns?.length ?? 0,
+    rows: it.source?.rowCount ?? 0,
+    remembered: it.suggested?.rememberedCount ?? 0,
   }
 })
-
+const ruleNote = computed(() => {
+  const list = mapping.value
+  const required = list.filter((c) => c.required).length
+  const fixed = list.filter((c) => c.fixed || c.derivedFrom).length
+  const options = list.filter((c) => !c.fixed && !c.derivedFrom && (c.options?.length ?? 0) > 0).length
+  const mapped = list.filter((c) => c.sourceIndex != null).length
+  return `必填 ${required} · 固定 ${fixed} · 下拉 ${options} · 已匹配 ${mapped}`
+})
 function setStatus(msg: string, kind: 'ok' | 'err' | '' = '') {
   statusText.value = msg
   statusKind.value = kind
@@ -357,7 +350,6 @@ onMounted(() => loadTemplates())
       <div>
         <div class="kicker">MODULE 02 · 期初导入</div>
         <h2>数据清洗与导入</h2>
-        <p class="sub">选择易助导入模板和客户来源文件，自动识别必填、映射字段、清洗校验，生成可直接导入的 XLS。</p>
       </div>
       <span class="pill">只读校验 · 不写数据库</span>
     </div>
@@ -381,7 +373,7 @@ onMounted(() => loadTemplates())
             {{ deleteArmed ? '确认删除' : '删除模板' }}
           </button>
         </div>
-        <p class="sub">{{ templateHint }}</p>
+        <p v-if="templateFile" class="sub">{{ templateFile.name }} · {{ fileSize(templateFile) }}</p>
       </div>
 
       <div class="paper-card file">
@@ -393,7 +385,6 @@ onMounted(() => loadTemplates())
           </label>
           <span class="sub">{{ sourceFile ? `${sourceFile.name} · ${fileSize(sourceFile)}` : '(.xls / .xlsx)' }}</span>
         </div>
-        <p class="sub">支持列名不完全一致，系统会自动匹配同义词。</p>
         <div class="file-actions">
           <button class="btn primary" type="button" :disabled="reading" @click="read">
             {{ reading ? '读取中...' : '读取' }}
@@ -597,6 +588,7 @@ onMounted(() => loadTemplates())
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  margin-top: auto;
 }
 
 .src-row {

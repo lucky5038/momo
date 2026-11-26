@@ -32,6 +32,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 212px minmax(0, 1fr);
   height: 100%;
+  overflow: hidden;
 }
 
 .titlebar-rule {
@@ -48,10 +49,13 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .content {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 0 22px 28px;
 }
