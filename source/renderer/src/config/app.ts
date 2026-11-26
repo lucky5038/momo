@@ -1,6 +1,6 @@
 /** 应用级常量与模块清单（侧栏与路由共用，避免两处维护）
- * 顺序沿用旧界面侧栏：跨表带值 → 触发器管理 → 系统设置 → 一句话带值 → 数据清洗 → 数据体检 */
-export const APP_VERSION = '2.4.5'
+ * 顺序：跨表带值 → 触发器管理 → 一句话带值 → 数据清洗 → 数据体检 → 系统设置（配置类放最后） */
+export const APP_VERSION = '2.5.0'
 
 export interface ModuleDef {
   key: string
@@ -29,14 +29,6 @@ export const MODULES: ModuleDef[] = [
     stage: 'P4 迁移中',
   },
   {
-    key: 'settings',
-    path: '/settings',
-    title: '系统设置',
-    icon: '⚙️',
-    desc: '数据库连接、账套切换、备份目录与运行参数。',
-    stage: 'P5 迁移中',
-  },
-  {
     key: 'chat',
     path: '/chat',
     title: '一句话带值',
@@ -58,6 +50,14 @@ export const MODULES: ModuleDef[] = [
     title: '数据体检',
     icon: '🩺',
     desc: '检查字段字典、空值与映射完整性，提前发现带值隐患。',
+    stage: 'P5 迁移中',
+  },
+  {
+    key: 'settings',
+    path: '/settings',
+    title: '系统设置',
+    icon: '⚙️',
+    desc: '数据库连接、账套切换、备份目录与运行参数。',
     stage: 'P5 迁移中',
   },
 ]
