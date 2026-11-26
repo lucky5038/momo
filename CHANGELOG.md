@@ -2,10 +2,15 @@
 
 ## 版本演进（最新在前）
 
+### v2.4.2（2026-11-26）
+- 跨表带值页面 Vue 化（P2 第一步）：`source/renderer/src/views/CrossFillPage.vue` 落地 01 目标 / 02 来源 / 高级选项 / 预览结果 / 执行结果，字段、禁用条件、提示文案对齐旧界面 `#tab-sync`。
+- 新增 `src/api/crossfill.ts`（meta / run / clear-column 强类型契约）、`src/stores/crossfill.ts`（表单与预览状态，切单据/来源即清空旧结果）、`src/components/ColumnCombo.vue`（可搜索列下拉）、`tools/nb-cdp-crossfill.mjs`（CDP 自动跑一遍选单据→选列→预览）。
+- 行为对齐：目标列只允许 960–995；来源档排除同家族与自身；付款单（YSFGQB + DCSHDA/DCSHDB）禁用建立触发器；执行前二次确认并自动备份；预览后配置变化会拦截执行。
+- 说明：本版仍只影响开发版窗口，旧界面与后端零改动，未生成安装包；可用发版基线仍为 2.2.101。
+
 ### v2.4.1（2026-11-26）
-- 颜色统一（P0 修正）：开发版窗口标题栏跟随浅色主题（
-ativeTheme.themeSource = 'light'，仅在 NB_RENDERER_URL 生效，正式版不变），窗口底色同步改为纸色 #F7F3EA，消除深色标题栏与米白页面的割裂感。
-- 顶栏状态文字统一为墨色（绿色/朱砂只保留在状态圆点上），侧栏 emoji 图标统一压成墨色（ilter: grayscale(1) opacity(.72)）。
+- 颜色统一（P0 修正）：开发版窗口标题栏跟随浅色主题（`nativeTheme.themeSource = 'light'`，仅在 NB_RENDERER_URL 生效，正式版不变），窗口底色同步改为纸色 #F7F3EA，消除深色标题栏与米白页面的割裂感。
+- 顶栏状态文字统一为墨色（绿色/朱砂只保留在状态圆点上），侧栏 emoji 图标统一压成墨色（`filter: grayscale(1) opacity(.72)`）。
 - 说明：仍为外壳阶段，旧界面与后端零改动，未生成安装包；可用发版基线仍为 2.2.101。
 
 ### v2.4.0（2026-11-26）
