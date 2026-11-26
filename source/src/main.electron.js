@@ -198,7 +198,7 @@ function createWindow() {
     backgroundColor: rendererUrl ? '#f7f3ea' : '#0b1220',
     // 开发版加载纸墨浅色前端：标题栏交给页面自绘（保留系统的最小化/最大化/关闭按钮），
     // 不然 Windows 深色主题会给一条黑标题栏，和米白页面永远是两种颜色
-    ...(rendererUrl ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#f7f3ea', symbolColor: '#1c1b19', height: 40 } } : {}),
+    ...(rendererUrl ? { titleBarStyle: 'hidden', titleBarOverlay: { color: '#f7f3ea', symbolColor: '#1c1b19', height: 52 } } : {}),
     title: 'N-B助手 · 让ERP在中国普遍成功',
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     autoHideMenuBar: true,

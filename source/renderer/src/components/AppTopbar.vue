@@ -54,9 +54,9 @@ const connLabel = computed(() => {
   height: 52px;
   /* 右侧留出系统最小化/最大化/关闭按钮的位置（自绘标题栏） */
   padding: 0 150px 0 22px;
-  background: rgba(255, 253, 247, 0.86);
+  /* 与 titleBarOverlay 的底色完全一致，避免右上角出现色块 */
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(4px);
   -webkit-app-region: drag;
 }
 

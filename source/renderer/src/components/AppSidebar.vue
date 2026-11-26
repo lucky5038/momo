@@ -49,8 +49,10 @@ const isActive = (path: string) => route.path === path
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 16px 14px;
-  border-bottom: 1px solid var(--line-soft);
+  height: 52px;
+  padding: 0 16px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
   -webkit-app-region: drag;
 }
 

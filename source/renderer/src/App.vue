@@ -17,6 +17,7 @@ onMounted(() => {
     <div class="main">
       <AppTopbar />
       <main class="content">
+        <p class="slogan">科技不是高高在上，而是服务于人民</p>
         <RouterView />
       </main>
     </div>
@@ -39,6 +40,17 @@ onMounted(() => {
 .content {
   flex: 1;
   overflow: auto;
-  padding: 20px 22px 28px;
+  padding: 0 22px 28px;
+}
+
+/* 旧界面 <main> 首行的题记，保留 */
+.slogan {
+  margin: 0;
+  padding: 12px 0 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: var(--ink-3);
 }
 </style>

@@ -217,7 +217,7 @@ async function onExecute() {
 
 <style scoped>
 .page {
-  padding: 16px 22px 26px;
+  padding: 12px 0 26px;
   display: flex;
   flex-direction: column;
   gap: 14px;
