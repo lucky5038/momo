@@ -1,11 +1,13 @@
 <script setup lang="ts">
 /** 跨表带值（P2）：01 目标 → 02 来源 → 高级选项 → 预览/执行。
  *  行为对齐旧界面 #tab-sync，差异只在"切单据/来源会清空旧结果"这一处（旧版会残留）。 */
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import ColumnCombo from '../components/ColumnCombo.vue'
+import { useAppStore } from '../stores/app'
 import { useCrossFillStore } from '../stores/crossfill'
 
+const app = useAppStore()
 const store = useCrossFillStore()
 const {
   docs,
@@ -24,7 +26,9 @@ const {
   canPreview,
   clearEnabled,
   preview,
-  running,
+  previewing,
+  executing,
+  busy,
   result,
   message,
   messageKind,
@@ -35,6 +39,15 @@ const {
 onMounted(() => {
   if (!docs.value.length) store.loadMeta()
 })
+
+// 账套/服务器切换后字典必须重拉，否则会拿旧账套的列去写新库
+watch(
+  () => app.generation,
+  () => {
+    store.invalidate()
+    void store.loadMeta()
+  },
+)
 
 const docSub = computed(() => {
   if (metaState.value === 'loading') return '正在加载单据字典，请稍候...'
@@ -64,11 +77,35 @@ const previewTitle = computed(() => {
 
 const banners = computed(() => {
   const p = preview.value
-  if (!p) return [] as { kind: string; text: string }[]
-  return [p.typeWarning, p.chainWarning, p.mergeNote, p.partyNote, p.note]
-    .filter((t): t is string => !!t)
-    .map((text) => ({ kind: 'note', text }))
+  if (!p) return [] as { kind: 'warn' | 'note'; text: string }[]
+  const list: { kind: 'warn' | 'note'; text: string }[] = []
+  // 类型不匹配 / 链条提示属于风险项，用告警色；其余是说明
+  if (p.typeWarning) list.push({ kind: 'warn', text: p.typeWarning })
+  if (p.chainWarning) list.push({ kind: 'warn', text: p.chainWarning })
+  if (p.mergeNote) list.push({ kind: 'note', text: p.mergeNote })
+  if (p.partyNote) list.push({ kind: 'note', text: p.partyNote })
+  if (p.note) list.push({ kind: 'note', text: p.note })
+  return list
 })
+
+/** 空结果也要解释清楚，否则用户会以为工具坏了（旧界面同样提醒 0 值） */
+const emptyHint = computed(() => {
+  if (!preview.value) return ''
+  return force.value
+    ? '源值为空、或来源档与目标单据没有匹配的行。'
+    : '源值为空、或该列已经有值（数值 0 也算已有值）。需要覆盖已有值请勾选「强制覆盖」。'
+})
+
+/** 后端预览只回 50 行样本，命中更多时必须说明，否则用户会以为只写了这些 */
+const sampleNote = computed(() => {
+  const p = preview.value
+  if (!p) return ''
+  const total = Number(p.totalRows || 0)
+  const shown = p.sample?.length ?? 0
+  if (!total || shown >= total) return ''
+  return `预览只列前 ${shown} 行样本，实际会写入 ${total} 行；执行前建议先看一眼备份目录。`
+})
+
 
 function onDocChange() {
   store.setDoc(docId.value)
@@ -93,8 +130,8 @@ async function onExecute() {
       <div class="paper-card card">
         <div class="step"><b>01</b> 目标</div>
 
-        <label class="lbl">目标单据（主表）</label>
-        <select v-model="docId" :disabled="!docs.length" :title="docSub" @change="onDocChange">
+        <label class="lbl" for="cf-doc">目标单据（主表）</label>
+        <select id="cf-doc" v-model="docId" :disabled="!docs.length" :title="docSub" @change="onDocChange">
           <option value="">—— 请选择单据 ——</option>
           <option v-for="d in docs" :key="d.id" :value="d.id">{{ d.name }}</option>
         </select>
@@ -102,8 +139,9 @@ async function onExecute() {
 
         <label class="lbl">目标列（要写入哪一列）</label>
         <ColumnCombo
-          v-model="tgtCol"
+          :model-value="tgtCol"
           :options="tgtCols"
+          @update:model-value="store.setTgtCol"
           :disabled="!docId"
           placeholder="搜索自定义字段..."
           :empty-text="docId ? '该单据没有自定义字段' : '请先选择单据'"
@@ -111,7 +149,7 @@ async function onExecute() {
         <p class="sub">{{ tgtSub }}</p>
 
         <div class="clear-row">
-          <button class="btn danger" type="button" :disabled="!clearEnabled" @click="onClear">清除目标字段</button>
+          <button class="btn danger" type="button" :disabled="!clearEnabled || busy" @click="onClear">清除目标字段</button>
           <span class="sub">清除当前目标字段的所有非空值，执行前备份</span>
         </div>
       </div>
@@ -121,16 +159,17 @@ async function onExecute() {
       <div class="paper-card card">
         <div class="step"><b>02</b> 来源</div>
 
-        <label class="lbl">来源档（自动排除已选单据）</label>
-        <select v-model="srcId" :disabled="!docId" @change="onSrcChange">
+        <label class="lbl" for="cf-src">来源档（自动排除已选单据）</label>
+        <select id="cf-src" v-model="srcId" :disabled="!docId" @change="onSrcChange">
           <option value="">—— 请选择来源档 ——</option>
           <option v-for="s in srcOptions" :key="s.id" :value="s.id">{{ s.name }}</option>
         </select>
 
         <label class="lbl">来源值列（取哪一列的值，可搜索切换）</label>
         <ColumnCombo
-          v-model="srcValCol"
+          :model-value="srcValCol"
           :options="valCols"
+          @update:model-value="store.setSrcValCol"
           :disabled="!srcId"
           placeholder="先选择来源档，再选来源值列..."
           :empty-text="srcId ? '该来源档没有可选值列' : '请先选择来源档'"
@@ -151,14 +190,16 @@ async function onExecute() {
       </div>
     </div>
 
-    <p v-if="message" class="status" :class="messageKind">{{ message }}</p>
+    <p v-if="message" class="status" :class="messageKind" role="status" aria-live="polite">{{ message }}</p>
 
     <div class="actionbar">
       <span class="sub">执行前自动备份；强制覆盖 / 触发器 / 合并在高级选项里。</span>
       <div class="btns">
-        <button class="btn" type="button" :disabled="running" @click="store.previewNow()">预览</button>
-        <button class="btn primary" type="button" :disabled="running || !canPreview" @click="onExecute">
-          {{ running ? '执行中...' : '执行' }}
+        <button class="btn" type="button" :disabled="previewing || executing" @click="store.previewNow()">
+          {{ previewing ? '预览中...' : '预览' }}
+        </button>
+        <button class="btn primary" type="button" :disabled="busy || !canPreview" @click="onExecute">
+          {{ executing ? '执行中...' : '执行' }}
         </button>
       </div>
     </div>
@@ -168,7 +209,8 @@ async function onExecute() {
         <strong>{{ previewTitle }}</strong>
         <span class="sub">共 {{ preview.totalRows ?? 0 }} 行待填入</span>
       </div>
-      <p v-for="(b, i) in banners" :key="i" class="sub warn">{{ b.text }}</p>
+      <p v-for="b in banners" :key="b.text" class="sub" :class="b.kind">{{ b.text }}</p>
+      <p v-if="sampleNote" class="sub">{{ sampleNote }}</p>
       <table v-if="preview.sample && preview.sample.length" class="grid">
         <thead>
           <tr>
@@ -179,7 +221,7 @@ async function onExecute() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(row, i) in preview.sample" :key="i">
+          <tr v-for="(row, i) in preview.sample" :key="(row['单号'] || '') + '#' + (row['序号'] || i)">
             <td>{{ row['单号'] ?? '' }}</td>
             <td>{{ row['序号'] ?? '' }}</td>
             <td>{{ row['现值'] ?? '' }}</td>
@@ -187,7 +229,7 @@ async function onExecute() {
           </tr>
         </tbody>
       </table>
-      <p v-else class="sub">本次没有需要填入的行。</p>
+      <template v-else><p class="sub">本次没有需要填入的行。</p><p class="sub">{{ emptyHint }}</p></template>
     </div>
 
     <div v-if="result" class="paper-card block">
@@ -205,7 +247,7 @@ async function onExecute() {
         <template v-else-if="result.triggerResult.error">（失败：{{ result.triggerResult.error }}）</template>
       </p>
       <ul v-if="result.sampleAfter && result.sampleAfter.length" class="after">
-        <li v-for="(s, i) in result.sampleAfter" :key="i">
+        <li v-for="(s, i) in result.sampleAfter" :key="(s.docNo || '') + '#' + i">
           <span>{{ s.docNo ?? '' }}</span>
           <span class="filled">{{ s.filled ?? '' }}</span>
         </li>
@@ -234,7 +276,7 @@ async function onExecute() {
   display: grid;
   place-items: center;
   color: var(--ink-3);
-  font-size: 18px;
+  font-size: var(--fs-card);
 }
 
 .card {
@@ -257,7 +299,7 @@ async function onExecute() {
 }
 
 .lbl {
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-2);
   margin-top: 8px;
 }
@@ -265,7 +307,7 @@ async function onExecute() {
 select {
   width: 100%;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--ink);
   background: var(--paper-2);
   border: 1px solid var(--line);
@@ -285,7 +327,15 @@ select:disabled {
 
 .sub {
   margin: 0;
-  font-size: 11.5px;
+  font-size: var(--fs-sub);
+  color: var(--ink-3);
+}
+
+.sub.warn {
+  color: var(--warn);
+}
+
+.sub.note {
   color: var(--ink-3);
 }
 
@@ -298,7 +348,7 @@ select:disabled {
 
 .btn {
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-2);
   background: var(--paper-2);
   border: 1px solid var(--line);
@@ -321,12 +371,12 @@ select:disabled {
 .btn.primary {
   background: var(--seal);
   border-color: var(--seal);
-  color: #fffaf0;
+  color: var(--paper-2);
 }
 
 .btn.primary:hover:not(:disabled) {
   background: var(--seal-deep);
-  color: #fffaf0;
+  color: var(--paper-2);
 }
 
 .btn.danger {
@@ -339,7 +389,7 @@ select:disabled {
 }
 
 .adv-title {
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-3);
   letter-spacing: 1px;
   margin-bottom: 4px;
@@ -356,7 +406,7 @@ select:disabled {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-2);
   cursor: pointer;
 }
@@ -367,7 +417,7 @@ select:disabled {
 
 .status {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   min-height: 18px;
 }
 
@@ -412,7 +462,7 @@ select:disabled {
 .grid {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .grid th,
@@ -439,7 +489,7 @@ select:disabled {
 .after {
   margin: 6px 0 0;
   padding-left: 18px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ink-2);
 }
 
@@ -450,7 +500,7 @@ select:disabled {
 
 .hint {
   margin: 8px 0 0;
-  font-size: 11.5px;
+  font-size: var(--fs-kicker);
   color: var(--seal);
 }
 </style>

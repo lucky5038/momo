@@ -65,7 +65,7 @@ onMounted(() => {
   margin: 0;
   padding: 12px 0 8px;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--fs-body);
   font-weight: 500;
   letter-spacing: 0.5px;
   color: var(--ink-3);

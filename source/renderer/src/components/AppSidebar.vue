@@ -61,7 +61,7 @@ const isActive = (path: string) => route.path === path
   height: 30px;
   border-radius: 6px;
   object-fit: cover;
-  box-shadow: inset 0 0 0 1px rgba(28, 27, 25, 0.08);
+  box-shadow: var(--shadow-sm);
 }
 
 .brand-text {
@@ -72,12 +72,12 @@ const isActive = (path: string) => route.path === path
 
 .brand-text strong {
   font-family: var(--font-title);
-  font-size: 16px;
+  font-size: var(--fs-brand);
   letter-spacing: 1px;
 }
 
 .brand-text small {
-  font-size: 11px;
+  font-size: var(--fs-kicker);
   color: var(--ink-3);
   letter-spacing: 0.3px;
 }
@@ -114,7 +114,7 @@ const isActive = (path: string) => route.path === path
 }
 
 .nav-icon {
-  font-size: 15px;
+  font-size: var(--fs-section);
   width: 18px;
   text-align: center;
   /* emoji 自带彩色，统一压成墨色，避免和纸墨底打架 */
@@ -122,7 +122,7 @@ const isActive = (path: string) => route.path === path
 }
 
 .nav-title {
-  font-size: 13.5px;
+  font-size: var(--fs-body);
   letter-spacing: 0.4px;
 }
 
@@ -135,13 +135,13 @@ const isActive = (path: string) => route.path === path
 }
 
 .ver {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ink-2);
   font-family: Consolas, monospace;
 }
 
 .ver-note {
-  font-size: 11px;
+  font-size: var(--fs-kicker);
   color: var(--ink-3);
 }
 </style>

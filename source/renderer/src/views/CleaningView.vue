@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /** 数据清洗（P3）：模板库 → 来源数据 → 读取 → 字段规则 → 预览 → 生成。
  *  行为对齐旧界面 #tab-cleaning：只读校验不写数据库，生成前必须预览通过。 */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
   cleaningApi,
   fileToBase64,
@@ -35,6 +35,8 @@ const previewing = ref(false)
 const generating = ref(false)
 const importing = ref(false)
 const deleteArmed = ref(false)
+/** 删除确认的 5 秒回退计时器：切模板/卸载时必须清掉，否则会把新状态的确认按钮悄悄变回去 */
+let deleteTimer = 0
 
 const shownIssues = computed(() =>
   issues.value.filter((x) => x.severity === 'error' || x.severity === 'warning').slice(0, 40),
@@ -47,6 +49,12 @@ const badCodes = computed(() => {
   return set
 })
 const hasJob = computed(() => !!jobId.value)
+/** 是否存在可选枚举列（决定要不要提示"选枚举值会清空来源列"） */
+const hasOptions = computed(() =>
+  mapping.value.some((c) => !c.fixed && !c.derivedFrom && (c.options?.length ?? 0) > 0),
+)
+/** 读取/预览/生成/导入互斥：同一时刻只允许一个后端作业，避免并发写同一个 jobDir */
+const working = computed(() => reading.value || previewing.value || generating.value || importing.value)
 const srcColumnLabel = computed(() => {
   const name = String(info.value?.source?.fileName || '客户数据').replace(/\.(xls|xlsx|xlsm)$/i, '')
   return name
@@ -56,6 +64,7 @@ const summary = computed(() => {
   if (!it) return null
   return {
     profile: it.suggested?.profile || '—',
+    template: it.templateName || it.template?.fileName || '',
     cols: it.template?.columns?.length ?? 0,
     rows: it.source?.rowCount ?? 0,
     remembered: it.suggested?.rememberedCount ?? 0,
@@ -96,6 +105,7 @@ function resetJob() {
   xlsPath.value = ''
   previewOk.value = false
   deleteArmed.value = false
+  window.clearTimeout(deleteTimer)
 }
 
 async function loadTemplates(selected?: string) {
@@ -148,7 +158,8 @@ async function removeTemplate() {
   if (!deleteArmed.value) {
     deleteArmed.value = true
     setStatus('再点一次「确认删除」；只删除模板库文件，不影响已生成的 XLS。')
-    window.setTimeout(() => (deleteArmed.value = false), 5000)
+    window.clearTimeout(deleteTimer)
+    deleteTimer = window.setTimeout(() => (deleteArmed.value = false), 5000)
     return
   }
   deleteArmed.value = false
@@ -172,6 +183,7 @@ function onSourceFile(e: Event) {
 }
 
 async function read() {
+  if (working.value) return
   const s = sourceFile.value
   if (!s || (!templateFile.value && !templateId.value)) {
     setStatus('请先选择模板和来源数据', 'err')
@@ -213,6 +225,7 @@ function collectMapping(): CleanMappingColumn[] {
     otherwise: c.otherwise || '',
     derivedFrom: c.derivedFrom,
     required: !!c.required,
+    requiredIf: c.requiredIf || null,
     options: c.options || [],
     fixed: !!c.fixed,
     editable: c.editable !== false,
@@ -220,6 +233,7 @@ function collectMapping(): CleanMappingColumn[] {
 }
 
 let rememberTimer = 0
+let hitTimer = 0
 function rememberSoon() {
   window.clearTimeout(rememberTimer)
   rememberTimer = window.setTimeout(() => {
@@ -256,6 +270,7 @@ async function validate(): Promise<CleanApplyResult | null> {
 
 async function preview() {
   if (!hasJob.value) return setStatus('请先点【读取】', 'err')
+  if (working.value) return
   previewing.value = true
   try {
     setStatus('正在校验并生成预览文件...')
@@ -287,6 +302,7 @@ async function preview() {
 
 async function generate() {
   if (!hasJob.value) return setStatus('请先点【读取】', 'err')
+  if (working.value) return
   generating.value = true
   try {
     setStatus('正在生成正式导入包...')
@@ -336,10 +352,17 @@ function locate(issue: CleanIssue) {
   if (!el) return
   el.scrollIntoView({ block: 'center' })
   el.classList.add('target-hit')
-  window.setTimeout(() => el.classList.remove('target-hit'), 1400)
+  window.clearTimeout(hitTimer)
+  hitTimer = window.setTimeout(() => el.classList.remove('target-hit'), 1400)
   const box = el.querySelector<HTMLElement>('select:not(:disabled),input:not(:disabled)')
   if (box) box.focus({ preventScroll: true })
 }
+
+onUnmounted(() => {
+  window.clearTimeout(rememberTimer)
+  window.clearTimeout(deleteTimer)
+  window.clearTimeout(hitTimer)
+})
 
 onMounted(() => loadTemplates())
 </script>
@@ -366,7 +389,7 @@ onMounted(() => loadTemplates())
             选择模板文件
             <input type="file" accept=".xls,.xlsx,.xlsm" hidden @change="onTemplateFile" />
           </label>
-          <button class="btn sm" type="button" :disabled="!templateFile || importing" @click="importTemplate">
+          <button class="btn sm" type="button" :disabled="!templateFile || working" @click="importTemplate">
             {{ importing ? '保存中...' : '导入模板文件' }}
           </button>
           <button class="btn sm danger" type="button" :disabled="!templateId" @click="removeTemplate">
@@ -386,13 +409,13 @@ onMounted(() => loadTemplates())
           <span class="sub">{{ sourceFile ? fileSize(sourceFile) : '(.xls / .xlsx)' }}</span>
         </div>
         <div class="file-actions">
-          <button class="btn primary" type="button" :disabled="reading" @click="read">
+          <button class="btn primary" type="button" :disabled="working" @click="read">
             {{ reading ? '读取中...' : '读取' }}
           </button>
-          <button class="btn" type="button" :disabled="!hasJob || previewing" @click="preview">
+          <button class="btn" type="button" :disabled="!hasJob || working" @click="preview">
             {{ previewing ? '预览中...' : '预览' }}
           </button>
-          <button class="btn primary" type="button" :disabled="!hasJob || !previewOk || generating" @click="generate">
+          <button class="btn primary" type="button" :disabled="!hasJob || !previewOk || working" @click="generate">
             {{ generating ? '生成中...' : '生成' }}
           </button>
         </div>
@@ -407,7 +430,8 @@ onMounted(() => loadTemplates())
     <p v-if="statusText" class="status" :class="statusKind">{{ statusText }}</p>
 
     <div v-if="summary" class="paper-card summary">
-      已识别 <b>{{ summary.profile }}</b> 模板（{{ summary.cols }} 列）和 <b>{{ summary.rows }}</b> 行客户数据。
+      已识别 <b>{{ summary.profile }}</b> 模板<template v-if="summary.template">「{{ summary.template }}」</template>（{{ summary.cols }} 列）和
+      <b>{{ summary.rows }}</b> 行客户数据。
       <template v-if="summary.remembered">
         <br /><span class="ok">已载入这个模板上次保存的 {{ summary.remembered }} 个默认值；换模板不会混用。</span>
       </template>
@@ -419,7 +443,10 @@ onMounted(() => loadTemplates())
         <strong>字段规则</strong>
         <span class="sub">{{ ruleNote }}</span>
       </div>
-      <p class="sub">来源有值优先；只有来源为空才使用默认值。固定值不可改。</p>
+      <p class="sub">
+        来源有值优先；只有来源为空才使用默认值。固定值不可改。
+        <span v-if="hasOptions">枚举字段选具体值时会清空来源列（以固定值为准），想保留来源就别在枚举里选值。</span>
+      </p>
       <div class="map-wrap">
         <table class="grid">
           <thead>
@@ -506,8 +533,8 @@ onMounted(() => loadTemplates())
       </div>
       <div v-if="!shownIssues.length" class="issue info"><span class="sev">通过</span><span>没有硬错误或警告。</span></div>
       <div
-        v-for="(x, i) in shownIssues"
-        :key="i"
+        v-for="x in shownIssues"
+        :key="`${x.severity}-${x.code || ''}-${x.row || 0}-${x.message}`"
         class="issue"
         :class="x.severity"
         @dblclick="locate(x)"
@@ -556,13 +583,13 @@ onMounted(() => loadTemplates())
 }
 
 .head h2 {
-  font-size: 20px;
+  font-size: var(--fs-page-title);
   margin: 2px 0 4px;
 }
 
 .pill {
   white-space: nowrap;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ink-2);
   background: var(--wash);
   border: 1px solid var(--line);
@@ -599,7 +626,7 @@ onMounted(() => loadTemplates())
 }
 
 .lbl {
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-2);
 }
 
@@ -607,7 +634,7 @@ select,
 input[type='text'] {
   width: 100%;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--ink);
   background: var(--paper-2);
   border: 1px solid var(--line);
@@ -629,7 +656,7 @@ input:disabled {
 
 .btn {
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--ink);
   background: var(--paper-2);
   border: 1px solid var(--line);
@@ -651,7 +678,7 @@ input:disabled {
 .btn.primary {
   background: var(--seal);
   border-color: var(--seal);
-  color: #fff;
+  color: var(--paper-2);
 }
 
 .btn.primary:disabled {
@@ -666,7 +693,7 @@ input:disabled {
 
 .btn.sm {
   padding: 5px 12px;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
 }
 
 .auto-row {
@@ -681,14 +708,14 @@ input:disabled {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--ink-2);
   cursor: pointer;
 }
 
 .status {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--ink-2);
 }
 
@@ -702,7 +729,7 @@ input:disabled {
 
 .summary {
   padding: 12px 16px;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--ink-2);
   line-height: 1.8;
 }
@@ -717,7 +744,7 @@ input:disabled {
 
 .sub {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-3);
 }
 
@@ -754,7 +781,7 @@ input:disabled {
 table.grid {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
 }
 
 table.grid th {
@@ -805,7 +832,7 @@ table.grid tr.target-hit {
 
 .tag {
   margin-left: 6px;
-  font-size: 11px;
+  font-size: var(--fs-kicker);
   padding: 0 5px;
   border-radius: 3px;
   background: var(--wash);
@@ -820,7 +847,7 @@ table.grid tr.target-hit {
 .stats {
   display: flex;
   gap: 18px;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--ink-2);
   padding: 0 4px;
 }
@@ -833,7 +860,7 @@ table.grid tr.target-hit {
   display: flex;
   gap: 10px;
   align-items: baseline;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   padding: 5px 8px;
   border-radius: 4px;
   background: var(--paper-3);
@@ -868,7 +895,7 @@ table.grid tr.target-hit {
 
 .path {
   font-family: Consolas, monospace;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ink-2);
   word-break: break-all;
 }

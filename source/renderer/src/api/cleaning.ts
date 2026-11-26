@@ -13,11 +13,19 @@ export interface CleanColOption {
   label?: string
 }
 
+/** 条件必填：某个依赖字段等于指定值时本字段才必填（后端 cleaning.js:1035-1040 依赖它） */
+export interface CleanRequiredIf {
+  fieldName: string
+  value: string
+}
+
 export interface CleanMappingColumn {
   code: string
   name?: string
   comment?: string
   required?: boolean
+  /** 必须原样回传，漏传会让「条件必填」规则整体失效（旧界面 index.html:2595 是传的） */
+  requiredIf?: CleanRequiredIf | null
   fixed?: boolean
   derivedFrom?: string
   sourceIndex?: number | null

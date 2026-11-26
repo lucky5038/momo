@@ -26,17 +26,28 @@
   --ok: #3f7a5e;
   --warn: #b4692e;
   --err: #a8322d;
+  --ok-wash: rgba(63, 122, 94, 0.1);
+  --warn-wash: rgba(180, 105, 46, 0.1);
+  --seal-line: rgba(168, 50, 45, 0.18);
+  --shadow-sm: inset 0 0 0 1px rgba(28, 27, 25, 0.08);
+  --shadow-pop: 0 8px 24px rgba(28, 27, 25, 0.12);
 
   /* 形状与字体 */
   --radius: 6px;
   /* 全应用统一字体：标题与正文同为微软雅黑，避免中英混排字重不一致 */
   --font-body: "Microsoft YaHei", "微软雅黑", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-title: var(--font-body);
-  /* 字号刻度：全应用只用这几档，避免同一屏里出现 11/11.5/12/12.5/13/14 混排 */
+  /* 字号刻度：全应用只用这几档，避免同一屏里出现 11/11.5/12/12.5/13/14 混排
+     page-title 页面标题 / card 卡片标题 / section 小节 / body 正文 / sub 说明 / xs 表格 / kicker 小标签 */
   --fs-page-title: 20px;
+  --fs-card: 18px;
   --fs-section: 15px;
   --fs-body: 14px;
   --fs-sub: 12.5px;
+  --fs-xs: 12px;
   --fs-kicker: 11.5px;
+  --fs-brand: 16px;
+  --fs-topbar: 17px;
+  --fs-icon-lg: 26px;
   --shadow-card: 0 1px 2px rgba(28, 27, 25, 0.05), 0 6px 16px rgba(28, 27, 25, 0.04);
 }

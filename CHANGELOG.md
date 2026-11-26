@@ -2,6 +2,48 @@
 
 ## 版本演进（最新在前）
 
+### v2.9.0（2026-11-26）
+体检修复批次（数据安全 + 假成功 + 重复/死代码 + 冗余文件），全部只动渲染层与开发工具，后端接口与旧界面零改动。
+
+**一、会写错库/会假成功的 5 条**
+- `api/client.ts`：现象是后端返回 200 但 `{ok:false}` 时前端当成功（如测试连接失败、跨表带值失败）；原因是只判了 `res.ok`。改法：`!res.ok` 与「200 且 `ok===false`」都抛 `ApiError`，并把后端 hint 一起带出（`lib/error.ts` 的 `errorMessage()` 拼接）。
+- 系统设置「测试连接」：现象是失败也提示「连接成功」；原因是把 200 当成功且未区分 dryRun。改法：走统一错误通道；成功提示写明「已应用当前参数并落盘」（后端 test-conn 成功即切库落盘）；按钮改为串行，避免连点并发切库。
+- 切账套后字典不失效：现象是切库后仍能选到旧库的列，可能把值写进新库；原因是各页面自己缓存 meta 且无失效信号。改法：`stores/app.ts` 新增 `generation` 代次 + `bumpGeneration()`，切库/测试连接/重连后自增，跨表带值 `watch(generation)` → `invalidate()` + `loadMeta()`。
+- 清洗映射漏传 `requiredIf`：现象是「条件必填」规则整条失效（后端 `cleaning.js:1035-1040` 依赖它，旧界面 `index.html:2595` 是传的）。改法：类型加 `CleanRequiredIf`，`collectMapping()` 原样回传。
+- 动作竞态：现象是同一页连点会并发执行（预览/生成/切库/刷新互相覆盖）。改法：系统设置 `action` 单值 + `busy` 计算属性；触发器按行 `busyRows`；清洗 `working` 互斥；`stores/crossfill.ts` 用 `metaSeq/runSeq` 只认最后一次结果。
+
+**二、交互与提示对齐旧界面**
+- 执行确认框补实时账套 + 备份目录；清除确认框补「单据名·列名 + 非空值数量」。
+- 预览只回 50 行样本时补提示「只列前 N 行样本，实际写入 M 行」。
+- 空结果补解释「数值 0 也算已有值」（旧界面同样提醒）。
+- 顶栏状态改真探活：`probe()` 走 `/api/meta` 并校验 `docs`，失败显示具体原因；按钮改「重新连接」，成功后推进字典代次。启动时仍用 `/api/config` 轻量探测，避免首屏等 10 秒。
+- 触发器：成功提示不再被随后的 `refresh()` 清掉（新增 `reloadQuiet()`）；刷新加 `refreshSeq` 只认最后一次；删除确认框带实时备份目录。
+
+**三、重复代码与死代码**
+- 新增 `composables/useStatus.ts`（4 份 `setMessage` 收敛）、`lib/error.ts`（2 份 `errorText` 收敛）。
+- 删死代码：`stores/app.ts` 的 `version`/`connText`、`ColumnCombo` 的 `props.options ?? []` 死防御、`paper.css` 未使用的 `--adv-title`、`api/client.ts` 中 6 个无调用方方法（firstOpen/onboarding/fieldDicts/chains/triggers/backupDir），`api/crossfill.ts` 去掉 `as unknown as` 泛型逃逸。
+- `stores/crossfill.ts` 的 `triggerBlocked` 改为基于当前 `srcId` 计算（原实现判断时机不对，恒 false）；`setDoc` 清预览时同时清 `previewKey`。
+
+**四、可访问性与细节**
+- `ColumnCombo` 支持 ↑↓/Enter/Esc、`role=combobox` + `aria-activedescendant`，失焦计时器在卸载时清理。
+- 表单 `<label for>` 关联对应 `input/select id`；状态区加 `role=status aria-live=polite`。
+- `:key="i"` 全部换业务键（预览行=单号#序号、问题行=严重级+字段码+行号、执行结果=docNo#i）。
+- 所有页面计时器（remember 300ms、删除确认 5s、定位高亮 1.4s）在卸载时清理。
+
+**五、样式 token 化**
+- 新增字号 token `--fs-card/--fs-xs/--fs-brand/--fs-topbar/--fs-icon-lg`，颜色 token `--ok-wash/--warn-wash/--seal-line/--shadow-sm/--shadow-pop`。
+- 全量替换后复查：`font-size:<数字>px` 与硬编码 hex 颜色在 `views/ components/ styles/ App.vue` 中均为 **0 条**。
+- 应用图标由 512×512（219KB）改为 64×64（11.5KB），产物体积同步下降。
+
+**六、仓库清理**
+- 删除 13 个一次性产物：`tools/api-sweep-*.csv`（3）、`tools/link-*-audit-*.csv`（5）、`tools/audit-all.js`、`tools/nb-cdp-shot2/shot3/pickfile/scrollcheck.mjs`（4）。
+- 保留（README 里登记过的回归/审计工具）：`test-trigger-sql.js`、`test-trigger-merge.js`、`test-chain-category.js`、`test-chain-merge.js`、`audit-links.ps1`、`audit-run-links.ps1`、`regen-inline.js`、`dev-renderer.ps1` 与 CDP 复用脚本（nav/routes/eval/smoke/crossfill/cleaning/typo）。
+- 新增 `tools/nb-cdp-smoke.mjs`：一键跑 6 个路由并收集控制台异常。
+
+**验证**
+- `vue-tsc --noEmit` 0 错误；`vite build` 782ms（js 152.35KB / css 22.17KB / 图标 11.46KB）。
+- 冒烟：6 个路由全部正常渲染、无 body 溢出、无未捕获异常。
+- 说明：本次验证时 192.168.0.142 的 SQL Server 不可达（`/api/meta` 返回 `Failed to connect … in 4000ms`），因此数据库相关页面显示错误态属预期；接入修复后这类错误会如实报出，不再伪装成功。未打包，可用发版基线仍为 2.2.101。
 ### v2.8.1（2026-11-26）
 - 字号刻度统一：新增 `--fs-page-title/--fs-section/--fs-body/--fs-sub/--fs-kicker` 五档 token，同一角色在四个已迁移页面只用一档。
 - 现象：同一屏里 kicker 出现 11px/12px、说明文字出现 11.5/12.5/13/14px、小节标题字距 0/1px 混用，看起来像"字体没统一"。
@@ -10,6 +52,7 @@
 - 覆盖文件：`paper.css`、`ModulePlaceholder.vue`、`TriggersView.vue`、`SettingsView.vue`、`CrossFillPage.vue`、`CleaningView.vue`。
 - 验证：CDP 取 computed style，三页 `.kicker 11.5/600/1.2px`、`h2 20/700/normal`、`.sub/.desc 12.5/400`、`.step 15/600/normal` 全部一致；`vue-tsc` 0；`vite build` 695ms。
 - 说明：旧界面与后端零改动，未打包，可用发版基线仍为 2.2.101。
+
 ### v2.8.0（2026-11-26）
 - 字体统一：去掉标题的宋体，全应用（含 h1/h2/h3、kicker、正文）统一微软雅黑，避免中英混排字重不一致。
 - 数据清洗：选完客户数据后按钮直接显示文件名（旁边只留大小），不再显示「选择客户数据」。

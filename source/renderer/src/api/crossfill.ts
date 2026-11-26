@@ -131,7 +131,7 @@ export function isCustomColumn(col: string): boolean {
   return n >= 960 && n <= 995
 }
 
-export const fetchMeta = () => api.meta() as unknown as Promise<Meta>
-export const runFill = (body: RunRequest) => api.run(body as unknown as Record<string, unknown>) as unknown as Promise<PreviewResponse | RunResponse>
+export const fetchMeta = () => api.meta<Meta>()
+export const runFill = <T extends PreviewResponse | RunResponse>(body: RunRequest) => api.run<T>(body as unknown as Record<string, unknown>)
 export const clearColumn = (body: { docId: string; tgtCol: string; confirm: boolean }) =>
-  api.clearColumn(body as unknown as Record<string, unknown>) as unknown as Promise<ClearResponse>
+  api.clearColumn<ClearResponse>(body as unknown as Record<string, unknown>)

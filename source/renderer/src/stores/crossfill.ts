@@ -1,18 +1,29 @@
 /** 跨表带值页面的状态与副作用（对应旧界面 #tab-sync 的全部逻辑）。
- *  旧页面用 DOM 当状态存储，迁移后统一收敛到这里，避免"切单据后残留旧结果"。 */
+ *  旧页面用 DOM 当状态存储，迁移后统一收敛到这里，避免"切单据后残留旧结果"。
+ *
+ *  三处容易踩的坑，这里都做了约束：
+ *   1. 换单据/换来源/换目标列 → 预览与结果一律清空，连 previewKey 一起清，否则执行时会误报"配置已变化"
+ *   2. 预览与执行分两个标志，避免预览时执行按钮显示"执行中…"
+ *   3. 切账套后 meta 必须失效，否则旧列字典会拿去写新库 */
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { api } from '../api/client'
 import { clearColumn, fetchMeta, runFill, isCustomColumn } from '../api/crossfill'
 import type { ClearResponse, Meta, PreviewResponse, RunRequest, RunResponse } from '../api/crossfill'
+import { useStatus } from '../composables/useStatus'
+import { errorMessage } from '../lib/error'
 
 /** 付款单不能用这两个来源建档触发器（旧界面同样硬编码）。 */
 const TRIGGER_BLOCKED_DOC = 'YSFGQB'
 const TRIGGER_BLOCKED_SRCS = ['DCSHDA', 'DCSHDB']
 
 export const useCrossFillStore = defineStore('crossfill', () => {
+  const status = useStatus()
+
   const meta = ref<Meta | null>(null)
   const metaState = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const metaError = ref('')
+  const backupDir = ref('')
 
   const docId = ref('')
   const tgtCol = ref('')
@@ -25,10 +36,15 @@ export const useCrossFillStore = defineStore('crossfill', () => {
 
   const preview = ref<PreviewResponse | null>(null)
   const previewKey = ref('')
-  const running = ref(false)
+  const previewing = ref(false)
+  const executing = ref(false)
+  const clearing = ref(false)
+  const busy = computed(() => previewing.value || executing.value || clearing.value)
   const result = ref<RunResponse | null>(null)
-  const message = ref('')
-  const messageKind = ref<'' | 'ok' | 'err'>('')
+
+  /** 请求序号：切单据/切账套后旧响应回来直接丢弃，避免覆盖新状态 */
+  let metaSeq = 0
+  let runSeq = 0
 
   const docs = computed(() => meta.value?.docs ?? [])
   const srcs = computed(() => meta.value?.srcs ?? [])
@@ -60,11 +76,6 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     () => !!docId.value && !!tgtCol.value.trim() && tgtCols.value.some((c) => c.col === tgtCol.value.trim()),
   )
 
-  function setMessage(kind: '' | 'ok' | 'err', text: string) {
-    messageKind.value = kind
-    message.value = text
-  }
-
   function buildRequest(confirm: boolean): RunRequest {
     return {
       docId: docId.value,
@@ -90,17 +101,42 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     return JSON.stringify(rest)
   }
 
+  function clearPreview() {
+    preview.value = null
+    previewKey.value = ''
+  }
+
+  function clearRunState() {
+    clearPreview()
+    result.value = null
+  }
+
   async function loadMeta() {
+    const seq = ++metaSeq
     metaState.value = 'loading'
     metaError.value = ''
     try {
-      meta.value = await fetchMeta()
+      const [m, cfg] = await Promise.all([fetchMeta(), api.config().catch(() => null)])
+      if (seq !== metaSeq) return
+      meta.value = m
+      backupDir.value = cfg?.backupDir || ''
       metaState.value = 'ready'
       resetForm()
     } catch (e) {
+      if (seq !== metaSeq) return
       metaState.value = 'error'
-      metaError.value = e instanceof Error ? e.message : String(e)
+      metaError.value = errorMessage(e)
     }
+  }
+
+  /** 账套切换/重新连接后调用：旧字典不能再用 */
+  function invalidate() {
+    metaSeq++
+    runSeq++
+    meta.value = null
+    metaState.value = 'idle'
+    metaError.value = ''
+    resetForm()
   }
 
   function resetForm() {
@@ -108,10 +144,9 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     tgtCol.value = ''
     srcId.value = ''
     srcValCol.value = ''
-    preview.value = null
-    previewKey.value = ''
-    result.value = null
-    setMessage('', '')
+    createTrigger.value = false
+    clearRunState()
+    status.reset()
   }
 
   function setDoc(id: string) {
@@ -119,94 +154,119 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     tgtCol.value = ''
     srcId.value = ''
     srcValCol.value = ''
-    preview.value = null
-    result.value = null
-    setMessage('', '')
-    if (triggerBlocked.value) createTrigger.value = false
+    createTrigger.value = false
+    clearRunState()
+    status.reset()
   }
 
   function setSrc(id: string) {
     srcId.value = id
     srcValCol.value = ''
-    preview.value = null
-    result.value = null
-    setMessage('', '')
+    clearRunState()
+    status.reset()
+    // 付款单 + 采购/委托来源不支持建触发器，选完来源再判，避免死分支
     if (triggerBlocked.value) createTrigger.value = false
+  }
+
+  /** 目标列由下拉直接写 store 时要清预览，否则表格还是上一列的样本 */
+  function setTgtCol(col: string) {
+    tgtCol.value = col
+    clearRunState()
+    status.reset()
+  }
+
+  function setSrcValCol(col: string) {
+    srcValCol.value = col
+    clearRunState()
+    status.reset()
   }
 
   async function previewNow() {
     if (!canPreview.value) {
-      setMessage('err', '请先选择单据、目标列、来源档与来源值列')
+      status.set('err', '请先选择单据、目标列、来源档与来源值列')
       return
     }
-    running.value = true
-    setMessage('', '')
+    const seq = ++runSeq
+    previewing.value = true
     result.value = null
+    status.reset()
     try {
       const req = buildRequest(false)
-      const resp = (await runFill(req)) as PreviewResponse
+      const resp = await runFill<PreviewResponse>(req)
+      if (seq !== runSeq) return
       preview.value = resp
       previewKey.value = keyOf(req)
-      setMessage('ok', `预览完成：共 ${resp.totalRows ?? 0} 行待填入，审阅后点「执行」。`)
+      const total = resp.totalRows ?? 0
+      const shown = resp.sample?.length ?? 0
+      const truncated = shown > 0 && shown < total ? `（预览表仅显示前 ${shown} 行）` : ''
+      status.set('ok', `预览完成：共 ${total} 行待填入${truncated}，审阅后点「执行」。`)
     } catch (e) {
-      preview.value = null
-      previewKey.value = ''
-      setMessage('err', e instanceof Error ? e.message : String(e))
+      if (seq !== runSeq) return
+      clearPreview()
+      status.fail(e)
     } finally {
-      running.value = false
+      if (seq === runSeq) previewing.value = false
     }
   }
 
   async function executeNow(): Promise<boolean> {
     if (!canPreview.value) {
-      setMessage('err', '请先选择单据、目标列、来源档与来源值列')
+      status.set('err', '请先选择单据、目标列、来源档与来源值列')
       return false
     }
     const req = buildRequest(true)
     if (previewKey.value && previewKey.value !== keyOf(req)) {
-      setMessage('err', '配置已经变化，请重新预览后再执行。')
+      status.set('err', '配置已经变化，请重新预览后再执行。')
       return false
     }
     const db = currentDb.value || '当前账套'
-    if (!window.confirm(`确认执行写库？工具会先自动备份 ${db} 到备份目录。`)) return false
+    const backupText = backupDir.value ? `备份目录 ${backupDir.value}` : '备份目录同设置页'
+    if (!window.confirm(`确认执行写库？\n账套：${db}\n执行前自动整库备份（${backupText}）。`)) return false
 
-    running.value = true
-    setMessage('', '')
+    const seq = ++runSeq
+    executing.value = true
+    status.reset()
     try {
-      const resp = (await runFill(req)) as RunResponse
+      const resp = await runFill<RunResponse>(req)
+      if (seq !== runSeq) return false
       result.value = resp
-      preview.value = null
-      previewKey.value = ''
-      setMessage('ok', `已写入数据库，受影响 ${resp.affected ?? 0} 行`)
+      clearPreview()
+      status.set('ok', `已写入数据库，受影响 ${resp.affected ?? 0} 行`)
       return true
     } catch (e) {
-      setMessage('err', e instanceof Error ? e.message : String(e))
+      if (seq !== runSeq) return false
+      status.fail(e)
       return false
     } finally {
-      running.value = false
+      if (seq === runSeq) executing.value = false
     }
   }
 
   /** 清除目标字段：整表整列，两段式（先问行数再确认） */
   async function clearTgtCol(): Promise<ClearResponse | null> {
-    if (!clearEnabled.value) return null
-    const body = { docId: docId.value, tgtCol: tgtCol.value.trim(), confirm: false }
+    if (!clearEnabled.value || busy.value) return null
+    const col = tgtCol.value.trim()
+    const body = { docId: docId.value, tgtCol: col, confirm: false }
+    clearing.value = true
     try {
       const probe = await clearColumn(body)
       const count = probe.count ?? 0
       if (!count) {
-        setMessage('ok', '该列没有可清除的值')
+        status.set('ok', '该列没有可清除的值')
         return probe
       }
-      if (!window.confirm(`确认清除该列全部 ${count} 个非空值？清除前会自动备份。`)) return null
+      const who = `${curDoc.value?.name ?? docId.value} · ${col}`
+      if (!window.confirm(`确认清除 ${who} 的全部 ${count} 个非空值？\n清除前自动整库备份。`)) return null
       const done = await clearColumn({ ...body, confirm: true })
-      setMessage('ok', `已清除 ${done.affected ?? count} 行`)
-      preview.value = null
-      previewKey.value = ''
+      const backup = done.backupPath ? `，备份：${done.backupPath}` : ''
+      status.set('ok', `已清除 ${done.affected ?? count} 行${backup}`)
+      clearPreview()
       return done
     } catch (e) {
-      setMessage('err', e instanceof Error ? e.message : String(e))
+      status.fail(e, '清除失败：')
       return null
+    } finally {
+      clearing.value = false
     }
   }
 
@@ -214,6 +274,7 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     meta,
     metaState,
     metaError,
+    backupDir,
     docs,
     srcs,
     currentDb,
@@ -233,15 +294,19 @@ export const useCrossFillStore = defineStore('crossfill', () => {
     canPreview,
     clearEnabled,
     preview,
-    previewKey,
-    running,
+    previewing,
+    executing,
+    busy,
     result,
-    message,
-    messageKind,
+    message: status.text,
+    messageKind: status.kind,
     loadMeta,
+    invalidate,
     resetForm,
     setDoc,
     setSrc,
+    setTgtCol,
+    setSrcValCol,
     previewNow,
     executeNow,
     clearTgtCol,

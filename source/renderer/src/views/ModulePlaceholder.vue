@@ -67,7 +67,7 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
 }
 
 .icon {
-  font-size: 26px;
+  font-size: var(--fs-icon-lg);
   line-height: 1.2;
 }
 
@@ -106,7 +106,7 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
 .stage {
   color: var(--seal);
   background: var(--seal-wash);
-  border: 1px solid rgba(168, 50, 45, 0.18);
+  border: 1px solid var(--seal-line);
 }
 
 .badge {
@@ -127,7 +127,7 @@ const planned = computed(() => MODULES.find((m) => m.key === route.meta.key)?.pl
 }
 
 .sample-label {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ink-3);
 }
 

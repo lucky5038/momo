@@ -3,11 +3,14 @@
  *  契约来自 app.js：GET /api/config、POST /api/save-config、POST /api/test-conn、
  *  POST /api/databases、POST /api/switch-db、GET|POST /api/backup-dir。
  *  注意：/api/test-conn 成功后后端会直接把新参数落盘并切库（dryRun 除外），所以这里不再单独保存。 */
-import { onMounted, reactive, ref } from 'vue'
-import { ApiError, api } from '../api/client'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { api } from '../api/client'
+import { useStatus } from '../composables/useStatus'
 import { useAppStore } from '../stores/app'
 
 const app = useAppStore()
+const status = useStatus()
+const { text: statusText, kind: statusKind } = status
 
 const form = reactive({
   server: '',
@@ -20,19 +23,9 @@ const databases = ref<string[]>([])
 const backupDir = ref('')
 const showPass = ref(false)
 const loading = ref(true)
-const busy = ref<'' | 'test' | 'save' | 'dbs' | 'switch' | 'backup'>('')
-const message = ref('')
-const messageKind = ref<'' | 'ok' | 'err'>('')
-
-function setMessage(text: string, kind: 'ok' | 'err' | '') {
-  message.value = text
-  messageKind.value = kind
-}
-
-function errorText(e: unknown): string {
-  if (e instanceof ApiError) return e.message
-  return e instanceof Error ? e.message : String(e)
-}
+/** 同一时刻只允许一个动作，避免连点产生并发切库（旧界面允许并发，切库结果会互相覆盖） */
+const action = ref<'' | 'test' | 'save' | 'dbs' | 'switch' | 'backup'>('')
+const busy = computed(() => action.value !== '')
 
 async function load() {
   loading.value = true
@@ -45,7 +38,7 @@ async function load() {
     backupDir.value = cfg.backupDir || ''
     await loadDatabases(true)
   } catch (e) {
-    setMessage(errorText(e), 'err')
+    status.fail(e)
   } finally {
     loading.value = false
   }
@@ -53,7 +46,7 @@ async function load() {
 
 async function loadDatabases(quiet = false) {
   if (!form.server && !form.user) return
-  busy.value = 'dbs'
+  action.value = 'dbs'
   try {
     const data = await api.databases({
       server: form.server,
@@ -64,33 +57,36 @@ async function loadDatabases(quiet = false) {
     if (form.database && !databases.value.includes(form.database)) {
       databases.value.unshift(form.database)
     }
-    if (!quiet) setMessage(`已读取 ${databases.value.length} 个账套`, 'ok')
+    if (!quiet) status.set('ok', `已读取 ${databases.value.length} 个账套`)
   } catch (e) {
-    if (!quiet) setMessage(errorText(e), 'err')
+    if (!quiet) status.fail(e)
   } finally {
-    busy.value = ''
+    action.value = ''
   }
 }
 
 async function onSwitchDb() {
-  if (!form.database) return
-  busy.value = 'switch'
+  if (!form.database || busy.value) return
+  action.value = 'switch'
   try {
     await api.switchDb(form.database)
     await app.checkConnection()
-    // 切库后字典会整体换一套，跨表带值那边要重新拉
-    setMessage(`已切换到账套 ${form.database}`, 'ok')
+    // 字典整体换一套：让依赖字典的页面（跨表带值）自动作废重拉
+    app.bumpGeneration()
+    status.set('ok', `已切换到账套 ${form.database}`)
   } catch (e) {
-    setMessage(errorText(e), 'err')
+    status.fail(e)
   } finally {
-    busy.value = ''
+    action.value = ''
   }
 }
 
 async function onTest() {
-  busy.value = 'test'
-  setMessage('正在连接…', '')
+  if (busy.value) return
+  action.value = 'test'
+  status.set('', '正在连接…')
   try {
+    // 后端 test-conn 成功后会把参数落盘并切库（dryRun 才只测），所以成功提示要说清
     await api.testConn({
       server: form.server,
       user: form.user,
@@ -98,24 +94,26 @@ async function onTest() {
       database: form.database,
     })
     await app.checkConnection()
-    setMessage('连接成功，已应用当前参数', 'ok')
+    app.bumpGeneration()
+    status.set('ok', '连接成功，已应用当前参数并落盘')
   } catch (e) {
-    setMessage(errorText(e), 'err')
+    status.fail(e)
   } finally {
-    busy.value = ''
+    action.value = ''
   }
 }
 
 async function onSave() {
+  if (busy.value) return
   if (!form.server.trim()) {
-    setMessage('服务器地址不能为空；连本机请填 127.0.0.1 或 .', 'err')
+    status.set('err', '服务器地址不能为空；连本机请填 127.0.0.1 或 .')
     return
   }
   if (!form.user.trim()) {
-    setMessage('账号不能为空', 'err')
+    status.set('err', '账号不能为空')
     return
   }
-  busy.value = 'save'
+  action.value = 'save'
   try {
     await api.saveConfig({
       server: form.server.trim(),
@@ -124,28 +122,30 @@ async function onSave() {
       database: form.database,
     })
     await app.checkConnection()
-    setMessage('配置已保存到 config.js', 'ok')
+    app.bumpGeneration()
+    status.set('ok', '配置已保存到 config.js')
   } catch (e) {
-    setMessage(errorText(e), 'err')
+    status.fail(e)
   } finally {
-    busy.value = ''
+    action.value = ''
   }
 }
 
 async function onChangeBackupDir() {
-  busy.value = 'backup'
+  if (busy.value) return
+  action.value = 'backup'
   try {
     const r = await api.setBackupDir()
     if (r.canceled) {
-      setMessage('已取消选择', '')
+      status.set('', '已取消选择')
       return
     }
     backupDir.value = r.backupDir || backupDir.value
-    setMessage('备份路径已更新', 'ok')
+    status.set('ok', '备份路径已更新')
   } catch (e) {
-    setMessage(errorText(e), 'err')
+    status.fail(e)
   } finally {
-    busy.value = ''
+    action.value = ''
   }
 }
 
@@ -154,7 +154,9 @@ onMounted(load)
 
 <template>
   <div class="page">
-    <p v-if="message" class="status" :class="messageKind">{{ message }}</p>
+    <p v-if="statusText" class="status" :class="statusKind" role="status" aria-live="polite">
+      {{ statusText }}
+    </p>
 
     <section class="card">
       <p class="step"><b>01</b>数据库连接</p>
@@ -184,22 +186,22 @@ onMounted(load)
         <label class="field wide">
           <span class="lbl">账套（数据库）</span>
           <span class="db-row">
-            <select v-model="form.database" :disabled="busy === 'switch'" @change="onSwitchDb">
+            <select v-model="form.database" :disabled="busy" @change="onSwitchDb">
               <option value="">请选择账套</option>
               <option v-for="d in databases" :key="d" :value="d">{{ d }}</option>
             </select>
-            <button class="btn sm" type="button" :disabled="busy === 'dbs'" @click="loadDatabases(false)">
-              {{ busy === 'dbs' ? '读取中…' : '刷新' }}
+            <button class="btn sm" type="button" :disabled="busy" @click="loadDatabases(false)">
+              {{ action === 'dbs' ? '读取中…' : '刷新' }}
             </button>
           </span>
         </label>
       </div>
       <div class="actions">
-        <button class="btn sm" type="button" :disabled="busy === 'test'" @click="onTest">
-          {{ busy === 'test' ? '连接中…' : '测试连接' }}
+        <button class="btn sm" type="button" :disabled="busy" @click="onTest">
+          {{ action === 'test' ? '连接中…' : '测试连接' }}
         </button>
-        <button class="btn sm" type="button" :disabled="busy === 'save'" @click="onSave">
-          {{ busy === 'save' ? '保存中…' : '保存配置' }}
+        <button class="btn sm" type="button" :disabled="busy" @click="onSave">
+          {{ action === 'save' ? '保存中…' : '保存配置' }}
         </button>
         <span class="sub">测试连接成功后会自动应用并落盘，不需要再点保存。</span>
       </div>
@@ -210,8 +212,8 @@ onMounted(load)
       <p class="sub">执行带值、删除触发器前的整库备份都写在这里。</p>
       <div class="backup-row">
         <span class="dir mono" :title="backupDir">{{ backupDir || '尚未设置' }}</span>
-        <button class="btn sm" type="button" :disabled="busy === 'backup'" @click="onChangeBackupDir">
-          {{ busy === 'backup' ? '请选择目录…' : '更改路径' }}
+        <button class="btn sm" type="button" :disabled="busy" @click="onChangeBackupDir">
+          {{ action === 'backup' ? '请选择目录…' : '更改路径' }}
         </button>
       </div>
     </section>
@@ -262,7 +264,7 @@ onMounted(load)
 }
 
 .lbl {
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-2);
 }
 
@@ -270,7 +272,7 @@ input,
 select {
   width: 100%;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--ink);
   background: var(--paper-2);
   border: 1px solid var(--line);
@@ -303,7 +305,7 @@ select:focus {
   top: 50%;
   transform: translateY(-50%);
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: var(--fs-kicker);
   color: var(--ink-3);
   background: transparent;
   border: none;
@@ -337,7 +339,7 @@ select:focus {
 
 .dir {
   flex: 1;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-2);
   background: var(--wash);
   border: 1px solid var(--line-soft);
@@ -350,13 +352,13 @@ select:focus {
 
 .sub {
   margin: 0;
-  font-size: 11.5px;
+  font-size: var(--fs-kicker);
   color: var(--ink-3);
 }
 
 .btn {
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-2);
   background: var(--paper);
   border: 1px solid var(--line);
@@ -378,12 +380,12 @@ select:focus {
 
 .btn.sm {
   padding: 5px 12px;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
 }
 
 .status {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
 }
 
 .status.ok {

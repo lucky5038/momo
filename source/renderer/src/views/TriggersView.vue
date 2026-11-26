@@ -2,74 +2,98 @@
 /** 触发器管理（P4）：列表 / 启停 / 删除，行为对齐旧界面「已建立触发器」卡片。
  *  系统触发器只读；删除前后端自动整库备份，所以前端只做一次确认。 */
 import { computed, onMounted, ref } from 'vue'
-import { ApiError } from '../api/client'
+import { useStatus } from '../composables/useStatus'
+import { useAppStore } from '../stores/app'
 import { listTriggers, toggleTrigger, dropTrigger, type TriggerRow } from '../api/triggers'
+
+const app = useAppStore()
+const status = useStatus()
+const { text: statusText, kind: statusKind } = status
 
 const rows = ref<TriggerRow[]>([])
 const database = ref('')
 const server = ref('')
 const loading = ref(false)
-const busy = ref('')
-const message = ref('')
-const messageKind = ref<'' | 'ok' | 'err'>('')
+/** 按触发器名记录忙碌行，避免整页只在「最后点的那行」上有状态 */
+const busyRows = ref<Set<string>>(new Set())
+/** 刷新序号：并发刷新时只认最后一次结果，避免旧请求把新列表覆盖掉 */
+let refreshSeq = 0
 
 const toolRows = computed(() => rows.value.filter((r) => r.isTool))
 const sysRows = computed(() => rows.value.filter((r) => !r.isTool))
+/** 删除前要告诉用户备份落在哪，这里取系统设置里的实时值 */
+const backupDir = computed(() => app.backupDir || '系统设置里未配置')
 
-function setMessage(text: string, kind: 'ok' | 'err' | '') {
-  message.value = text
-  messageKind.value = kind
+function isBusy(name: string) {
+  return busyRows.value.has(name)
 }
 
-function errorText(e: unknown): string {
-  if (e instanceof ApiError) return e.message
-  return e instanceof Error ? e.message : String(e)
+function markBusy(name: string, on: boolean) {
+  const next = new Set(busyRows.value)
+  if (on) next.add(name)
+  else next.delete(name)
+  busyRows.value = next
 }
 
 async function refresh() {
+  const seq = ++refreshSeq
   loading.value = true
-  setMessage('', '')
   try {
     const data = await listTriggers()
+    if (seq !== refreshSeq) return
     rows.value = data.triggers || []
     database.value = data.database || ''
     server.value = data.server || ''
   } catch (e) {
+    if (seq !== refreshSeq) return
     rows.value = []
-    setMessage(errorText(e), 'err')
+    status.fail(e)
   } finally {
-    loading.value = false
+    if (seq === refreshSeq) loading.value = false
   }
 }
 
+/** 先读列表再提示，避免 refresh() 把刚写的成功提示清掉 */
+async function reloadQuiet() {
+  const seq = ++refreshSeq
+  const data = await listTriggers()
+  if (seq !== refreshSeq) return
+  rows.value = data.triggers || []
+  database.value = data.database || ''
+  server.value = data.server || ''
+}
+
 async function onToggle(row: TriggerRow) {
-  busy.value = row.name
+  if (isBusy(row.name)) return
+  markBusy(row.name, true)
   try {
-    const enable = row.disabled
-    const r = await toggleTrigger(row.name, enable)
-    setMessage(`已${r.enabled ? '启用' : '停用'} ${row.name}`, 'ok')
-    await refresh()
+    const r = await toggleTrigger(row.name, row.disabled)
+    const done = `已${r.enabled ? '启用' : '停用'} ${row.name}`
+    status.set('ok', done)
+    await reloadQuiet()
+    // reloadQuiet 不写状态，成功提示得以保留
   } catch (e) {
-    setMessage(errorText(e), 'err')
+    status.fail(e)
   } finally {
-    busy.value = ''
+    markBusy(row.name, false)
   }
 }
 
 async function onDrop(row: TriggerRow) {
+  if (isBusy(row.name)) return
   const ok = window.confirm(
-    `确认删除触发器 ${row.name}？\n删除前会自动整库备份（备份目录见系统设置）。`,
+    `确认删除触发器 ${row.name}？\n删除前会自动整库备份到：\n${backupDir.value}`,
   )
   if (!ok) return
-  busy.value = row.name
+  markBusy(row.name, true)
   try {
     const r = await dropTrigger(row.name)
-    setMessage(`已删除 ${row.name}（备份 ${r.backupPath}）`, 'ok')
-    await refresh()
+    status.set('ok', `已删除 ${row.name}（备份 ${r.backupPath}）`)
+    await reloadQuiet()
   } catch (e) {
-    setMessage(errorText(e), 'err')
+    status.fail(e)
   } finally {
-    busy.value = ''
+    markBusy(row.name, false)
   }
 }
 
@@ -87,7 +111,7 @@ onMounted(refresh)
       </button>
     </div>
 
-    <p v-if="message" class="status" :class="messageKind">{{ message }}</p>
+    <p v-if="statusText" class="status" :class="statusKind" role="status" aria-live="polite">{{ statusText }}</p>
 
     <section class="card">
       <p class="step"><b>01</b>本工具触发器</p>
@@ -114,10 +138,10 @@ onMounted(refresh)
               </span>
             </td>
             <td class="c-act">
-              <button class="btn sm" type="button" :disabled="busy === row.name" @click="onToggle(row)">
+              <button class="btn sm" type="button" :disabled="isBusy(row.name)" @click="onToggle(row)">
                 {{ row.disabled ? '启用' : '停用' }}
               </button>
-              <button class="btn sm danger" type="button" :disabled="busy === row.name" @click="onDrop(row)">
+              <button class="btn sm danger" type="button" :disabled="isBusy(row.name)" @click="onDrop(row)">
                 删除
               </button>
             </td>
@@ -176,7 +200,7 @@ onMounted(refresh)
 }
 
 .where {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ink-3);
 }
 
@@ -218,13 +242,13 @@ onMounted(refresh)
 .tbl {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--fs-body);
 }
 
 .tbl th {
   text-align: left;
   font-weight: 500;
-  font-size: 11.5px;
+  font-size: var(--fs-kicker);
   color: var(--ink-3);
   padding: 6px 8px;
   border-bottom: 1px solid var(--line);
@@ -257,7 +281,7 @@ onMounted(refresh)
 
 .mono {
   font-family: Consolas, 'Courier New', monospace;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ink-2);
 }
 
@@ -279,12 +303,12 @@ onMounted(refresh)
 
 .badge.on {
   color: var(--ok);
-  background: rgba(63, 122, 94, 0.1);
+  background: var(--ok-wash);
 }
 
 .badge.off {
   color: var(--warn);
-  background: rgba(180, 105, 46, 0.1);
+  background: var(--warn-wash);
 }
 
 .btn {
@@ -310,18 +334,18 @@ onMounted(refresh)
 
 .btn.sm {
   padding: 3px 10px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   margin-right: 6px;
 }
 
 .btn.danger {
   color: var(--seal);
-  border-color: rgba(168, 50, 45, 0.35);
+  border-color: var(--seal-line);
 }
 
 .status {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
 }
 
 .status.ok {

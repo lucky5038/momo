@@ -7,18 +7,7 @@ const route = useRoute()
 const store = useAppStore()
 
 const title = computed(() => String(route.meta.title ?? 'N-B助手'))
-const connLabel = computed(() => {
-  switch (store.conn) {
-    case 'ok':
-      return '已就绪'
-    case 'error':
-      return '异常'
-    case 'checking':
-      return '检测中'
-    default:
-      return '未检测'
-  }
-})
+const connHint = computed(() => store.connError || store.connLabel)
 </script>
 
 <template>
@@ -28,9 +17,9 @@ const connLabel = computed(() => {
     </div>
 
     <div class="right">
-      <div class="conn" :class="store.conn" :title="store.connText">
+      <div class="conn" :class="store.conn" :title="connHint">
         <i class="dot" />
-        <span>{{ connLabel }}</span>
+        <span>{{ store.connLabel }}</span>
       </div>
 
       <div v-if="store.database" class="db" :title="store.server">
@@ -38,8 +27,8 @@ const connLabel = computed(() => {
         <strong>{{ store.database }}</strong>
       </div>
 
-      <button class="refresh" type="button" :disabled="store.conn === 'checking'" @click="store.checkConnection()">
-        刷新状态
+      <button class="refresh" type="button" :disabled="store.conn === 'checking'" @click="store.reconnect()">
+        重新连接
       </button>
     </div>
   </header>
@@ -60,7 +49,7 @@ const connLabel = computed(() => {
 }
 
 .left h1 {
-  font-size: 17px;
+  font-size: var(--fs-topbar);
   letter-spacing: 1px;
 }
 
@@ -75,7 +64,7 @@ const connLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-3);
 }
 
@@ -112,7 +101,7 @@ const connLabel = computed(() => {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   padding-left: 14px;
   border-left: 1px solid var(--line-soft);
 }
@@ -128,7 +117,7 @@ const connLabel = computed(() => {
 
 .refresh {
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-sub);
   color: var(--ink-2);
   background: var(--paper-2);
   border: 1px solid var(--line);
