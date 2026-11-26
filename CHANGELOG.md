@@ -2,6 +2,13 @@
 
 ## 版本演进（最新在前）
 
+### v2.4.0（2026-11-26）
+- 前端外壳与主题（重建 P0）：`source/renderer/` 新增单主题「纸墨」（`src/styles/paper.css`：宣纸底 #F7F3EA、墨字 #1C1B19、朱砂 #A8322D），侧栏 + 顶栏外壳就位，6 个模块路由（`#/run`、`#/triggers`、`#/settings`、`#/chat`、`#/cleaning`、`#/diagnose`）可点击切换，顶栏显示后端配置状态与当前账套。
+- 新增 `src/api/client.ts`（后端接口统一封装）、`src/stores/app.ts`（连接状态）、`src/config/app.ts`（模块清单，侧栏与路由共用）、`src/views/ModulePlaceholder.vue`（各模块占位页，功能仍由旧界面提供）。
+- `vite.config.ts` 增加 `/api` 代理到 `http://127.0.0.1:8787`；`tools/dev-renderer.ps1` 修复隐藏控制台导致 Vite 进程退出的问题（日志重定向 + 退出告警），并开启 `--remote-debugging-port=9222` 供自动化验证。
+- 新增 `tools/nb-cdp-nav.mjs`、`tools/nb-cdp-routes.mjs`：通过 CDP 点击侧栏，校验路由、顶栏标题、占位卡与主题色。
+- 说明：本版仍是外壳阶段，旧界面 `src/public/index.html` 与后端零改动，未生成安装包；可用发版基线仍为 2.2.101。
+
 ### v2.3.1（2026-11-26）
 - 开发模式接入前端工程：`src/main.electron.js` 新增 `NB_RENDERER_URL`，开发版窗口直接加载 Vite 服务（Vue 3 页面）；未设置该变量时仍走原有内置后端页面，正式版打包逻辑不变。
 - 新增 `tools/dev-renderer.ps1`：一条命令启动 Vite + Electron 开发版（开发数据目录 `N-B助手-开发版`），关闭窗口后自动停止 Vite；兼容源码变更导致的自重启。

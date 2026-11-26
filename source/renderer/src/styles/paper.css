@@ -1,0 +1,35 @@
+/* 纸墨主题 · 全应用唯一主题
+   宣纸底 + 墨字 + 朱砂点缀。禁止再引入第二套主题色，
+   需要调整观感只改这里的 token。 */
+:root {
+  /* 纸 */
+  --paper: #f7f3ea;
+  --paper-2: #fffdf7;
+  --paper-3: #fbf7ee;
+
+  /* 墨 */
+  --ink: #1c1b19;
+  --ink-2: #4a463f;
+  --ink-3: #8a8578;
+
+  /* 线 */
+  --line: #d8d0bf;
+  --line-soft: #e6decb;
+
+  /* 朱砂 */
+  --seal: #a8322d;
+  --seal-deep: #8f2a26;
+  --seal-wash: rgba(168, 50, 45, 0.08);
+
+  /* 辅助色 */
+  --wash: #ede7d9;
+  --ok: #3f7a5e;
+  --warn: #b4692e;
+  --err: #a8322d;
+
+  /* 形状与字体 */
+  --radius: 6px;
+  --font-title: "Songti SC", "STSong", "SimSun", "宋体", serif;
+  --font-body: "Microsoft YaHei", "微软雅黑", system-ui, -apple-system, sans-serif;
+  --shadow-card: 0 1px 2px rgba(28, 27, 25, 0.05), 0 6px 16px rgba(28, 27, 25, 0.04);
+}
