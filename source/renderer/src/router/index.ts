@@ -5,12 +5,14 @@ import ModulePlaceholder from '../views/ModulePlaceholder.vue'
 import CrossFillPage from '../views/CrossFillPage.vue'
 import TriggersView from '../views/TriggersView.vue'
 import SettingsView from '../views/SettingsView.vue'
+import CleaningView from '../views/CleaningView.vue'
 
 /** 已迁移完成的模块页面；没登记的仍走占位页 */
 const PAGES: Record<string, Component> = {
   run: CrossFillPage,
   triggers: TriggersView,
   settings: SettingsView,
+  cleaning: CleaningView,
 }
 
 /** 用 hash 路由：生产态由 app.js 兜底返回 index.html，hash 不参与后端路由判断，
