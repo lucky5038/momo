@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>主界面 · 十步首页</title>
+<style>
+  :root{
+    --paper:#f7f3ea; --paper-2:#fffdf7; --paper-3:#fbf7ee; --wash:#ede7d9;
+    --ink:#1c1b19; --ink-2:#4a463f; --ink-3:#8a8578;
+    --line:#d8d0bf; --line-soft:#e6decb;
+    --seal:#a8322d; --seal-wash:rgba(168,50,45,.08);
+    --ok:#3f7a5e; --ok-wash:rgba(63,122,94,.10);
+    --warn:#b4692e;
+    --shadow-sm:inset 0 0 0 1px rgba(28,27,25,.08);
+    --shadow-pop:0 8px 24px rgba(28,27,25,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Microsoft YaHei","微软雅黑",system-ui,sans-serif;
+    overflow:hidden;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none;
+    background-image:radial-gradient(rgba(28,27,25,.035) .5px, transparent .5px);
+    background-size:4px 4px;
+  }
+  .wash{position:fixed; border-radius:50%; filter:blur(60px); pointer-events:none}
+  .wash.a{width:760px;height:760px;left:-180px;top:-240px;background:rgba(168,50,45,.055);animation:breathe 34s ease-in-out infinite}
+  .wash.b{width:900px;height:900px;right:-260px;bottom:-320px;background:rgba(120,110,90,.06);animation:breathe 46s ease-in-out infinite reverse}
+  @keyframes breathe{0%,100%{transform:scale(1) translate(0,0)}50%{transform:scale(1.12) translate(24px,-18px)}}
+
+  .app{position:relative;height:100%;display:flex;flex-direction:column;padding:26px 54px 18px}
+  .body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+
+  /* 顶栏 */
+  .top{display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand img{width:38px;height:38px;border-radius:10px;object-fit:cover;box-shadow:var(--shadow-sm)}
+  .brand b{font-size:17px;letter-spacing:.5px}
+  .brand span{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px;letter-spacing:.4px}
+  .topright{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--ink-3)}
+  .state{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px var(--ok-wash)}
+  .db{color:var(--ink-2)}
+  .gear{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2);background:var(--paper-2)}
+
+  /* 标题 */
+  .head{margin-top:26px}
+  .kick{font-size:11.5px;letter-spacing:1.4px;color:var(--ink-3)}
+  h1{margin:8px 0 0;font-size:44px;line-height:1.15;letter-spacing:1px;font-weight:900}
+  h1 em{font-style:normal;color:var(--seal)}
+  .slogan{display:flex;align-items:center;gap:16px;margin-top:14px;color:var(--ink-2);font-size:13.5px;letter-spacing:1.2px}
+  .slogan i{flex:0 0 56px;height:1px;background:var(--line)}
+
+  /* 十步 */
+  .steps{margin-top:34px;display:grid;grid-template-columns:repeat(10,1fr);align-items:start;position:relative}
+  .steps::before{content:"";position:absolute;left:5%;right:5%;top:19px;height:1px;background:var(--line)}
+  .s{position:relative;text-align:center;cursor:default}
+  .node{width:38px;height:38px;margin:0 auto;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;
+        background:var(--paper);border:1px dashed var(--line);color:var(--ink-3);position:relative;z-index:1}
+  .nm{margin-top:10px;font-size:13px;font-weight:600;color:var(--ink-2)}
+  .st{margin-top:5px;font-size:11px;color:var(--ink-3);display:inline-flex;align-items:center;gap:5px}
+  .st b{width:5px;height:5px;border-radius:50%;background:var(--ink-3);opacity:.6}
+  .s.live .node{background:var(--seal);border:1px solid var(--seal);color:#fff;box-shadow:0 6px 16px rgba(168,50,45,.22)}
+  .s.live .nm{color:var(--ink)}
+  .s.live .st{color:var(--seal)}
+  .s.live .st b{background:var(--seal);opacity:1}
+  .s.plan .node{border:1px dashed var(--line);color:var(--ink-2)}
+  .s.plan .st{color:var(--ink-3)}
+
+  /* 卡片区 */
+  .cards{margin-top:34px;align-self:start;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+  .card{background:var(--paper-2);border:1px solid var(--line-soft);border-radius:8px;padding:18px 20px 16px;box-shadow:var(--shadow-sm);cursor:pointer}
+  .card .stepno{font-size:11px;color:var(--seal);letter-spacing:1.2px}
+  .card h3{margin:8px 0 6px;font-size:16.5px;letter-spacing:.4px}
+  .card p{margin:0;font-size:12.5px;line-height:1.75;color:var(--ink-3)}
+  .card .tags{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+  .tag{font-size:10.5px;color:var(--ink-3);border:1px solid var(--line-soft);border-radius:999px;padding:2px 9px}
+  .card.ghost{background:transparent;border-style:dashed;cursor:default}
+  .card.ghost h3{color:var(--ink-3)}
+  .card.ghost .stepno{color:var(--ink-3)}
+
+  /* 底部 */
+  .foot{display:flex;align-items:center;justify-content:center;position:relative;padding-top:14px;border-top:1px solid var(--line-soft);color:var(--ink-2);font-size:12.5px;letter-spacing:1.2px}
+  .ver{position:absolute;right:0;font-size:11px;color:var(--ink-3);letter-spacing:.4px}
+</style>
+</head>
+<body>
+  <div class="wash a"></div><div class="wash b"></div>
+  <div class="app">
+    <div class="top">
+      <div class="brand">
+        <img src="../../source/renderer/src/assets/app-icon.png" alt="N-B助手" />
+        <div><b>N-B助手</b><span>实施流程优化</span></div>
+      </div>
+      <div class="topright">
+        <span class="state"><i class="dot"></i>已就绪</span>
+        <span class="db">账套 XBK</span>
+        <span class="gear">⚙</span>
+      </div>
+    </div>
+
+    <div class="body">
+    <div class="head">
+      <div class="kick">EASYHELP · 实施十步</div>
+      <h1>易助十大实施步骤 · <em>我们能接哪几步</em></h1>
+      <div class="slogan"><i></i>科技不再是高高在上，而是服务于人民<i></i></div>
+    </div>
+
+    <div class="steps">
+      <div class="s"><div class="node">01</div><div class="nm">启动</div><span class="st"><b></b>规划中</span></div>
+      <div class="s"><div class="node">02</div><div class="nm">安装</div><span class="st"><b></b>规划中</span></div>
+      <div class="s live"><div class="node">03</div><div class="nm">编码</div><span class="st"><b></b>正在开发</span></div>
+      <div class="s"><div class="node">04</div><div class="nm">调研</div><span class="st"><b></b>规划中</span></div>
+      <div class="s"><div class="node">05</div><div class="nm">培训</div><span class="st"><b></b>规划中</span></div>
+      <div class="s"><div class="node">06</div><div class="nm">模拟</div><span class="st"><b></b>规划中</span></div>
+      <div class="s live"><div class="node">07</div><div class="nm">期初</div><span class="st"><b></b>正在开发</span></div>
+      <div class="s"><div class="node">08</div><div class="nm">上线会议</div><span class="st"><b></b>规划中</span></div>
+      <div class="s plan"><div class="node">09</div><div class="nm">检查</div><span class="st"><b></b>规划中</span></div>
+      <div class="s"><div class="node">10</div><div class="nm">结案</div><span class="st"><b></b>规划中</span></div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="stepno">03 · 编码</div>
+        <h3>带值 · 跨表带值 / 触发器</h3>
+        <p>选两张单据、一列来源，路由由工具算；执行前整库备份，触发器可随时停用。</p>
+        <div class="tags"><span class="tag">跨表带值</span><span class="tag">触发器</span><span class="tag">正在开发</span></div>
+      </div>
+      <div class="card">
+        <div class="stepno">07 · 期初</div>
+        <h3>数据清洗与导入</h3>
+        <p>客户 Excel 自动匹配模板、校验必填，生成可直接导入的 XLS。</p>
+        <div class="tags"><span class="tag">19 套模板</span><span class="tag">正在开发</span></div>
+      </div>
+      <div class="card ghost">
+        <div class="stepno">09 · 检查</div>
+        <h3>上线检查（数据体检）</h3>
+        <p>字段字典、空值与映射完整性；上线对账与差异定位。尚未开始。</p>
+        <div class="tags"><span class="tag">规划中</span></div>
+      </div>
+    </div>
+    </div>
+
+    <div class="foot">
+      科技不再是高高在上，而是服务于人民
+      <span class="ver">v2.10.0</span>
+    </div>
+  </div>
+</body>
+</html>

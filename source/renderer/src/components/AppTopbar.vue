@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/** 模块页顶栏：小品牌 + 返回十步 + 当前位置 + 连接状态 + 设置齿轮（自绘标题栏，右侧留出系统按钮区） */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '../stores/app'
@@ -6,13 +7,19 @@ import { useAppStore } from '../stores/app'
 const route = useRoute()
 const store = useAppStore()
 
-const title = computed(() => String(route.meta.title ?? 'N-B助手'))
+const title = computed(() => String(route.meta.title ?? '带值'))
+const step = computed(() => String(route.meta.step ?? ''))
 const connHint = computed(() => store.connError || store.connLabel)
 </script>
 
 <template>
   <header class="topbar">
     <div class="left">
+      <button class="back" type="button" title="返回十步" @click="$router.push('/')">← 十步</button>
+      <span class="crumb">
+        <span v-if="step">易助实施 · <b>{{ step }}</b></span>
+        <span v-else>{{ title }}</span>
+      </span>
       <h1>{{ title }}</h1>
     </div>
 
@@ -21,15 +28,13 @@ const connHint = computed(() => store.connError || store.connLabel)
         <i class="dot" />
         <span>{{ store.connLabel }}</span>
       </div>
-
       <div v-if="store.database" class="db" :title="store.server">
-        <span class="db-label">账套</span>
-        <strong>{{ store.database }}</strong>
+        <span>账套</span><strong>{{ store.database }}</strong>
       </div>
-
       <button class="refresh" type="button" :disabled="store.conn === 'checking'" @click="store.reconnect()">
         重新连接
       </button>
+      <button class="gear" type="button" title="系统设置" @click="$router.push('/settings')">⚙</button>
     </div>
   </header>
 </template>
@@ -39,18 +44,57 @@ const connHint = computed(() => store.connError || store.connLabel)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   height: 52px;
-  /* 右侧留出系统最小化/最大化/关闭按钮的位置（自绘标题栏） */
-  padding: 0 150px 0 22px;
-  /* 与 titleBarOverlay 的底色完全一致，避免右上角出现色块 */
+  /* 右侧留给系统最小化/最大化/关闭按钮（自绘标题栏） */
+  padding: 0 150px 0 20px;
   background: var(--paper);
   -webkit-app-region: drag;
 }
 
+.left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+}
+
+.back {
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  color: var(--ink-2);
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.back:hover {
+  border-color: var(--seal);
+  color: var(--seal);
+}
+
+.crumb {
+  font-size: var(--fs-kicker);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.crumb b {
+  color: var(--seal);
+  font-weight: 600;
+}
+
 .left h1 {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 1px solid var(--line-soft);
   font-size: var(--fs-topbar);
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 .right {
@@ -64,7 +108,7 @@ const connHint = computed(() => store.connError || store.connLabel)
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--fs-sub);
+  font-size: var(--fs-kicker);
   color: var(--ink-3);
 }
 
@@ -80,17 +124,9 @@ const connHint = computed(() => store.connError || store.connLabel)
   box-shadow: 0 0 0 3px var(--ok-wash);
 }
 
-.conn.ready {
-  color: var(--ink-2);
-}
-
-/* 只读了配置、还没真连数据库：用琥珀色，避免「已配置」被误读成「已连通」 */
-.conn.configured .dot {
+.conn.configured .dot,
+.conn.checking .dot {
   background: var(--warn);
-}
-
-.conn.configured {
-  color: var(--ink-2);
 }
 
 .conn.error .dot {
@@ -98,24 +134,13 @@ const connHint = computed(() => store.connError || store.connLabel)
   box-shadow: 0 0 0 3px var(--seal-wash);
 }
 
-.conn.error {
-  color: var(--ink-2);
-}
-
-.conn.checking .dot {
-  background: var(--warn);
-}
-
 .db {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font-size: var(--fs-sub);
-  padding-left: 14px;
+  padding-left: 13px;
   border-left: 1px solid var(--line-soft);
-}
-
-.db-label {
+  font-size: var(--fs-kicker);
   color: var(--ink-3);
 }
 
@@ -124,19 +149,32 @@ const connHint = computed(() => store.connError || store.connLabel)
   color: var(--ink);
 }
 
-.refresh {
+.refresh,
+.gear {
   font-family: inherit;
-  font-size: var(--fs-sub);
+  font-size: var(--fs-kicker);
   color: var(--ink-2);
   background: var(--paper-2);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 5px 12px;
   cursor: pointer;
   transition: border-color 0.12s ease, color 0.12s ease;
 }
 
-.refresh:hover:not(:disabled) {
+.refresh {
+  border-radius: var(--radius);
+  padding: 4px 11px;
+}
+
+.gear {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.refresh:hover:not(:disabled),
+.gear:hover {
   border-color: var(--seal);
   color: var(--seal);
 }

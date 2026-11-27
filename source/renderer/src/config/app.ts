@@ -1,6 +1,33 @@
-/** 应用级常量与模块清单（侧栏与路由共用，避免两处维护）
- * 顺序：跨表带值 → 触发器管理 → 一句话带值 → 数据清洗 → 数据体检 → 系统设置（配置类放最后） */
-export const APP_VERSION = '2.10.0'
+/** 应用级常量、模块清单与实施十步清单 */
+export const APP_VERSION = '2.11.0'
+
+/** 实施十步：主界面按这十步铺开；status=dev 表示已有入口，plan 表示还在规划 */
+export type StepStatus = 'dev' | 'plan'
+
+export interface StepDef {
+  /** 01–10 */
+  no: string
+  /** 步骤名 */
+  title: string
+  /** 图标 key（见 components/StepIcon.vue） */
+  icon: string
+  status: StepStatus
+  /** 可进入时对应的路由 */
+  path?: string
+}
+
+export const STEPS: StepDef[] = [
+  { no: '01', title: '启动', icon: 'start', status: 'plan' },
+  { no: '02', title: '安装', icon: 'install', status: 'plan' },
+  { no: '03', title: '编码', icon: 'coding', status: 'dev', path: '/run' },
+  { no: '04', title: '调研', icon: 'survey', status: 'plan' },
+  { no: '05', title: '培训', icon: 'training', status: 'plan' },
+  { no: '06', title: '模拟', icon: 'simulate', status: 'plan' },
+  { no: '07', title: '期初', icon: 'opening', status: 'dev', path: '/cleaning' },
+  { no: '08', title: '上线会议', icon: 'meeting', status: 'plan' },
+  { no: '09', title: '检查', icon: 'inspect', status: 'dev', path: '/diagnose' },
+  { no: '10', title: '结案', icon: 'close', status: 'plan' },
+]
 
 /** 旧版界面里「规划中」的模块：只有说明文案，没有接口与逻辑 */
 export interface PlannedDef {

@@ -1,11 +1,15 @@
 <script setup lang="ts">
 /** 跨表带值（P2）：01 目标 → 02 来源 → 高级选项 → 预览/执行。
  *  行为对齐旧界面 #tab-sync，差异只在"切单据/来源会清空旧结果"这一处（旧版会残留）。 */
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import ColumnCombo from '../components/ColumnCombo.vue'
+import TriggersView from './TriggersView.vue'
 import { useAppStore } from '../stores/app'
 import { useCrossFillStore } from '../stores/crossfill'
+
+/** 03 编码：页内两个标签「跨表带值 / 触发器」，两者同属编码阶段 */
+const view = ref<'run' | 'trg'>('run')
 
 const app = useAppStore()
 const store = useCrossFillStore()
@@ -141,7 +145,32 @@ async function onExecute() {
 </script>
 
 <template>
-  <section class="page">
+  <div class="viewtabs" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      class="vt"
+      :class="{ on: view === 'run' }"
+      :aria-selected="view === 'run'"
+      @click="view = 'run'"
+    >
+      跨表带值
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="vt"
+      :class="{ on: view === 'trg' }"
+      :aria-selected="view === 'trg'"
+      @click="view = 'trg'"
+    >
+      触发器
+    </button>
+  </div>
+
+  <TriggersView v-if="view === 'trg'" />
+
+  <section v-show="view === 'run'" class="page">
     <div class="flow">
       <div class="paper-card card">
         <div class="step"><b>01</b> 目标</div>
@@ -300,6 +329,34 @@ async function onExecute() {
 </template>
 
 <style scoped>
+.viewtabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 0 2px;
+}
+
+.vt {
+  font-family: inherit;
+  font-size: var(--fs-sub);
+  color: var(--ink-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 15px;
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.vt:hover {
+  color: var(--ink-2);
+  border-color: var(--line);
+}
+
+.vt.on {
+  color: #fff;
+  background: var(--seal);
+  box-shadow: 0 6px 14px rgba(168, 50, 45, 0.2);
+}
 .page {
   padding: 12px 0 26px;
   display: flex;

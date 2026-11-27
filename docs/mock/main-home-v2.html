@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>主界面 · v2 极简</title>
+<style>
+  :root{
+    --paper:#f7f3ea; --paper-2:#fffdf7; --ink:#1c1b19; --ink-2:#4a463f; --ink-3:#8a8578;
+    --line:#d8d0bf; --line-soft:#e6decb;
+    --seal:#a8322d; --ok:#3f7a5e; --ok-wash:rgba(63,122,94,.10);
+    --shadow-sm:inset 0 0 0 1px rgba(28,27,25,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:"Microsoft YaHei","微软雅黑",system-ui,sans-serif;overflow:hidden}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(rgba(28,27,25,.035) .5px,transparent .5px);background-size:4px 4px}
+  .wash{position:fixed;border-radius:50%;filter:blur(70px);pointer-events:none}
+  .wash.a{width:820px;height:820px;left:-220px;top:-280px;background:rgba(168,50,45,.05);animation:br 34s ease-in-out infinite}
+  .wash.b{width:960px;height:960px;right:-300px;bottom:-380px;background:rgba(120,110,90,.055);animation:br 46s ease-in-out infinite reverse}
+  @keyframes br{0%,100%{transform:scale(1) translate(0,0)}50%{transform:scale(1.12) translate(20px,-16px)}}
+
+  .app{position:relative;height:100%;display:flex;flex-direction:column;padding:26px 58px 20px}
+
+  .top{display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand img{width:38px;height:38px;border-radius:10px;object-fit:cover;box-shadow:var(--shadow-sm)}
+  .brand b{font-size:17px;letter-spacing:.5px}
+  .brand span{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px;letter-spacing:.4px}
+  .topright{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--ink-3)}
+  .state{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px var(--ok-wash)}
+  .gear{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-2);background:var(--paper-2)}
+
+  .body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;gap:0}
+
+  .kick{text-align:center;font-size:11.5px;letter-spacing:2.4px;color:var(--ink-3)}
+  .kick b{color:var(--ink-2);font-weight:600}
+
+  .steps{margin-top:26px;display:grid;grid-template-columns:repeat(10,1fr);align-items:start;position:relative}
+  .steps::before{content:"";position:absolute;left:4%;right:4%;top:23px;height:1px;background:var(--line-soft)}
+  .s{position:relative;text-align:center}
+  .node{width:46px;height:46px;margin:0 auto;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;
+        background:var(--paper);border:1px dashed var(--line);color:var(--ink-3);position:relative;z-index:1}
+  .nm{margin-top:11px;font-size:13.5px;font-weight:600;color:var(--ink-3)}
+  .st{margin-top:5px;font-size:11px;color:var(--ink-3);display:inline-flex;align-items:center;gap:5px;opacity:.85}
+  .st i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.55}
+  .s.live .node{background:var(--seal);border:1px solid var(--seal);color:#fff;box-shadow:0 10px 22px rgba(168,50,45,.24)}
+  .s.live .nm{color:var(--ink)}
+  .s.live .st{color:var(--seal);opacity:1}
+
+  .slogan{margin:56px 0 0;text-align:center;font-size:46px;font-weight:900;letter-spacing:2px;line-height:1.25;color:var(--ink)}
+  .slogan em{font-style:normal;color:var(--seal)}
+  .sub{margin-top:18px;text-align:center;font-size:13px;color:var(--ink-3);letter-spacing:.6px}
+
+  .foot{display:flex;align-items:center;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--line-soft);color:var(--ink-3);font-size:11px;letter-spacing:.4px}
+</style>
+</head>
+<body>
+  <div class="wash a"></div><div class="wash b"></div>
+  <div class="app">
+    <div class="top">
+      <div class="brand">
+        <img src="../../source/renderer/src/assets/app-icon.png" alt="N-B助手" />
+        <div><b>N-B助手</b><span>实施流程优化</span></div>
+      </div>
+      <div class="topright">
+        <span class="state"><i class="dot"></i>已就绪</span>
+        <span>账套 XBK</span>
+        <span class="gear">⚙</span>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="kick">易助十大实施步骤 · <b>能点的三步</b></div>
+
+      <div class="steps">
+        <div class="s"><div class="node">01</div><div class="nm">启动</div><span class="st"><i></i>规划中</span></div>
+        <div class="s"><div class="node">02</div><div class="nm">安装</div><span class="st"><i></i>规划中</span></div>
+        <div class="s live"><div class="node">03</div><div class="nm">编码</div><span class="st"><i></i>正在开发</span></div>
+        <div class="s"><div class="node">04</div><div class="nm">调研</div><span class="st"><i></i>规划中</span></div>
+        <div class="s"><div class="node">05</div><div class="nm">培训</div><span class="st"><i></i>规划中</span></div>
+        <div class="s"><div class="node">06</div><div class="nm">模拟</div><span class="st"><i></i>规划中</span></div>
+        <div class="s live"><div class="node">07</div><div class="nm">期初</div><span class="st"><i></i>正在开发</span></div>
+        <div class="s"><div class="node">08</div><div class="nm">上线会议</div><span class="st"><i></i>规划中</span></div>
+        <div class="s"><div class="node">09</div><div class="nm">检查</div><span class="st"><i></i>规划中</span></div>
+        <div class="s"><div class="node">10</div><div class="nm">结案</div><span class="st"><i></i>规划中</span></div>
+      </div>
+
+      <div class="slogan">科技不再是高高在上，<em>而是服务于人民</em></div>
+      <div class="sub">点「编码」进去是带值，点「期初」进去是数据清洗</div>
+    </div>
+
+    <div class="foot">v2.10.0</div>
+  </div>
+</body>
+</html>

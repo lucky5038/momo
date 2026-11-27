@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import AppSidebar from './components/AppSidebar.vue'
+import { useRoute } from 'vue-router'
 import AppTopbar from './components/AppTopbar.vue'
 import SetupWizard from './components/SetupWizard.vue'
 import ToastHost from './components/ToastHost.vue'
@@ -8,6 +8,7 @@ import { api } from './api/client'
 import { useAppStore } from './stores/app'
 
 const store = useAppStore()
+const route = useRoute()
 // 旧版首次启动会强制走一遍连接向导；这里只在后端说 needsSetup 时才拦，老用户升级不打扰
 const needsSetup = ref(false)
 
@@ -27,19 +28,15 @@ onMounted(async () => {
 <template>
   <SetupWizard v-if="needsSetup" />
   <div v-else class="shell">
-    <AppSidebar />
-    <div class="main">
-      <AppTopbar />
-      <main class="content">
-        <p class="slogan">科技不是高高在上，而是服务于人民</p>
-        <div v-if="store.conn === 'error' && store.connError" class="conn-banner" role="alert">
-          <span>数据库连接失败：{{ store.connError }}</span>
-          <button class="btn sm" type="button" @click="store.reconnect()">重新连接</button>
-        </div>
-        <RouterView />
-      </main>
-    </div>
-    <!-- 标题栏下的一条横线：整条画在 overlay 区域之外，不然右侧系统按钮那一截会被盖掉 -->
+    <AppTopbar v-if="route.path !== '/'" />
+    <main class="content" :class="{ flush: route.path === '/' }">
+      <div v-if="store.conn === 'error' && store.connError" class="conn-banner" role="alert">
+        <span>数据库连接失败：{{ store.connError }}</span>
+        <button class="btn sm" type="button" @click="store.reconnect()">重新连接</button>
+      </div>
+      <RouterView />
+    </main>
+    <!-- 标题栏下的一条横线：整条画在 overlay 区域之外，否则右侧系统按钮那一截会被盖掉 -->
     <div class="titlebar-rule" />
   </div>
   <ToastHost v-if="!needsSetup" />
@@ -48,8 +45,8 @@ onMounted(async () => {
 <style scoped>
 .shell {
   position: relative;
-  display: grid;
-  grid-template-columns: 212px minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   height: 100%;
   overflow: hidden;
 }
@@ -58,8 +55,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 8px 0 0;
-  padding: 8px 12px;
+  margin: 6px 20px 0;
+  padding: 7px 12px;
   font-size: var(--fs-sub);
   color: var(--err);
   background: var(--seal-wash);
@@ -77,29 +74,16 @@ onMounted(async () => {
   pointer-events: none;
 }
 
-.main {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
 .content {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 0 22px 28px;
+  padding: 0 20px 22px;
 }
 
-/* 旧界面 <main> 首行的题记，保留 */
-.slogan {
-  margin: 0;
-  padding: 12px 0 8px;
-  text-align: center;
-  font-size: var(--fs-body);
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  color: var(--ink-3);
+/* 主界面自己控制内边距，且要占满高度 */
+.content.flush {
+  padding: 0;
+  overflow: hidden;
 }
 </style>
