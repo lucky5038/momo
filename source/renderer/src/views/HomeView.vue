@@ -41,13 +41,13 @@ onMounted(() => {
           <span>{{ app.connLabel }}</span>
         </div>
         <div v-if="app.database" class="db"><span>账套</span><strong>{{ app.database }}</strong></div>
+        <span class="nb"><span class="k">预留</span><b>N-B</b><i>规划中</i></span>
         <button class="gear" type="button" title="系统设置" @click="router.push('/settings')">⚙</button>
       </div>
     </div>
 
     <div class="headline">
       <h1>科技不再是高高在上，<em>而是服务于人民</em></h1>
-      <span class="nb"><span class="k">预留</span><b>N-B</b><i>规划中</i></span>
     </div>
 
     <div class="grid">
@@ -87,6 +87,9 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding-bottom: 8px;
+  /* 右侧让开自绘标题栏的窗口按钮区（titleBarOverlay 150px） */
+  padding-right: 150px;
+  -webkit-app-region: drag;
 }
 
 .brand {
@@ -118,6 +121,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 14px;
+  -webkit-app-region: no-drag;
   font-size: var(--fs-xs);
   color: var(--ink-3);
 }
@@ -164,6 +168,7 @@ onMounted(() => {
 }
 
 .gear {
+  -webkit-app-region: no-drag;
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -184,7 +189,7 @@ onMounted(() => {
 .headline {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 16px;
   margin: 2px 0 10px;
 }
@@ -197,7 +202,7 @@ onMounted(() => {
 
 .headline h1 em {
   font-style: normal;
-  color: var(--seal);
+  color: inherit;
 }
 
 .nb {
