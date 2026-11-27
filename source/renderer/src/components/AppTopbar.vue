@@ -1,16 +1,15 @@
 <script setup lang="ts">
-/** 模块页顶栏：小品牌 + 返回十步 + 当前位置 + 连接状态 + 设置齿轮（自绘标题栏，右侧留出系统按钮区） */
+/** 模块页顶栏：返回 + 当前位置；右上统一状态胶囊（StatusPill）
+ *  自绘标题栏，右侧留出系统按钮区 */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAppStore } from '../stores/app'
+import StatusPill from './StatusPill.vue'
 
 const route = useRoute()
 const router = useRouter()
-const store = useAppStore()
 
 const title = computed(() => String(route.meta.title ?? '带值'))
 const step = computed(() => String(route.meta.step ?? ''))
-const connHint = computed(() => store.connError || store.connLabel)
 /** 系统设置是全局入口（右上角齿轮进），不属于十步流程 */
 const isGlobal = computed(() => !step.value)
 
@@ -34,17 +33,7 @@ function goBack() {
     </div>
 
     <div class="right">
-      <div class="conn" :class="store.conn" :title="connHint">
-        <i class="dot" />
-        <span>{{ store.connLabel }}</span>
-      </div>
-      <div v-if="store.database" class="db" :title="store.server">
-        <span>账套</span><strong>{{ store.database }}</strong>
-      </div>
-      <button class="refresh" type="button" :disabled="store.conn === 'checking'" @click="store.reconnect()">
-        重新连接
-      </button>
-      <button class="gear" type="button" title="系统设置" @click="$router.push('/settings')">⚙</button>
+      <StatusPill />
     </div>
   </header>
 </template>
@@ -71,13 +60,15 @@ function goBack() {
 }
 
 .back {
-  font-family: inherit;
-  font-size: var(--fs-xs);
-  color: var(--ink-2);
-  background: var(--paper-2);
+  flex: 0 0 auto;
+  height: 28px;
+  padding: 0 11px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 4px 11px;
+  background: var(--paper-2);
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  font-family: inherit;
   cursor: pointer;
   transition: border-color 0.12s ease, color 0.12s ease;
 }
@@ -88,7 +79,7 @@ function goBack() {
 }
 
 .crumb {
-  font-size: var(--fs-kicker);
+  font-size: var(--fs-xs);
   color: var(--ink-3);
   white-space: nowrap;
 }
@@ -100,11 +91,11 @@ function goBack() {
 
 .left h1 {
   margin: 0;
-  padding-left: 12px;
-  border-left: 1px solid var(--line-soft);
   font-size: var(--fs-topbar);
   letter-spacing: 1px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .right {
@@ -112,85 +103,5 @@ function goBack() {
   align-items: center;
   gap: 14px;
   -webkit-app-region: no-drag;
-}
-
-.conn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--fs-kicker);
-  color: var(--ink-3);
-}
-
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ink-3);
-}
-
-.conn.ready .dot {
-  background: var(--ok);
-  box-shadow: 0 0 0 3px var(--ok-wash);
-}
-
-.conn.configured .dot,
-.conn.checking .dot {
-  background: var(--warn);
-}
-
-.conn.error .dot {
-  background: var(--err);
-  box-shadow: 0 0 0 3px var(--seal-wash);
-}
-
-.db {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding-left: 13px;
-  border-left: 1px solid var(--line-soft);
-  font-size: var(--fs-kicker);
-  color: var(--ink-3);
-}
-
-.db strong {
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.refresh,
-.gear {
-  font-family: inherit;
-  font-size: var(--fs-kicker);
-  color: var(--ink-2);
-  background: var(--paper-2);
-  border: 1px solid var(--line);
-  cursor: pointer;
-  transition: border-color 0.12s ease, color 0.12s ease;
-}
-
-.refresh {
-  border-radius: var(--radius);
-  padding: 4px 11px;
-}
-
-.gear {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 13px;
-  line-height: 1;
-}
-
-.refresh:hover:not(:disabled),
-.gear:hover {
-  border-color: var(--seal);
-  color: var(--seal);
-}
-
-.refresh:disabled {
-  cursor: default;
-  opacity: 0.6;
 }
 </style>

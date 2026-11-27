@@ -3,6 +3,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import StepIcon from '../components/StepIcon.vue'
+import StatusPill from '../components/StatusPill.vue'
 import { toast } from '../lib/toast'
 import { useAppStore } from '../stores/app'
 import { APP_VERSION, STEPS } from '../config/app'
@@ -39,14 +40,7 @@ onMounted(() => {
       <h1 class="slogan">科技不再是高高在上，而是服务于人民</h1>
 
       <div class="stat">
-        <div class="group">
-          <div class="conn" :class="app.conn" :title="app.connError || app.connLabel">
-            <i class="dot" />
-          </div>
-          <div v-if="app.database" class="db"><span>账套</span><strong>{{ app.database }}</strong></div>
-          <span class="nb"><b>预留 · N-B</b><i>规划中</i></span>
-          <button class="gear" type="button" title="系统设置" @click="router.push('/settings')">⚙</button>
-        </div>
+        <StatusPill />
       </div>
     </div>
 
@@ -79,7 +73,6 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 10px 28px 6px;
 }
 
 /* 背景墨影由 App.vue 统一提供，这里只负责排版 */
@@ -89,9 +82,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 50px;
-  /* 右侧让开自绘标题栏的窗口按钮区（titleBarOverlay 150px） */
-  padding-right: 150px;
+  height: 52px;
+  /* 与模块页顶栏同一几何：右 150 让开窗口按钮，左 20 */
+  padding: 0 150px 0 20px;
+  background: var(--paper);
   -webkit-app-region: drag;
 }
 
@@ -127,9 +121,9 @@ onMounted(() => {
   top: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 800;
-  letter-spacing: 1.6px;
+  letter-spacing: 1.4px;
   white-space: nowrap;
   color: var(--ink);
   pointer-events: none;
@@ -139,84 +133,22 @@ onMounted(() => {
   -webkit-app-region: no-drag;
 }
 
-.group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 32px;
-  padding: 0 6px 0 12px;
-  border: 1px solid var(--line-soft);
-  border-radius: 999px;
-  background: rgba(255, 253, 247, 0.72);
-  font-size: var(--fs-xs);
-  color: var(--ink-3);
-  -webkit-app-region: no-drag;
-}
 
-.conn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
 
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ink-3);
-}
 
-.conn.ready .dot {
-  background: var(--ok);
-  box-shadow: 0 0 0 3px var(--ok-wash);
-}
 
-.conn.configured .dot,
-.conn.checking .dot {
-  background: var(--warn);
-}
 
-.conn.error .dot {
-  background: var(--err);
-  box-shadow: 0 0 0 3px var(--seal-wash);
-}
 
-.db {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding-left: 10px;
-  border-left: 1px solid var(--line-soft);
-  white-space: nowrap;
-}
 
-.db strong {
-  font-weight: 600;
-  color: var(--ink);
-}
 
-.gear {
-  -webkit-app-region: no-drag;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-  background: var(--paper-2);
-  color: var(--ink-2);
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-  transition: border-color 0.12s ease, color 0.12s ease;
-}
 
-.gear:hover {
-  border-color: var(--seal);
-  color: var(--seal);
-}
+
+
+
 .grid {
   flex: 1;
   min-height: 0;
+  padding: 8px 26px 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(0, 1fr));
@@ -331,27 +263,9 @@ onMounted(() => {
   border-color: var(--warn);
 }
 
-.nb {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding-left: 10px;
-  border-left: 1px solid var(--line-soft);
-  white-space: nowrap;
-}
 
-.nb b {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--ink-2);
-}
 
-.nb i {
-  font-style: normal;
-  font-size: 10.5px;
-  color: var(--ink-3);
-}
+
 
 .foot {
   display: flex;
