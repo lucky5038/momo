@@ -147,10 +147,18 @@ let mainWindow = null;
 // 正式版不会进入这里（isDev 仅在 NB_DEV=1 或 --dev 时成立）。
 function installDevWatcher() {
   if (!isDev) return;
+  const bootAt = Date.now();
   let timer = null;
   const onChange = (_event, filename) => {
     const name = String(filename || '');
     if (/port\.txt$|server_debug|\.log$|cleaning[\\/]jobs/i.test(name)) return;
+    // Windows 的 fs.watch 在启动阶段会对已存在的文件补发一次事件；
+    // 只有「启动之后真的被写过」的文件才重启，否则开发版会刚起来就自杀重启。
+    try {
+      if (fs.statSync(path.join(__dirname, name)).mtimeMs < bootAt - 2000) return;
+    } catch {
+      /* 文件被删除或改名：继续按变更处理 */
+    }
     clearTimeout(timer);
     timer = setTimeout(() => {
       const uiChange = /\.(html|css|js)$/i.test(name) && /public|public_inline/i.test(name);
