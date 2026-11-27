@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>欢迎屏 · 纸墨封面（示意）</title>
+<style>
+  :root {
+    --paper: #f7f3ea;
+    --paper-2: #fffdf7;
+    --ink: #1c1b19;
+    --ink-2: #4a463f;
+    --ink-3: #8a8578;
+    --line: #d8d0bf;
+    --seal: #a8322d;
+    --seal-wash: rgba(168, 50, 45, 0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Microsoft YaHei", "微软雅黑", system-ui, sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ===== 动态纸墨底：两层墨晕缓慢漂移 + 纸粒 ===== */
+  .wash, .wash-2, .grain { position: fixed; inset: -20%; pointer-events: none; }
+  .wash {
+    background:
+      radial-gradient(38% 32% at 22% 26%, rgba(28, 27, 25, 0.13), transparent 70%),
+      radial-gradient(30% 26% at 78% 74%, rgba(168, 50, 45, 0.075), transparent 72%);
+    filter: blur(6px);
+    animation: drift1 34s ease-in-out infinite alternate;
+  }
+  .wash-2 {
+    background:
+      radial-gradient(26% 22% at 66% 18%, rgba(28, 27, 25, 0.08), transparent 74%),
+      radial-gradient(34% 30% at 14% 82%, rgba(28, 27, 25, 0.07), transparent 76%);
+    filter: blur(10px);
+    animation: drift2 46s ease-in-out infinite alternate;
+  }
+  @keyframes drift1 {
+    from { transform: translate3d(-1.5%, -1%, 0) scale(1); }
+    to   { transform: translate3d(2%, 1.5%, 0) scale(1.06); }
+  }
+  @keyframes drift2 {
+    from { transform: translate3d(1.5%, 1%, 0) scale(1.04); }
+    to   { transform: translate3d(-2%, -1.5%, 0) scale(1); }
+  }
+  .grain {
+    background-image: radial-gradient(rgba(28, 27, 25, 0.055) 0.5px, transparent 0.5px);
+    background-size: 4px 4px;
+    opacity: 0.7;
+  }
+
+  /* ===== 版面骨架 ===== */
+  .stage { position: relative; height: 100%; display: grid; grid-template-rows: auto 1fr auto; padding: 40px 56px 26px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand .mark {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: var(--paper-2); border: 1px solid var(--line);
+    display: grid; place-items: center;
+    font: 700 17px/1 "Microsoft YaHei", sans-serif; color: var(--seal);
+    box-shadow: inset 0 0 0 1px rgba(28, 27, 25, 0.04);
+  }
+  .brand .name { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+  .brand .slogan { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+
+  .kicker {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 12.5px; font-weight: 600; letter-spacing: 2.4px;
+    color: var(--ink-3);
+  }
+  .kicker::before {
+    content: ""; width: 26px; height: 1px; background: var(--seal); opacity: 0.85;
+  }
+
+  main { display: flex; align-items: center; }
+  .hero { max-width: 780px; }
+  .hero h1 {
+    margin: 0;
+    font-size: 58px; line-height: 1.06; letter-spacing: -1.8px; font-weight: 900;
+  }
+  .hero h1 em { font-style: normal; color: var(--seal); }
+  .hero .lede {
+    margin: 20px 0 0;
+    font-size: 14px; line-height: 1.9; color: var(--ink-2); max-width: 520px;
+  }
+  .hero .lede code {
+    font-family: Consolas, monospace; font-size: 13px;
+    padding: 1px 6px; border-radius: 4px;
+    background: rgba(28, 27, 25, 0.055);
+  }
+  .actions { margin-top: 38px; display: flex; align-items: center; gap: 18px; }
+  .btn-primary {
+    appearance: none; border: 0; cursor: pointer;
+    padding: 15px 34px; border-radius: 8px;
+    background: var(--seal); color: #fff;
+    font: 600 15.5px/1 "Microsoft YaHei", sans-serif; letter-spacing: 1px;
+    box-shadow: 0 6px 18px rgba(168, 50, 45, 0.22);
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(168, 50, 45, 0.28); }
+  .steps-note { font-size: 12.5px; color: var(--ink-3); letter-spacing: 0.4px; }
+
+  /* 主视觉：右侧一枚巨大的朱砂方印（替代参考图里的人物大图） */
+  .seal-art {
+    position: fixed; right: -40px; bottom: -60px;
+    width: 520px; height: 520px; border-radius: 40px;
+    border: 22px solid var(--seal-wash);
+    transform: rotate(-9deg);
+    display: grid; place-items: center;
+    opacity: 0.42;
+    pointer-events: none;
+  }
+  .seal-art span {
+    font: 900 260px/1 "Microsoft YaHei", sans-serif;
+    color: var(--seal-wash);
+    letter-spacing: -10px;
+  }
+
+  footer {
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid var(--line); padding-top: 14px;
+    font-size: 11.5px; color: var(--ink-3); letter-spacing: 0.4px;
+  }
+  footer .ver { font-family: Consolas, monospace; }
+</style>
+</head>
+<body>
+  <div class="wash"></div>
+  <div class="wash-2"></div>
+  <div class="grain"></div>
+  <div class="seal-art"><span>N</span></div>
+
+  <div class="stage">
+    <header>
+      <div class="brand">
+        <div class="mark">N</div>
+        <div>
+          <div class="name">N-B助手</div>
+          <div class="slogan">让ERP在中国普遍成功</div>
+        </div>
+      </div>
+      <div class="kicker">第一次使用</div>
+    </header>
+
+    <main>
+      <div class="hero">
+        <h1>先把数据库<em>连上</em></h1>
+        <p class="lede">
+          连上之后自动读取账套与单据字典。配置只写在本机 <code>config.js</code>，
+          不会上传到任何地方。
+        </p>
+        <div class="actions">
+          <button class="btn-primary">开始设置</button>
+          <span class="steps-note">2 步 · 约 1 分钟</span>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <span>科技不是高高在上，而是服务于人民</span>
+      <span class="ver">v2.9.7</span>
+    </footer>
+  </div>
+</body>
+</html>

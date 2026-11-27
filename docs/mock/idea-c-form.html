@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>方案 C · 引导表单（纸墨）</title>
+<style>
+  :root{
+    --paper:#f7f3ea; --paper-2:#fffdf7; --ink:#1c1b19; --ink-2:#4a463f; --ink-3:#8a8578;
+    --line:#d8d0bf; --line-soft:#e6decb; --seal:#a8322d; --seal-wash:rgba(168,50,45,.09);
+  }
+  *{box-sizing:border-box} html,body{height:100%;margin:0}
+  body{background:var(--paper);color:var(--ink);overflow:hidden;position:relative;
+    font-family:"Microsoft YaHei","微软雅黑",system-ui,sans-serif}
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:.75;
+    background-image:radial-gradient(rgba(28,27,25,.05) .5px,transparent .5px);background-size:4px 4px}
+  .ink{position:fixed;pointer-events:none;border-radius:50%;filter:blur(10px)}
+  .ink.i1{width:74vw;height:74vw;right:-24vw;top:-30vw;
+    background:radial-gradient(circle,rgba(28,27,25,.085),transparent 62%);
+    animation:breathe 30s ease-in-out infinite alternate}
+  .ink.i2{width:56vw;height:56vw;left:-22vw;bottom:-28vw;
+    background:radial-gradient(circle,rgba(168,50,45,.075),transparent 64%);
+    animation:breathe 40s ease-in-out infinite alternate-reverse}
+  @keyframes breathe{from{transform:scale(1) translate3d(0,0,0)}to{transform:scale(1.09) translate3d(-2%,2%,0)}}
+
+  .stage{position:relative;height:100%;display:grid;grid-template-rows:auto 1fr auto;padding:38px 54px 24px}
+  header{display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:11px}
+  .mark{width:34px;height:34px;border-radius:9px;background:var(--seal);color:#fff;
+    display:grid;place-items:center;font:900 18px/1 "Microsoft YaHei",sans-serif;
+    box-shadow:0 4px 14px rgba(168,50,45,.22)}
+  .name{font-size:15.5px;font-weight:700;letter-spacing:.5px}
+  .slogan{font-size:11px;color:var(--ink-3);margin-top:1px;letter-spacing:.4px}
+  .progress{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:3px;color:var(--ink-3)}
+  .progress b{font-weight:600} .progress b.on{color:var(--seal)}
+  .progress i{width:30px;height:1px;background:var(--line);display:block}
+
+  main{display:grid;grid-template-columns:minmax(0,1fr) 520px;align-items:center;gap:56px}
+  .intro h1{margin:0;font-size:46px;line-height:1.12;letter-spacing:-1.3px;font-weight:900}
+  .intro p{margin:16px 0 0;font-size:13.5px;line-height:1.95;color:var(--ink-2);max-width:360px}
+  .intro .tip{margin-top:22px;display:inline-flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-3)}
+  .intro .tip::before{content:"";width:24px;height:1px;background:var(--seal);opacity:.75}
+
+  .card{background:var(--paper-2);border:1px solid var(--line);border-radius:12px;
+    padding:26px 26px 22px;box-shadow:0 20px 50px rgba(28,27,25,.08)}
+  .row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .field{display:block;margin-bottom:16px}
+  .field>span{display:block;font-size:11px;letter-spacing:1.4px;color:var(--ink-3);margin-bottom:7px}
+  .field input,.field select{width:100%;padding:11px 13px;font-size:13.5px;color:var(--ink);
+    background:var(--paper);border:1px solid var(--line);border-radius:6px;outline:none;font-family:inherit;
+    transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+  .field input:focus,.field select:focus{border-color:var(--seal);background:#fff;
+    box-shadow:0 0 0 3px var(--seal-wash)}
+  .field .hint{display:block;margin-top:6px;font-size:10.5px;font-style:normal;color:var(--ink-3)}
+  .db-row{display:flex;gap:10px} .db-row select{flex:1}
+  .btn{border:1px solid var(--line);background:var(--paper-2);color:var(--ink-2);cursor:pointer;
+    font-family:inherit;padding:11px 16px;border-radius:6px;font-size:12.5px;font-weight:600;white-space:nowrap;
+    transition:border-color .15s ease,color .15s ease}
+  .btn:hover{border-color:var(--seal);color:var(--seal)}
+  .btn-primary{background:var(--seal);border-color:var(--seal);color:#fff;padding:12px 24px;
+    font-size:14px;letter-spacing:1px;box-shadow:0 8px 22px rgba(168,50,45,.2)}
+  .btn-primary:hover{color:#fff;transform:translateY(-1px);box-shadow:0 12px 28px rgba(168,50,45,.26)}
+  .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:12px;
+    margin-top:4px;padding-top:16px;border-top:1px solid var(--line-soft)}
+
+  footer{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);
+    padding-top:13px;font-size:11px;color:var(--ink-3)}
+  .ver{font-family:Consolas,monospace}
+</style>
+</head>
+<body>
+  <div class="grain"></div><div class="ink i1"></div><div class="ink i2"></div>
+
+  <div class="stage">
+    <header>
+      <div class="brand">
+        <div class="mark">N</div>
+        <div><div class="name">N-B助手</div><div class="slogan">实施流程优化</div></div>
+      </div>
+      <div class="progress"><b>01</b><i></i><b>02</b><i></i><b class="on">03</b></div>
+    </header>
+
+    <main>
+      <div class="intro">
+        <h1>填写连接信息</h1>
+        <p>服务器填 ERP 数据库所在的机器，本机就填 127.0.0.1；账号一般是 sa。</p>
+        <div class="tip">连上后从列表里选一个账套</div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <label class="field"><span>服务器</span><input value="127.0.0.1" /><em class="hint">数据库所在机器</em></label>
+          <label class="field"><span>账号</span><input value="sa" /><em class="hint">SQL Server 登录名</em></label>
+          <label class="field"><span>密码</span><input type="password" value="123" /><em class="hint">只存本机</em></label>
+        </div>
+        <label class="field">
+          <span>账套</span>
+          <div class="db-row">
+            <select><option>—— 请先读取账套 ——</option></select>
+            <button class="btn">读取账套</button>
+          </div>
+        </label>
+        <div class="form-footer">
+          <button class="btn">上一步</button>
+          <button class="btn btn-primary">保存并进入软件</button>
+        </div>
+      </div>
+    </main>
+
+    <footer><span>科技不再是高高在上，而是服务于人民</span><span class="ver">v2.9.7</span></footer>
+  </div>
+</body>
+</html>

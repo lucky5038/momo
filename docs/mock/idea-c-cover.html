@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>方案 C · 纸墨（口号版）</title>
+<style>
+  :root{
+    --paper:#f7f3ea; --paper-2:#fffdf7; --ink:#1c1b19; --ink-2:#4a463f; --ink-3:#8a8578;
+    --line:#d8d0bf; --line-soft:#e6decb; --seal:#a8322d; --seal-wash:rgba(168,50,45,.09);
+    --ok:#3f7a5e;
+  }
+  *{box-sizing:border-box} html,body{height:100%;margin:0}
+  body{background:var(--paper);color:var(--ink);overflow:hidden;position:relative;
+    font-family:"Microsoft YaHei","微软雅黑",system-ui,sans-serif}
+
+  /* 纸纹 + 两团极淡墨影（缓慢呼吸，静态看是底纹，动起来是活的） */
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:.75;
+    background-image:radial-gradient(rgba(28,27,25,.05) .5px,transparent .5px);background-size:4px 4px}
+  .ink{position:fixed;pointer-events:none;border-radius:50%;filter:blur(10px)}
+  .ink.i1{width:74vw;height:74vw;right:-24vw;top:-30vw;
+    background:radial-gradient(circle,rgba(28,27,25,.085),transparent 62%);
+    animation:breathe 30s ease-in-out infinite alternate}
+  .ink.i2{width:56vw;height:56vw;left:-22vw;bottom:-28vw;
+    background:radial-gradient(circle,rgba(168,50,45,.075),transparent 64%);
+    animation:breathe 40s ease-in-out infinite alternate-reverse}
+  @keyframes breathe{from{transform:scale(1) translate3d(0,0,0)}to{transform:scale(1.09) translate3d(-2%,2%,0)}}
+
+  .stage{position:relative;height:100%;display:grid;grid-template-rows:auto 1fr auto;padding:38px 54px 24px}
+
+  header{display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:11px}
+  .mark{width:34px;height:34px;border-radius:9px;object-fit:cover;
+    box-shadow:0 3px 10px rgba(28,27,25,.16)}
+  .name{font-size:15.5px;font-weight:700;letter-spacing:.5px}
+  .slogan{font-size:11px;color:var(--ink-3);margin-top:1px;letter-spacing:.4px}
+  .kicker{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;letter-spacing:2.2px;color:var(--ink-3)}
+  .kicker::before{content:"";width:24px;height:1px;background:var(--seal);opacity:.8}
+
+  main{display:flex;flex-direction:column;justify-content:center;gap:30px}
+  .slogan-h{margin:0;font-size:52px;line-height:1.1;letter-spacing:-1.2px;font-weight:900;white-space:nowrap}
+  .slogan-h em{font-style:normal;color:var(--seal)}
+  .row2{display:grid;grid-template-columns:minmax(0,1fr) 430px;align-items:center;gap:56px}
+  .hero h1{margin:0;font-size:58px;line-height:1.12;letter-spacing:-1.4px;font-weight:900}
+  .hero h1 em{font-style:normal;color:var(--seal)}
+  .hero p{margin:20px 0 0;font-size:14px;line-height:1.9;color:var(--ink-2);max-width:430px}
+  .actions{margin-top:36px;display:flex;align-items:center;gap:16px}
+  .btn{border:0;cursor:pointer;font-family:inherit;padding:14px 32px;border-radius:8px;
+    background:var(--seal);color:#fff;font-size:15px;font-weight:600;letter-spacing:1px;
+    box-shadow:0 8px 22px rgba(168,50,45,.2);transition:transform .16s ease,box-shadow .16s ease}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(168,50,45,.26)}
+  .btn:active{transform:scale(.985)}
+  .note{font-size:12.5px;color:var(--ink-3)}
+
+  /* 实施流程卡：把"不断完善"具象成 3/5 */
+  .flowcard{background:var(--paper-2);border:1px solid var(--line);border-radius:12px;
+    padding:22px 24px 18px;box-shadow:0 18px 44px rgba(28,27,25,.07)}
+  .flowcard .cap{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  .flowcard .cap span{font-size:10.5px;letter-spacing:2.2px;color:var(--ink-3)}
+  .flowcard .cap b{font-size:12px;font-weight:600;color:var(--seal)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:10px 0;border-top:1px solid var(--line-soft);font-size:13px}
+  .row:first-of-type{border-top:0}
+  .row .k{color:var(--ink-2)}
+  .row .v{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ok);white-space:nowrap}
+  .row .v::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--ok)}
+  .row.todo .k{color:var(--ink-3)}
+  .row.todo .v{color:var(--ink-3)}
+  .row.todo .v::before{background:var(--line);box-shadow:inset 0 0 0 1px rgba(28,27,25,.15)}
+  .dots{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin:14px 0 8px}
+  .d{height:6px;border-radius:3px;background:var(--line-soft)}
+  .d.on{background:var(--seal);opacity:.85}
+  .d.plan{background:transparent;box-shadow:inset 0 0 0 1px var(--seal);opacity:.8}
+  .steps{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;font-size:10px;color:var(--ink-3);text-align:center}
+  .cardnote{margin:14px 0 0;font-size:11.5px;line-height:1.7;color:var(--ink-3)}  .bar{margin-top:14px;height:3px;border-radius:2px;background:var(--line-soft);overflow:hidden}
+  .bar i{display:block;height:100%;width:60%;background:var(--seal);opacity:.75;
+    animation:fill 1.1s cubic-bezier(.22,.61,.36,1) both}
+  @keyframes fill{from{width:0}}
+
+  footer{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);
+    padding-top:13px;font-size:11px;color:var(--ink-3);letter-spacing:.3px}
+  .ver{font-family:Consolas,monospace}
+</style>
+</head>
+<body>
+  <div class="grain"></div><div class="ink i1"></div><div class="ink i2"></div>
+
+  <div class="stage">
+    <header>
+      <div class="brand">
+        <img class="mark" src="../../source/renderer/src/assets/app-icon.png" alt="N-B助手" />
+        <div><div class="name">N-B助手</div><div class="slogan">实施流程优化</div></div>
+      </div>
+      <div class="kicker">第一次使用</div>
+    </header>
+
+    <main>
+      <h1 class="slogan-h">科技不再是高高在上，<em>而是服务于人民</em></h1>
+      <div class="row2">
+      <div class="hero">
+        <p>把实施里重复的流程，一件件交给工具。</p>
+        <div class="actions">
+          <button class="btn">开始设置</button>
+          <span class="note">2 步 · 约 1 分钟</span>
+        </div>
+      </div>
+
+      <div class="flowcard">
+        <div class="cap"><span>实施十步</span><b>规划中 4 / 10</b></div>
+        <div class="dots">
+          <i class="d"></i><i class="d"></i><i class="d plan"></i><i class="d"></i><i class="d"></i>
+          <i class="d plan"></i><i class="d plan"></i><i class="d"></i><i class="d plan"></i><i class="d"></i>
+        </div>
+        <div class="steps">
+          <span>启动</span><span>安装</span><span>编码</span><span>调研</span><span>培训</span>
+          <span>模拟</span><span>期初</span><span>上线</span><span>检查</span><span>结案</span>
+        </div>
+        <p class="cardnote">只敢说"在规划"：编码、模拟、期初还在打磨，检查刚起头，离做完很远。</p>
+      </div>
+      </div>
+    </main>
+
+    <footer><span></span><span class="ver">v2.9.7</span></footer>
+  </div>
+</body>
+</html>
