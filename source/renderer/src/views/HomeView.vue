@@ -42,9 +42,9 @@ onMounted(() => {
         <div class="group">
           <div class="conn" :class="app.conn" :title="app.connError || app.connLabel">
             <i class="dot" />
-            <span>{{ app.connLabel }}</span>
           </div>
           <div v-if="app.database" class="db"><span>账套</span><strong>{{ app.database }}</strong></div>
+          <span class="nb"><b>预留 · N-B</b><i>规划中</i></span>
           <button class="gear" type="button" title="系统设置" @click="router.push('/settings')">⚙</button>
         </div>
       </div>
@@ -68,7 +68,6 @@ onMounted(() => {
     </div>
 
     <div class="foot">
-      <span class="nb">预留 · N-B · 规划中</span>
       <span>v{{ APP_VERSION }}</span>
     </div>
   </div>
@@ -333,10 +332,25 @@ onMounted(() => {
 }
 
 .nb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line-soft);
+  white-space: nowrap;
+}
+
+.nb b {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--ink-2);
+}
+
+.nb i {
+  font-style: normal;
   font-size: 10.5px;
-  letter-spacing: 1.2px;
   color: var(--ink-3);
-  opacity: 0.8;
 }
 
 .foot {

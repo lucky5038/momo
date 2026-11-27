@@ -262,7 +262,7 @@ async function onExecute() {
       </div>
     </div>
 
-    <div v-if="preview" class="paper-card block">
+    <div v-if="preview" class="block">
       <div class="block-head">
         <strong>{{ previewTitle }}</strong>
         <span class="sub">共 {{ preview.totalRows ?? 0 }} 行待填入</span>
@@ -290,7 +290,7 @@ async function onExecute() {
       <template v-else><p class="sub">本次没有需要填入的行。</p><p class="sub">{{ emptyHint }}</p></template>
     </div>
 
-    <div v-if="result" class="paper-card block">
+    <div v-if="result" class="block">
       <div class="block-head">
         <strong>已写入数据库</strong>
         <span class="sub">受影响 {{ result.affected ?? 0 }} 行</span>
@@ -489,7 +489,9 @@ select:disabled {
 }
 
 .block {
-  padding: 12px 16px 14px;
+  padding: 12px 2px 6px;
+  border-top: 1px solid var(--line-soft);
+  margin-top: 10px;
 }
 
 .block-head {
