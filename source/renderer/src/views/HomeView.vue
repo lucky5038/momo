@@ -244,8 +244,9 @@ onMounted(() => {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-between;
+  text-align: center;
   padding: 13px 15px;
   border-radius: var(--radius);
   border: 1px dashed var(--line);
@@ -276,11 +277,12 @@ onMounted(() => {
   font-weight: 800;
   letter-spacing: 1.5px;
   line-height: 1.2;
-  color: var(--ink-3);
+  color: var(--ink);
 }
 
 .step .st {
   display: inline-flex;
+  justify-content: center;
   align-items: center;
   gap: 6px;
   margin-top: 7px;
@@ -319,10 +321,6 @@ onMounted(() => {
 .step.dev .art {
   color: var(--seal);
   opacity: 0.92;
-}
-
-.step.dev .nm {
-  color: var(--ink);
 }
 
 .step.dev .st i {

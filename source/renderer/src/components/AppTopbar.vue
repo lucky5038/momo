@@ -1,25 +1,35 @@
 <script setup lang="ts">
 /** 模块页顶栏：小品牌 + 返回十步 + 当前位置 + 连接状态 + 设置齿轮（自绘标题栏，右侧留出系统按钮区） */
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '../stores/app'
 
 const route = useRoute()
+const router = useRouter()
 const store = useAppStore()
 
 const title = computed(() => String(route.meta.title ?? '带值'))
 const step = computed(() => String(route.meta.step ?? ''))
 const connHint = computed(() => store.connError || store.connLabel)
+/** 系统设置是全局入口（右上角齿轮进），不属于十步流程 */
+const isGlobal = computed(() => !step.value)
+
+function goBack() {
+  if (isGlobal.value) {
+    window.history.length > 1 ? window.history.back() : void router.push('/')
+    return
+  }
+  void router.push('/')
+}
 </script>
 
 <template>
   <header class="topbar">
     <div class="left">
-      <button class="back" type="button" title="返回十步" @click="$router.push('/')">← 十步</button>
-      <span class="crumb">
-        <span v-if="step">易助实施 · <b>{{ step }}</b></span>
-        <span v-else>{{ title }}</span>
-      </span>
+      <button class="back" type="button" :title="isGlobal ? '返回上一页' : '返回主界面'" @click="goBack">
+        {{ isGlobal ? '← 返回' : '← 返回主界面' }}
+      </button>
+      <span v-if="step" class="crumb">易助实施 · <b>{{ step }}</b></span>
       <h1>{{ title }}</h1>
     </div>
 

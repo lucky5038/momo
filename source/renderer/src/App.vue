@@ -37,7 +37,7 @@ onMounted(async () => {
       <RouterView />
     </main>
     <!-- 标题栏下的一条横线：整条画在 overlay 区域之外，否则右侧系统按钮那一截会被盖掉 -->
-    <div class="titlebar-rule" />
+    <div v-if="route.path !== '/'" class="titlebar-rule" />
   </div>
   <ToastHost v-if="!needsSetup" />
 </template>
