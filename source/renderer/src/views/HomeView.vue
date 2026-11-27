@@ -30,24 +30,24 @@ onMounted(() => {
 
 <template>
   <div class="home">
-    <div class="brand-row">
+    <div class="topbar">
       <div class="brand">
         <img src="../assets/app-icon.png" alt="N-B助手" />
         <div class="txt"><b>N-B助手</b><span>实施流程优化</span></div>
       </div>
-      <div class="stat">
-        <div class="conn" :class="app.conn" :title="app.connError || app.connLabel">
-          <i class="dot" />
-          <span>{{ app.connLabel }}</span>
-        </div>
-        <div v-if="app.database" class="db"><span>账套</span><strong>{{ app.database }}</strong></div>
-        <span class="nb"><span class="k">预留</span><b>N-B</b><i>规划中</i></span>
-        <button class="gear" type="button" title="系统设置" @click="router.push('/settings')">⚙</button>
-      </div>
-    </div>
 
-    <div class="headline">
-      <h1>科技不再是高高在上，<em>而是服务于人民</em></h1>
+      <h1 class="slogan">科技不再是高高在上，而是服务于人民</h1>
+
+      <div class="stat">
+        <div class="group">
+          <div class="conn" :class="app.conn" :title="app.connError || app.connLabel">
+            <i class="dot" />
+            <span>{{ app.connLabel }}</span>
+          </div>
+          <div v-if="app.database" class="db"><span>账套</span><strong>{{ app.database }}</strong></div>
+          <button class="gear" type="button" title="系统设置" @click="router.push('/settings')">⚙</button>
+        </div>
+      </div>
     </div>
 
     <div class="grid">
@@ -67,7 +67,10 @@ onMounted(() => {
       </button>
     </div>
 
-    <div class="foot"><span>v{{ APP_VERSION }}</span></div>
+    <div class="foot">
+      <span class="nb">预留 · N-B · 规划中</span>
+      <span>v{{ APP_VERSION }}</span>
+    </div>
   </div>
 </template>
 
@@ -77,16 +80,17 @@ onMounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 16px 30px 10px;
+  padding: 10px 28px 6px;
 }
 
 /* 背景墨影由 App.vue 统一提供，这里只负责排版 */
 
-.brand-row {
+.topbar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 8px;
+  height: 50px;
   /* 右侧让开自绘标题栏的窗口按钮区（titleBarOverlay 150px） */
   padding-right: 150px;
   -webkit-app-region: drag;
@@ -117,19 +121,44 @@ onMounted(() => {
   color: var(--ink-3);
 }
 
+/* 口号：绝对居中，不参与两侧布局，保证任何窗口宽度都真居中 */
+.slogan {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  white-space: nowrap;
+  color: var(--ink);
+  pointer-events: none;
+}
+
 .stat {
+  -webkit-app-region: no-drag;
+}
+
+.group {
   display: flex;
   align-items: center;
-  gap: 14px;
-  -webkit-app-region: no-drag;
+  gap: 10px;
+  height: 32px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: rgba(255, 253, 247, 0.72);
   font-size: var(--fs-xs);
   color: var(--ink-3);
+  -webkit-app-region: no-drag;
 }
 
 .conn {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .dot {
@@ -158,8 +187,9 @@ onMounted(() => {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  padding-left: 12px;
+  padding-left: 10px;
   border-left: 1px solid var(--line-soft);
+  white-space: nowrap;
 }
 
 .db strong {
@@ -169,13 +199,13 @@ onMounted(() => {
 
 .gear {
   -webkit-app-region: no-drag;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--paper-2);
   color: var(--ink-2);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
   cursor: pointer;
   transition: border-color 0.12s ease, color 0.12s ease;
@@ -185,64 +215,13 @@ onMounted(() => {
   border-color: var(--seal);
   color: var(--seal);
 }
-
-.headline {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin: 2px 0 10px;
-}
-
-.headline h1 {
-  margin: 0;
-  font-size: 23px;
-  letter-spacing: 1.2px;
-}
-
-.headline h1 em {
-  font-style: normal;
-  color: inherit;
-}
-
-.nb {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 13px;
-  border: 1px dashed var(--line);
-  border-radius: 999px;
-  background: rgba(255, 253, 247, 0.6);
-  flex: 0 0 auto;
-}
-
-.nb .k {
-  padding-right: 9px;
-  border-right: 1px solid var(--line-soft);
-  font-size: 10px;
-  letter-spacing: 1.2px;
-  color: var(--ink-3);
-}
-
-.nb b {
-  font-size: var(--fs-sub);
-  letter-spacing: 1px;
-  color: var(--ink-2);
-}
-
-.nb i {
-  font-style: normal;
-  font-size: 10.5px;
-  color: var(--ink-3);
-}
-
 .grid {
   flex: 1;
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .step {
@@ -353,10 +332,18 @@ onMounted(() => {
   border-color: var(--warn);
 }
 
+.nb {
+  font-size: 10.5px;
+  letter-spacing: 1.2px;
+  color: var(--ink-3);
+  opacity: 0.8;
+}
+
 .foot {
   display: flex;
-  justify-content: flex-end;
-  padding-top: 9px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
   font-size: var(--fs-kicker);
   color: var(--ink-3);
 }
