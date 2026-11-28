@@ -1,5 +1,5 @@
 /** 应用级常量、模块清单与实施十步清单 */
-export const APP_VERSION = '2.13.0'
+export const APP_VERSION = '2.13.1'
 
 /** 实施十步：主界面按这十步铺开；status=dev 表示已有入口，plan 表示还在规划 */
 export type StepStatus = 'dev' | 'plan'

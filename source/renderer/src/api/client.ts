@@ -161,4 +161,5 @@ export const api = {
   // 主流程
   run: <T = Record<string, unknown>>(body: RunPayload) => post<T>('/api/run', body),
   clearColumn: <T = Record<string, unknown>>(body: RunPayload) => post<T>('/api/clear-column', body),
+  openForm: (path: string) => post<{ ok: boolean; file: string }>('/api/open-form', { path }),
 }

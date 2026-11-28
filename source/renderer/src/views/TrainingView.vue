@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { TRAIN_MODULES, type TrainModule, type TrainNode } from '../config/training'
+import { TRAIN_MODULES, type TrainModule, type TrainNode, type TrainForm } from '../config/training'
+import { api } from '../api/client'
+import { toast } from '../lib/toast'
 
 const QC_KEY = 'nb_training_qc'
 
@@ -19,8 +21,20 @@ const nodeMap = computed(() => {
   return m
 })
 
-const chains = computed(() =>
-  mod.chains
+async function openForm(fm: TrainForm) {
+  if (!fm.file) {
+    toast(fm.name + '：还没收录文件', 'warn')
+    return
+  }
+  try {
+    await api.openForm(fm.file)
+    toast('已打开：' + fm.name)
+  } catch (e) {
+    toast('打开失败：' + (e as Error).message, 'err')
+  }
+}
+
+const chains = computed(() =>  mod.chains
     .filter((c) => !c.qcOnly || qcOn.value)
     .map((c) => ({
       ...c,
@@ -69,9 +83,16 @@ function pick(key: string) {
         <div class="forms">
           <div class="fcap">配套表单</div>
           <div class="flist">
-            <span v-for="fm in mod.forms" :key="fm.code" class="form">
+            <button
+              v-for="fm in mod.forms"
+              :key="fm.code"
+              class="form"
+              :class="{ has: !!fm.file }"
+              :title="fm.file ? '点开看这张表' : '暂未收录文件'"
+              @click="openForm(fm)"
+            >
               <em>{{ fm.code }}</em>{{ fm.name }}
-            </span>
+            </button>
           </div>
         </div>
       </div>
@@ -301,7 +322,7 @@ function pick(key: string) {
   flex-wrap: wrap;
   gap: 8px;
 }
-.form {
+.form.f2 {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -313,6 +334,7 @@ function pick(key: string) {
   padding: 5px 12px;
 }
 .form em {
+  margin-right: 6px;
   font-style: normal;
   font-size: var(--fs-xs);
   color: var(--seal);
@@ -353,5 +375,13 @@ function pick(key: string) {
 }
 .q p:last-child {
   margin-bottom: 0;
+}
+.form.has {
+  cursor: pointer;
+  border-color: var(--seal-line);
+  color: var(--seal);
+}
+.form.has:hover {
+  background: var(--seal-wash);
 }
 </style>

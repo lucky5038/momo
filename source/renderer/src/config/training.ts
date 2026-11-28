@@ -28,6 +28,7 @@ export interface TrainDoc {
 export interface TrainForm {
   code: string
   name: string
+  file?: string
 }
 
 export interface TrainModule {
@@ -48,8 +49,6 @@ const BUY_NODES: TrainNode[] = [
   { key: 'so', name: '订单', role: '业务' },
   { key: 'mrp', name: '物料需求', role: 'PMC' },
   { key: 'draft', name: '采购底稿', role: '采购' },
-  { key: 'insp', name: '进料检验单', role: 'QC' },
-  { key: 'judge', name: '判定', role: '合格入库 / 不合格退' },
 ]
 
 const BUY_DOCS: Record<string, TrainDoc> = {
@@ -145,17 +144,16 @@ export const TRAIN_MODULES: TrainModule[] = [
     chains: [
       { key: 'kit', name: '套料采购', nodes: ['so', 'mrp', 'draft', 'po', 'qc', 'recv'] },
       { key: 'casual', name: '零星采购', nodes: ['req', 'po', 'qc', 'recv'] },
-      { key: 'qcflow', name: '检验', nodes: ['recv', 'insp', 'judge'], qcOnly: true },
     ],
     docs: BUY_DOCS,
     forms: [
-      { code: 'SI-501', name: '关键用户培训计划表' },
-      { code: 'SI-502', name: '企业内部训练计划表' },
-      { code: 'SI-503', name: '培训签到表' },
-      { code: 'SI-504', name: '培训 PPT' },
-      { code: 'SI-505', name: '操作手册' },
-      { code: 'SI-507', name: '课后练习剧本' },
-      { code: 'SI-508', name: '月度经营会报表' },
+      { code: 'SI-501', name: '关键用户培训计划表', file: '易助实施方法V8.3\\5. 教育训练\\SI-501 关键用户培训计划表.docx' },
+      { code: 'SI-502', name: '企业内部训练计划表', file: '易助实施方法V8.3\\5. 教育训练\\SI-502 企业内部训练计划表.xlsx' },
+      { code: 'SI-503', name: '培训签到表', file: '易助实施方法V8.3\\5. 教育训练\\SI-503 教育训练签到表.docx' },
+      { code: 'SI-505', name: '操作手册', file: '易助实施方法V8.3\\5. 教育训练\\SI-505 易助ERP操作手册.pdf' },
+      { code: 'SI-507', name: '课后练习剧本', file: '易助实施方法V8.3\\5. 教育训练\\SI-507 易助ERP课后练习剧本.xlsx' },
+      { code: 'SI-508', name: '月度经营会报表', file: '易助实施方法V8.3\\5. 教育训练\\SI-508 月度经营会必看报表.docx' },
+      { code: 'MANUAL-BUY', name: '采购模块操作手册', file: '易助客户各模块操作手册2023\\采购模块.pdf' },
     ],
   },
 ]

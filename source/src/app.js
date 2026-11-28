@@ -2049,6 +2049,57 @@ async function handleCleaningReveal(req, res) {
   }
 }
 
+function trainingFormRoots() {
+  const list = [];
+  const env = String(process.env.NB_FORMS_ROOT || '').trim();
+  if (env) list.push(env);
+  try {
+    list.push(path.join(require('os').homedir(), 'Desktop', '易助培训资料'));
+  } catch (e) { /* ignore */ }
+  list.push('D:\\HuaweiMoveData\\Users\\DX03\\Desktop\\易助培训资料');
+  return list.map((p) => path.resolve(p));
+}
+
+const FORM_EXTS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'];
+
+function openLocalFile(p) {
+  try {
+    const { shell } = require('electron');
+    if (shell && typeof shell.openPath === 'function') return shell.openPath(p).then((err) => err || '');
+  } catch (e) { /* 非 Electron 环境，走系统关联程序 */ }
+  try {
+    const cp = spawn('cmd.exe', ['/c', 'start', '', p], { detached: true, stdio: 'ignore' });
+    cp.unref();
+    return Promise.resolve('');
+  } catch (e) {
+    return Promise.resolve(e.message);
+  }
+}
+
+async function handleOpenForm(req, res) {
+  try {
+    const body = JSON.parse((await readBody(req)) || '{}');
+    const rel = String(body.path || '').trim();
+    if (!rel) return sendJSON(res, 400, { error: '缺少 path' });
+    const root = trainingFormRoots().find((r) => fs.existsSync(r));
+    if (!root) return sendJSON(res, 400, { error: '没找到培训资料目录，可用环境变量 NB_FORMS_ROOT 指定' });
+    const full = path.resolve(root, rel);
+    const relToRoot = path.relative(root, full);
+    if (relToRoot.startsWith('..') || path.isAbsolute(relToRoot)) {
+      return sendJSON(res, 400, { error: '路径不在培训资料目录内' });
+    }
+    if (!fs.existsSync(full)) return sendJSON(res, 404, { error: '文件不存在：' + relToRoot });
+    if (FORM_EXTS.indexOf(path.extname(full).toLowerCase()) < 0) {
+      return sendJSON(res, 400, { error: '只支持 pdf / word / excel / ppt 文件' });
+    }
+    const err = await openLocalFile(full);
+    if (err) return sendJSON(res, 500, { error: err });
+    sendJSON(res, 200, { ok: true, file: full });
+  } catch (e) {
+    sendJSON(res, 500, { error: e.message });
+  }
+}
+
 const router = {
   '/api/meta': handleMeta,
   '/api/cleaning/inspect': handleCleaningInspect,
@@ -2059,6 +2110,7 @@ const router = {
   '/api/cleaning/preview': handleCleaningPreview,
   '/api/cleaning/generate': handleCleaningGenerate,
   '/api/cleaning/reveal': handleCleaningReveal,
+  '/api/open-form': handleOpenForm,
   '/api/run': handleRun,
   '/api/clear-column': handleClearColumn,
   '/api/databases': handleDatabases,
