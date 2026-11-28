@@ -56,13 +56,15 @@ function pick(key: string) {
       <div class="panel">
         <div v-for="c in chains" :key="c.key" class="chain">
           <div class="cname">{{ c.name }}</div>
-          <template v-for="(k, i) in c.nodeKeys" :key="k + i">
-            <span v-if="i > 0" class="arw">↓</span>
-            <button class="node" :class="{ on: selected === k, qc: nodeMap[k]?.qcOnly }" @click="pick(k)">
-              <b>{{ nodeMap[k]?.name }}</b>
-              <em>{{ nodeMap[k]?.role }}</em>
-            </button>
-          </template>
+          <div class="row">
+            <template v-for="(k, i) in c.nodeKeys" :key="k + i">
+              <span v-if="i > 0" class="arw">→</span>
+              <button class="node" :class="{ on: selected === k, qc: nodeMap[k]?.qcOnly }" @click="pick(k)">
+                <b>{{ nodeMap[k]?.name }}</b>
+                <em>{{ nodeMap[k]?.role }}</em>
+              </button>
+            </template>
+          </div>
         </div>
       </div>
 
@@ -195,18 +197,12 @@ function pick(key: string) {
   padding: 18px 20px;
   overflow: auto;
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 20px;
-  padding-top: 24px;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding-top: 22px;
 }
 .chain {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  margin-bottom: 0;
+  margin-bottom: 30px;
 }
 .chain:last-child {
   margin-bottom: 0;
@@ -218,15 +214,17 @@ function pick(key: string) {
   margin-bottom: 9px;
 }
 .row {
-  display: contents;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .node {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 5px;
   padding: 16px 14px;
-  min-width: 0;
-  width: 100%;
+  min-width: 104px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -272,10 +270,9 @@ function pick(key: string) {
 }
 .arw {
   color: var(--ink-3);
-  font-size: 15px;
-  line-height: 1;
-  padding: 5px 0;
-  text-align: center;
+  font-size: var(--fs-body);
+  display: flex;
+  align-items: center;
 }
 .side {
   display: flex;
