@@ -50,22 +50,19 @@ function pick(key: string) {
         <span class="label">走检验（QC）</span>
       </label>
 
-      <span class="hint">点任一单据 → 右边六问</span>
     </div>
 
     <div class="body">
       <div class="panel">
         <div v-for="c in chains" :key="c.key" class="chain">
           <div class="cname">{{ c.name }}</div>
-          <div class="row">
-            <template v-for="(k, i) in c.nodeKeys" :key="k + i">
-              <span v-if="i > 0" class="arw">→</span>
-              <button class="node" :class="{ on: selected === k, qc: nodeMap[k]?.qcOnly }" @click="pick(k)">
-                <b>{{ nodeMap[k]?.name }}</b>
-                <em>{{ nodeMap[k]?.role }}</em>
-              </button>
-            </template>
-          </div>
+          <template v-for="(k, i) in c.nodeKeys" :key="k + i">
+            <span v-if="i > 0" class="arw">↓</span>
+            <button class="node" :class="{ on: selected === k, qc: nodeMap[k]?.qcOnly }" @click="pick(k)">
+              <b>{{ nodeMap[k]?.name }}</b>
+              <em>{{ nodeMap[k]?.role }}</em>
+            </button>
+          </template>
         </div>
       </div>
 
@@ -73,27 +70,27 @@ function pick(key: string) {
         <div class="dname">{{ selectedName }}</div>
         <template v-if="doc">
           <div class="q">
-            <h4>做什么 · What</h4>
+            <h4>① 做什么 · What</h4>
             <p>{{ doc.what }}</p>
           </div>
           <div class="q">
-            <h4>为什么 · Why</h4>
+            <h4>② 为什么 · Why</h4>
             <p>{{ doc.why }}</p>
           </div>
           <div class="q">
-            <h4>谁做 · Who</h4>
+            <h4>③ 谁做 · Who</h4>
             <p v-for="(w, i) in doc.who" :key="i">{{ w }}</p>
           </div>
           <div class="q">
-            <h4>什么时候 · When</h4>
+            <h4>④ 什么时候 · When</h4>
             <p>{{ doc.when }}</p>
           </div>
           <div class="q">
-            <h4>交给谁 · Where</h4>
+            <h4>⑤ 交给谁 · Where</h4>
             <p>{{ doc.where }}</p>
           </div>
           <div class="q">
-            <h4>怎么做对 · How</h4>
+            <h4>⑥ 怎么做对 · How</h4>
             <p v-for="(c2, i) in doc.how" :key="i">· {{ c2 }}</p>
           </div>
         </template>
@@ -198,33 +195,38 @@ function pick(key: string) {
   padding: 18px 20px;
   overflow: auto;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
+  padding-top: 24px;
 }
 .chain {
-  margin-bottom: 40px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-bottom: 0;
 }
 .chain:last-child {
   margin-bottom: 0;
 }
 .cname {
-  font-size: var(--fs-body);
+  font-size: var(--fs-card);
   font-weight: 700;
   color: var(--ink);
   margin-bottom: 9px;
 }
 .row {
-  display: flex;
-  align-items: stretch;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: contents;
 }
 .node {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 5px;
-  padding: 16px 18px;
-  min-width: 112px;
+  padding: 16px 14px;
+  min-width: 0;
+  width: 100%;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -235,7 +237,7 @@ function pick(key: string) {
 }
 .node b {
   display: block;
-  font-size: var(--fs-card);
+  font-size: 17px;
   font-weight: 700;
   line-height: 1.3;
   color: var(--ink);
@@ -243,7 +245,7 @@ function pick(key: string) {
 .node em {
   display: block;
   font-style: normal;
-  font-size: var(--fs-sub);
+  font-size: 13px;
   color: var(--ink-3);
   margin-top: 5px;
   letter-spacing: 0.3px;
@@ -270,30 +272,30 @@ function pick(key: string) {
 }
 .arw {
   color: var(--ink-3);
-  font-size: var(--fs-body);
-  display: flex;
-  align-items: center;
+  font-size: 15px;
+  line-height: 1;
+  padding: 5px 0;
+  text-align: center;
 }
 .side {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-auto-rows: min-content;
-  gap: 12px 16px;
-  align-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  justify-content: center;
 }
 .dname {
-  grid-column: 1 / -1;
-  font-size: var(--fs-body);
+  font-size: var(--fs-card);
   font-weight: 800;
   color: var(--ink);
   margin-bottom: 2px;
 }
 .q {
+  width: 100%;
   border-left: 3px solid var(--seal);
-  padding: 8px 12px 9px;
+  padding: 7px 12px 8px;
   background: var(--paper);
   border-radius: 0 5px 5px 0;
-  min-height: 104px;
 }
 .q h4 {
   margin: 0 0 7px;
