@@ -66,6 +66,14 @@ function pick(key: string) {
             </template>
           </div>
         </div>
+        <div class="forms">
+          <div class="fcap">配套表单</div>
+          <div class="flist">
+            <span v-for="fm in mod.forms" :key="fm.code" class="form">
+              <em>{{ fm.code }}</em>{{ fm.name }}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div class="panel side">
@@ -216,15 +224,15 @@ function pick(key: string) {
 .row {
   display: flex;
   align-items: stretch;
-  flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 .node {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 5px;
-  padding: 16px 14px;
-  min-width: 104px;
+  padding: 14px 10px;
+  flex: 1 1 0;
+  min-width: 0;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -235,7 +243,8 @@ function pick(key: string) {
 }
 .node b {
   display: block;
-  font-size: 17px;
+  font-size: 16px;
+  white-space: nowrap;
   font-weight: 700;
   line-height: 1.3;
   color: var(--ink);
@@ -269,10 +278,45 @@ function pick(key: string) {
   opacity: 0.9;
 }
 .arw {
+  flex: 0 0 12px;
   color: var(--ink-3);
-  font-size: var(--fs-body);
+  font-size: 13px;
   display: flex;
   align-items: center;
+  justify-content: center;
+}
+.forms {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-soft);
+}
+.fcap {
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 9px;
+}
+.flist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.form {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-sub);
+  color: var(--ink-2);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.form em {
+  font-style: normal;
+  font-size: var(--fs-xs);
+  color: var(--seal);
+  letter-spacing: 0.4px;
 }
 .side {
   display: flex;

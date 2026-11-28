@@ -25,12 +25,18 @@ export interface TrainDoc {
   how: string[]
 }
 
+export interface TrainForm {
+  code: string
+  name: string
+}
+
 export interface TrainModule {
   key: string
   name: string
   nodes: TrainNode[]
   chains: TrainChain[]
   docs: Record<string, TrainDoc>
+  forms: TrainForm[]
   qcToggle?: boolean
 }
 
@@ -137,10 +143,19 @@ export const TRAIN_MODULES: TrainModule[] = [
     nodes: BUY_NODES,
     qcToggle: true,
     chains: [
-      { key: 'casual', name: '零星采购', nodes: ['req', 'po', 'qc', 'recv'] },
       { key: 'kit', name: '套料采购', nodes: ['so', 'mrp', 'draft', 'po', 'qc', 'recv'] },
+      { key: 'casual', name: '零星采购', nodes: ['req', 'po', 'qc', 'recv'] },
       { key: 'qcflow', name: '检验', nodes: ['recv', 'insp', 'judge'], qcOnly: true },
     ],
     docs: BUY_DOCS,
+    forms: [
+      { code: 'SI-501', name: '关键用户培训计划表' },
+      { code: 'SI-502', name: '企业内部训练计划表' },
+      { code: 'SI-503', name: '培训签到表' },
+      { code: 'SI-504', name: '培训 PPT' },
+      { code: 'SI-505', name: '操作手册' },
+      { code: 'SI-507', name: '课后练习剧本' },
+      { code: 'SI-508', name: '月度经营会报表' },
+    ],
   },
 ]
