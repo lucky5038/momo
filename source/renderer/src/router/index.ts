@@ -19,13 +19,13 @@ const routes: RouteRecordRaw[] = [
     path: '/cleaning',
     name: 'cleaning',
     component: CleaningView,
-    meta: { key: 'cleaning', title: '数据清洗', step: '07 期初' },
+    meta: { key: 'cleaning', title: '数据清洗与导入', step: '07 期初' },
   },
   {
     path: '/diagnose',
     name: 'diagnose',
     component: ModulePlaceholder,
-    meta: { key: 'diagnose', title: '上线检查', step: '09 检查' },
+    meta: { key: 'diagnose', title: '上线检查（数据体检）', step: '09 检查' },
   },
   {
     path: '/settings',

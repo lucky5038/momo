@@ -393,14 +393,6 @@ onMounted(() => loadTemplates())
 
 <template>
   <section class="page">
-    <div class="paper-card head">
-      <div>
-        <div class="kicker">MODULE 02 · 期初导入</div>
-        <h2>数据清洗与导入</h2>
-      </div>
-      <span class="pill">只读校验 · 不写数据库</span>
-    </div>
-
     <div class="file-grid">
       <div class="paper-card file">
         <div class="lbl">01 目标模板</div>
@@ -599,35 +591,16 @@ onMounted(() => loadTemplates())
   gap: 14px;
 }
 
-.head {
-  padding: 14px 16px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
 
-.kicker {
-  font-size: var(--fs-kicker);
-  letter-spacing: 1.2px;
-  color: var(--ink-3);
-  font-weight: 600;
-}
+
+
 
 .head h2 {
   font-size: var(--fs-page-title);
   margin: 2px 0 4px;
 }
 
-.pill {
-  white-space: nowrap;
-  font-size: var(--fs-xs);
-  color: var(--ink-2);
-  background: var(--wash);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 10px;
-}
+
 
 .file-grid {
   display: grid;

@@ -85,5 +85,7 @@ onMounted(async () => {
 .content.flush {
   padding: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 </style>

@@ -70,9 +70,11 @@ onMounted(() => {
 <style scoped>
 .home {
   position: relative;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 /* 背景墨影由 App.vue 统一提供，这里只负责排版 */
@@ -151,7 +153,7 @@ onMounted(() => {
   padding: 8px 26px 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(200px, 1fr));
   gap: 10px;
 }
 
