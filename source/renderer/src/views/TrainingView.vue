@@ -195,17 +195,20 @@ function pick(key: string) {
   background: var(--paper-2);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 18px 20px;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .chain {
-  margin-bottom: 20px;
+  margin-bottom: 40px;
 }
 .chain:last-child {
   margin-bottom: 0;
 }
 .cname {
-  font-size: var(--fs-sub);
+  font-size: var(--fs-body);
   font-weight: 700;
   color: var(--ink);
   margin-bottom: 9px;
@@ -220,8 +223,8 @@ function pick(key: string) {
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 5px;
-  padding: 9px 13px;
-  min-width: 88px;
+  padding: 16px 18px;
+  min-width: 112px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -232,7 +235,7 @@ function pick(key: string) {
 }
 .node b {
   display: block;
-  font-size: var(--fs-body);
+  font-size: var(--fs-card);
   font-weight: 700;
   line-height: 1.3;
   color: var(--ink);
@@ -240,7 +243,7 @@ function pick(key: string) {
 .node em {
   display: block;
   font-style: normal;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sub);
   color: var(--ink-3);
   margin-top: 5px;
   letter-spacing: 0.3px;
@@ -272,29 +275,36 @@ function pick(key: string) {
   align-items: center;
 }
 .side {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-auto-rows: min-content;
+  gap: 12px 16px;
+  align-content: center;
 }
 .dname {
-  font-size: var(--fs-sub);
-  font-weight: 700;
+  grid-column: 1 / -1;
+  font-size: var(--fs-body);
+  font-weight: 800;
   color: var(--ink);
+  margin-bottom: 2px;
 }
 .q {
   border-left: 3px solid var(--seal);
-  padding: 2px 0 2px 10px;
+  padding: 8px 12px 9px;
+  background: var(--paper);
+  border-radius: 0 5px 5px 0;
+  min-height: 104px;
 }
 .q h4 {
-  margin: 0 0 5px;
-  font-size: var(--fs-xs);
+  margin: 0 0 7px;
+  font-size: var(--fs-sub);
   color: var(--seal);
   letter-spacing: 0.6px;
   font-weight: 700;
 }
 .q p {
-  margin: 0 0 3px;
-  font-size: var(--fs-sub);
+  margin: 0 0 4px;
+  font-size: var(--fs-body);
   line-height: 1.72;
   color: var(--ink-2);
 }
