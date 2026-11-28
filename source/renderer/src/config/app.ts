@@ -1,5 +1,5 @@
 /** 应用级常量、模块清单与实施十步清单 */
-export const APP_VERSION = '2.11.7'
+export const APP_VERSION = '2.12.0'
 
 /** 实施十步：主界面按这十步铺开；status=dev 表示已有入口，plan 表示还在规划 */
 export type StepStatus = 'dev' | 'plan'
@@ -21,7 +21,7 @@ export const STEPS: StepDef[] = [
   { no: '02', title: '安装', icon: 'install', status: 'plan' },
   { no: '03', title: '编码', icon: 'coding', status: 'dev', path: '/run' },
   { no: '04', title: '调研', icon: 'survey', status: 'plan' },
-  { no: '05', title: '培训', icon: 'training', status: 'plan' },
+  { no: '05', title: '培训', icon: 'training', status: 'dev', path: '/training' },
   { no: '06', title: '模拟', icon: 'simulate', status: 'plan' },
   { no: '07', title: '期初', icon: 'opening', status: 'dev', path: '/cleaning' },
   { no: '08', title: '上线会议', icon: 'meeting', status: 'plan' },

@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import CrossFillPage from '../views/CrossFillPage.vue'
 import SettingsView from '../views/SettingsView.vue'
 import CleaningView from '../views/CleaningView.vue'
+import TrainingView from '../views/TrainingView.vue'
 import ModulePlaceholder from '../views/ModulePlaceholder.vue'
 
 /** 用 hash 路由：生产态由 app.js 兜底返回 index.html，hash 不参与后端路由判断，
@@ -20,6 +21,12 @@ const routes: RouteRecordRaw[] = [
     name: 'cleaning',
     component: CleaningView,
     meta: { key: 'cleaning', title: '数据清洗与导入', step: '07 期初' },
+  },
+  {
+    path: '/training',
+    name: 'training',
+    component: TrainingView,
+    meta: { key: 'training', title: '培训', step: '05 培训' },
   },
   {
     path: '/diagnose',

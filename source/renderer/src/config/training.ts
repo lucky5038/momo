@@ -1,0 +1,146 @@
+/** 05 培训：按模块的流程地图 + 单据六问（What / Why / Who / When / Where / How） */
+
+export interface TrainNode {
+  key: string
+  name: string
+  role: string
+  qcOnly?: boolean
+}
+
+export interface TrainChain {
+  key: string
+  name: string
+  nodes: string[]
+  qcOnly?: boolean
+}
+
+/** 5W1H：做什么 / 为什么做 / 谁做 / 什么时候做 / 交给谁 / 怎么做对 */
+export interface TrainDoc {
+  key: string
+  what: string
+  why: string
+  who: string[]
+  when: string
+  where: string
+  how: string[]
+}
+
+export interface TrainModule {
+  key: string
+  name: string
+  nodes: TrainNode[]
+  chains: TrainChain[]
+  docs: Record<string, TrainDoc>
+  qcToggle?: boolean
+}
+
+const BUY_NODES: TrainNode[] = [
+  { key: 'req', name: '请购单', role: '仓管 / 使用部门' },
+  { key: 'po', name: '采购单', role: '采购' },
+  { key: 'qc', name: '检验', role: 'QC', qcOnly: true },
+  { key: 'recv', name: '进货单', role: '仓管 / 采购' },
+  { key: 'so', name: '订单', role: '业务' },
+  { key: 'mrp', name: '物料需求', role: 'PMC' },
+  { key: 'draft', name: '采购底稿', role: '采购' },
+  { key: 'insp', name: '进料检验单', role: 'QC' },
+  { key: 'judge', name: '判定', role: '合格入库 / 不合格退' },
+]
+
+const BUY_DOCS: Record<string, TrainDoc> = {
+  req: {
+    key: 'req',
+    what: '提一张「要买东西」的申请',
+    why: '手上没料了，但采购不能凭空买，得有一张申请做依据',
+    who: ['仓管 / 使用部门'],
+    when: '发现缺料时，或知道下周要生产时',
+    where: '交给采购，比价后下采购单',
+    how: ['写清料号、数量、需要日期', '先看有没有库存、有没有在途，不要重复买'],
+  },
+  po: {
+    key: 'po',
+    what: '向供应商正式下单',
+    why: '价格、数量、交期写在这张单上，是对供应商的承诺',
+    who: ['采购'],
+    when: '请购审批完，或采购底稿出来之后',
+    where: '供应商送货来，仓管做进货单',
+    how: ['供应商、单价、交期要核对清楚', '一次下单、分批到货的，收货时要拆着收'],
+  },
+  qc: {
+    key: 'qc',
+    what: '来料先检，合格才让入库',
+    why: '把不合格的料挡在仓库外，别让它上生产线',
+    who: ['QC'],
+    when: '货到之后、入库之前',
+    where: '合格转进货单入库；不合格退供应商',
+    how: ['抽检比例按客户自己的规定', '不合格要留证据（照片、检验记录）'],
+  },
+  recv: {
+    key: 'recv',
+    what: '记录这一次实际收到多少',
+    why: '供应商把料送来了，进货单是采购这笔生意落地的凭据',
+    who: ['仓管：收货点数、录实际到货数量', '采购：核对单价与供应商'],
+    when: '货到当天，或第二天上班先补',
+    where: '审核后这张单就生效，采购这一段结束；质量问题退回走退货',
+    how: ['一般先有已审核的采购单，才能取到单', '到货数量和采购单不一致时，按实际到货改', '单价默认带采购单的，可以改（备注写原因）'],
+  },
+  so: {
+    key: 'so',
+    what: '记下客户要什么、要多少、什么时候要',
+    why: '客户下单了，后面买料、排产全都从这里开始',
+    who: ['业务'],
+    when: '客户确认订单之后立刻录',
+    where: 'PMC 按订单跑物料需求',
+    how: ['数量和交期跟客户确认清楚', '订单改了要同步改，不然后面全错'],
+  },
+  mrp: {
+    key: 'mrp',
+    what: '按订单算出这一批要采购多少',
+    why: '采购数量要根据订单来定，不是凭经验估',
+    who: ['PMC'],
+    when: '接到订单、排产之前',
+    where: '结果生成采购底稿，交给采购',
+    how: ['现有库存、在途采购要扣掉，否则会多买', '损耗率是否计入，按客户习惯定'],
+  },
+  draft: {
+    key: 'draft',
+    what: '把要买的料汇总成一张清单',
+    why: '多料号、多供应商先汇总，避免漏买和重复买',
+    who: ['采购'],
+    when: '物料需求算完之后',
+    where: '从底稿生成采购单',
+    how: ['数量可以手工加（比如备损耗）', '单价只是参考，最终以采购单为准'],
+  },
+  insp: {
+    key: 'insp',
+    what: '记下这一批来料的检验结果',
+    why: '结果落在单据上，后面追责、退货才有依据',
+    who: ['QC'],
+    when: '到货后逐批检',
+    where: '判定后把合格数量回写进货单',
+    how: ['检验单要挂到对应的进货单上', '一批到货一次检验，不要混批'],
+  },
+  judge: {
+    key: 'judge',
+    what: '决定这一批料收还是不收',
+    why: '决定这批料能不能进仓库、能不能投产',
+    who: ['QC'],
+    when: '检验完成之后',
+    where: '合格入库；不合格退供应商，采购去谈',
+    how: ['不合格要通知采购和供应商', '让步接收要有人签字确认'],
+  },
+}
+
+export const TRAIN_MODULES: TrainModule[] = [
+  {
+    key: 'buy',
+    name: '采购',
+    nodes: BUY_NODES,
+    qcToggle: true,
+    chains: [
+      { key: 'casual', name: '零星采购', nodes: ['req', 'po', 'qc', 'recv'] },
+      { key: 'kit', name: '套料采购', nodes: ['so', 'mrp', 'draft', 'po', 'qc', 'recv'] },
+      { key: 'qcflow', name: '检验', nodes: ['recv', 'insp', 'judge'], qcOnly: true },
+    ],
+    docs: BUY_DOCS,
+  },
+]
